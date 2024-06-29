@@ -7,19 +7,28 @@ import ckit
 import pyauto
 
 from cfiler import *
+
+# https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
 from cfiler_mainwindow import MainWindow, PAINT_FOCUSED_ITEMS, PAINT_FOCUSED_HEADER
+
+# https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import FileList, item_Base
 
 USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
 
 
-# https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
 def configure(window: MainWindow):
 
-    window.keymap["C-H"] = window.command_JumpHistory
+    window.keymap["A-C-H"] = window.command_JumpHistory
     window.keymap["C-D"] = window.command_Delete
 
+    window.keymap["C-S-N"] = window.command_Mkdir
+
+    window.keymap["A"] = window.command_CursorTop
+    window.keymap["E"] = window.command_CursorBottom
+    window.keymap["Home"] = window.command_CursorTop
+    window.keymap["End"] = window.command_CursorBottom
     window.keymap["J"] = window.command_CursorDown
     window.keymap["K"] = window.command_CursorUp
     window.keymap["C-J"] = window.command_CursorDownSelected
@@ -33,9 +42,16 @@ def configure(window: MainWindow):
         def cursor(self) -> int:
             return self._pane.cursor
 
+        def focus(self, i: int) -> None:
+            self._pane.cursor = i
+
         @property
         def file_list(self) -> FileList:
             return self._pane.file_list
+
+        @property
+        def scroll_info(self) -> ckit.ScrollInfo:
+            return self._pane.scroll_info
 
         @property
         def current_path(self) -> str:
@@ -68,6 +84,49 @@ def configure(window: MainWindow):
 
         def unSelect(self, i: int) -> None:
             self.file_list.selectItem(i, False)
+
+        @property
+        def selectionTop(self) -> int:
+            for i in range(self.count):
+                if self.byIndex(i).selected():
+                    return i
+            return -1
+
+        @property
+        def selectionBottom(self) -> int:
+            idxs = []
+            for i in range(self.count):
+                if self.byIndex(i).selected():
+                    idxs.append(i)
+            if len(idxs) < 1:
+                return -1
+            return idxs[-1]
+
+    def to_top_selection():
+        pane = ActivePane(window)
+        i = pane.selectionTop
+        if -1 < i:
+            pane.focus(i)
+            pane.scroll_info.makeVisible(i, window.fileListItemPaneHeight(), 1)
+            window.paint(PAINT_FOCUSED_ITEMS)
+
+    def command_ToTopSelection(_):
+        to_top_selection()
+
+    window.keymap["C-A-K"] = command_ToTopSelection
+
+    def to_bottom_selection():
+        pane = ActivePane(window)
+        i = pane.selectionBottom
+        if -1 < i:
+            pane.focus(i)
+            pane.scroll_info.makeVisible(i, window.fileListItemPaneHeight(), 1)
+            window.paint(PAINT_FOCUSED_ITEMS)
+
+    def command_ToBottomSelection(_):
+        to_bottom_selection()
+
+    window.keymap["C-A-J"] = command_ToBottomSelection
 
     def smart_copy_path():
         pane = ActivePane(window)
@@ -121,6 +180,7 @@ def configure(window: MainWindow):
             self.mark()
 
         def allFiles(self) -> None:
+            self.clearAll()
             pane = self.pane
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
@@ -128,6 +188,7 @@ def configure(window: MainWindow):
             self.mark()
 
         def allDirs(self) -> None:
+            self.clearAll()
             pane = self.pane
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
@@ -140,17 +201,31 @@ def configure(window: MainWindow):
                 pane.unSelect(i)
             self.mark()
 
+        def toTop(self) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                if i <= pane.cursor:
+                    pane.select(i)
+            self.mark()
+
+        def toEnd(self) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                if pane.cursor <= i:
+                    pane.select(i)
+            self.mark()
+
     SELECTOR = Selector(window)
 
     def command_SelectAllItems(_):
         SELECTOR.allItems()
 
-    window.keymap["A"] = command_SelectAllItems
+    window.keymap["C-A"] = command_SelectAllItems
 
     def command_UnSelectAllItems(_):
         SELECTOR.clearAll()
 
-    window.keymap["S-A"] = command_UnSelectAllItems
+    window.keymap["C-U"] = command_UnSelectAllItems
 
     def command_SelectAllFiles(_):
         SELECTOR.allFiles()
@@ -161,6 +236,18 @@ def configure(window: MainWindow):
         SELECTOR.allDirs()
 
     window.keymap["D"] = command_SelectAllDirs
+
+    def command_SelectToTop(_):
+        SELECTOR.toTop()
+
+    window.keymap["S-Home"] = command_SelectToTop
+    window.keymap["S-A"] = command_SelectToTop
+
+    def command_SelectToEnd(_):
+        SELECTOR.toEnd()
+
+    window.keymap["S-End"] = command_SelectToEnd
+    window.keymap["S-E"] = command_SelectToEnd
 
     def open_parent_side():
         pass
@@ -189,16 +276,6 @@ def configure(window: MainWindow):
         pyauto.shellExecute(None, help_path, "", "")
 
     window.keymap["A-H"] = open_doc
-
-    def open_source(_):
-        pyauto.shellExecute(
-            None,
-            "https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py",
-            "",
-            "",
-        )
-
-    window.keymap["A-S-H"] = open_source
 
     def edit_config(_):
         dir_path = Path(USER_PROFILE, r"Sync\develop\repo\cfiler")
