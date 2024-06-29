@@ -18,6 +18,7 @@ LINE_BREAK = os.linesep
 def configure(window: MainWindow):
 
     window.keymap["C-H"] = window.command_JumpHistory
+    window.keymap["C-D"] = window.command_Delete
 
     window.keymap["J"] = window.command_CursorDown
     window.keymap["K"] = window.command_CursorUp
@@ -200,12 +201,18 @@ def configure(window: MainWindow):
     window.keymap["A-S-H"] = open_source
 
     def edit_config(_):
-        dir_path = str(Path(USER_PROFILE, r"Sync\develop\repo\cfiler"))
-        vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
-        if vscode_path.exists():
-            pyauto.shellExecute(None, str(vscode_path), dir_path, "")
+        dir_path = Path(USER_PROFILE, r"Sync\develop\repo\cfiler")
+        if dir_path.exists():
+            dp = str(dir_path)
+            vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
+            if vscode_path.exists():
+                vp = str(vscode_path)
+                pyauto.shellExecute(None, vp, dp, "")
+            else:
+                pyauto.shellExecute(None, dp, "", "")
         else:
-            pyauto.shellExecute(None, dir_path, "", "")
+            pyauto.shellExecute(None, USER_PROFILE, "", "")
+            print("cannot find repo dir. open user profile instead.")
 
     window.keymap["C-E"] = edit_config
 
