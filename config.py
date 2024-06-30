@@ -1,3 +1,4 @@
+import io
 import datetime
 import os
 import shutil
@@ -258,7 +259,7 @@ def configure(window: MainWindow):
             pane = Pane(window)
             pyauto.shellExecute(None, str(vscode_path), pane.current_path, "")
 
-    window.keymap["V"] = keybind(on_vscode)
+    window.keymap["A-V"] = keybind(on_vscode)
 
     def duplicate_with_name():
         pane = Pane(window)
@@ -270,9 +271,12 @@ def configure(window: MainWindow):
             "NewFileName",
             text=focus_path.name,
             selection=[0, len(focus_path.stem)],
-        ).strip()
+        )
 
         if result and result != pane.focusItem.getName():
+            result = result.strip()
+            if len(result) < 1:
+                return
             new_path = focus_path.with_name(result)
             if new_path.exists():
                 print("same file exists!")
@@ -572,20 +576,6 @@ def configure(window: MainWindow):
     # ↓デフォルトの_config.pyをコメントアウト
 
     # --------------------------------------------------------------------
-    # F5 キーであふを起動する
-
-    def command_LaunchAFX(info):
-        print( "あふを起動 :" )
-        left_location = os.path.join( window.leftFileList().getLocation(), "" )
-        right_location = os.path.join( window.rightFileList().getLocation(), "" )
-        print( "  Left  :", left_location )
-        print( "  Right :", right_location )
-        shellExecute( None, "c:/ols/afx/afx.exe", '-L"%s" -R"%s"' % (left_location,right_location), "" )
-        print( "Done.\n" )
-
-    window.keymap[ "F5" ] = command_LaunchAFX
-
-    # --------------------------------------------------------------------
     # Shift-X キーでプログラム起動メニューを表示する
 
     def command_ProgramMenu(info):
@@ -607,31 +597,6 @@ def configure(window: MainWindow):
 
     window.keymap[ "S-X" ] = command_ProgramMenu
 
-    # --------------------------------------------------------------------
-    # Enter キーを押したときの動作をカスタマイズするためのフック
-
-    def hook_Enter():
-
-        if 0:
-            print( "hook_Enter" )
-            pane = window.activePane()
-            item = pane.file_list.getItem(pane.cursor)
-
-            # hook から True を返すと、デフォルトの動作がスキップされます
-            return True
-
-    window.enter_hook = hook_Enter
-
-    # --------------------------------------------------------------------
-    # テキストエディタを設定する
-
-    if 1: # プログラムのファイルパスを設定 (単純な使用方法)
-        window.editor = "notepad.exe"
-
-    if 0: # 呼び出し可能オブジェクトを設定 (高度な使用方法)
-        def editor( item, point, location ):
-            shellExecute( None, "lredit.exe", '--text "%s" %d:%d' % ( item.getFullpath(), point[0], point[1] ), location )
-        window.editor = editor
 
     # --------------------------------------------------------------------
     # テキスト差分エディタを設定する
@@ -672,18 +637,6 @@ def configure(window: MainWindow):
     window.select_filter_list += [
         ( "SOURCE",        filter_Default( "*.cpp *.c *.h *.cs *.py *.pyw *.fx", dir_policy=None ) ),
         ( "BOOKMARK",      filter_Bookmark(dir_policy=None) ),
-    ]
-
-    # --------------------------------------------------------------------
-    # アーカイブファイルのファイル名パターンとアーカイバの関連付け
-
-    window.archiver_list = [
-        ( "*.zip *.jar *.apk",  ZipArchiver ),
-        ( "*.7z",               SevenZipArchiver ),
-        ( "*.tgz *.tar.gz",     TgzArchiver ),
-        ( "*.tbz2 *.tar.bz2",   Bz2Archiver ),
-        ( "*.lzh",              LhaArchiver ),
-        ( "*.rar",              RarArchiver ),
     ]
 
     # --------------------------------------------------------------------
@@ -755,32 +708,6 @@ def configure(window: MainWindow):
     window.itemformat = itemformat_Name_Ext_Size_YYYYMMDDorHHMMSS
 
     # --------------------------------------------------------------------
-    # "Google" コマンド
-    #   Google でキーワードを検索します
-
-    def command_Google(info):
-        if len(info.args)>=1:
-            keyword = ' '.join(info.args)
-            keyword = urllib.parse.quote_plus(keyword)
-        else:
-            keyword = ""
-        url = "http://www.google.com/search?ie=utf8&q=%s" % keyword
-        shellExecute( None, url, "", "" )
-
-    # --------------------------------------------------------------------
-    # "Eijiro" コマンド
-    #   英辞郎 on the WEB で日本語/英語を相互に検索します
-
-    def command_Eijiro(info):
-        if len(args)>=1:
-            keyword = ' '.join(info.args)
-            keyword = urllib.parse.quote_plus(keyword)
-        else:
-            keyword = ""
-        url = "http://eow.alc.co.jp/%s/UTF-8/" % keyword
-        shellExecute( None, url, "", "" )
-
-    # --------------------------------------------------------------------
     # "Subst" コマンド
     #   任意のパスにドライブを割り当てるか、ドライブの解除を行います。
     #    subst;H;C:\dirname  : C:\dirname を Hドライブに割り当てます
@@ -802,81 +729,6 @@ def configure(window: MainWindow):
             print( "ドライブの解除     : Subst;<ドライブ名>" )
             raise TypeError
 
-
-    # --------------------------------------------------------------------
-    # Subversionでバージョン管理しているファイルだけを表示するフィルタ
-    class filter_Subversion:
-
-        svn_exe_path = "c:/Program Files/TortoiseSVN/bin/svn.exe"
-
-        def __init__( self, nonsvn_dir_policy ):
-
-            self.nonsvn_dir_policy = nonsvn_dir_policy
-            self.cache = {}
-            self.last_used = time.time()
-
-        def _getSvnFiles( self, dirname ):
-
-            if dirname.replace("\\","/").find("/.svn/") >= 0:
-                return set()
-
-            filename_set = set()
-
-            cmd = [ filter_Subversion.svn_exe_path, "stat", "-q", "-v", "--xml", "--depth", "immediates" ]
-            svn_output = io.StringIO()
-            subprocess = SubProcess( cmd, cwd=dirname, env=None, stdout_write=svn_output.write )
-            subprocess()
-
-            try:
-                elm1 = xml.etree.ElementTree.fromstring(svn_output.getvalue())
-            except xml.etree.ElementTree.ParseError as e:
-                for line in svn_output.getvalue().splitlines():
-                    if line.startswith("svn:"):
-                        print( line )
-                return filename_set
-            elm2 = elm1.find("target")
-            for elm3 in elm2.findall("entry"):
-                elm4 = elm3.find("wc-status")
-                if elm4.get("item")=="unversioned": continue
-                filename_set.add( elm3.get("path") )
-
-            return filename_set
-
-        def __call__( self, item ):
-
-            now = time.time()
-            if now - self.last_used > 3.0:
-                self.cache = {}
-            self.last_used = now
-
-            if not hasattr(item,"getFullpath"): return False
-
-            fullpath = item.getFullpath()
-
-            dirname, filename = os.path.split(fullpath)
-
-            try:
-                filename_set = self.cache[dirname]
-            except KeyError:
-                filename_set = self._getSvnFiles(dirname)
-                self.cache[dirname] = filename_set
-
-            if item.isdir() and not filename_set:
-                return self.nonsvn_dir_policy
-            return filename in filename_set
-
-        def __str__(self):
-            return "[svn]"
-
-    window.filter_list += [
-        ( "SUBVERSION",    filter_Subversion( nonsvn_dir_policy=True ) ),
-    ]
-
-    window.select_filter_list += [
-        ( "SUBVERSION",    filter_Subversion( nonsvn_dir_policy=False ) ),
-    ]
-
-    # --------------------------------------------------------------------
 
 
 # テキストビューアの設定処理
