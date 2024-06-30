@@ -1,7 +1,8 @@
 import datetime
 import os
-from pathlib import Path
 import hashlib
+from pathlib import Path
+from typing import Callable
 
 import ckit
 import pyauto
@@ -12,7 +13,7 @@ from cfiler import *
 from cfiler_mainwindow import MainWindow, PAINT_FOCUSED_ITEMS, PAINT_FOCUSED_HEADER
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
-from cfiler_filelist import FileList, item_Base
+from cfiler_filelist import FileList, item_Base, lister_Default
 
 USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
@@ -34,9 +35,13 @@ def configure(window: MainWindow):
     window.keymap["C-J"] = window.command_CursorDownSelected
     window.keymap["C-K"] = window.command_CursorUpSelected
 
-    class ActivePane:
-        def __init__(self, window: MainWindow) -> None:
-            self._pane = window.activePane()
+    class Pane:
+        def __init__(self, window: MainWindow, active: bool = True) -> None:
+            self._window = window
+            if active:
+                self._pane = self._window.activePane()
+            else:
+                self._pane = self._window.inactivePane()
 
         @property
         def cursor(self) -> int:
@@ -102,34 +107,43 @@ def configure(window: MainWindow):
                 return -1
             return idxs[-1]
 
+        def openPath(self, path: str) -> bool:
+            # https://github.com/crftwr/cfiler/blob/0d1017e93939b53024b9ba80492c428d3ae24b8b/cfiler_mainwindow.py#L3117
+            if not Path(path).exists() or Path(path).is_file():
+                print("invalid dir path: {}".format(path))
+                return False
+            lister = lister_Default(self._window, path)
+            self._window.jumpLister(self._pane, lister)
+            return True
+
+    def keybind(func: Callable):
+        def _callback(info):
+            func()
+
+        return _callback
+
     def to_top_selection():
-        pane = ActivePane(window)
+        pane = Pane(window)
         i = pane.selectionTop
         if -1 < i:
             pane.focus(i)
             pane.scroll_info.makeVisible(i, window.fileListItemPaneHeight(), 1)
             window.paint(PAINT_FOCUSED_ITEMS)
 
-    def command_ToTopSelection(_):
-        to_top_selection()
-
-    window.keymap["C-A-K"] = command_ToTopSelection
+    window.keymap["C-A-K"] = keybind(to_top_selection)
 
     def to_bottom_selection():
-        pane = ActivePane(window)
+        pane = Pane(window)
         i = pane.selectionBottom
         if -1 < i:
             pane.focus(i)
             pane.scroll_info.makeVisible(i, window.fileListItemPaneHeight(), 1)
             window.paint(PAINT_FOCUSED_ITEMS)
 
-    def command_ToBottomSelection(_):
-        to_bottom_selection()
-
-    window.keymap["C-A-J"] = command_ToBottomSelection
+    window.keymap["C-A-J"] = keybind(to_bottom_selection)
 
     def smart_copy_path():
-        pane = ActivePane(window)
+        pane = Pane(window)
         paths = []
         for i in range(pane.count):
             item = pane.byIndex(i)
@@ -144,22 +158,16 @@ def configure(window: MainWindow):
         ckit.setClipboardText(lines)
         print("copied:\n{}\n".format(lines))
 
-    def command_SmartCopyPath(_):
-        smart_copy_path()
-
-    window.keymap["C-A-P"] = command_SmartCopyPath
+    window.keymap["C-A-P"] = keybind(smart_copy_path)
 
     def smart_enter():
-        pane = ActivePane(window)
+        pane = Pane(window)
         if pane.focusItem.isdir():
-            window.command.Enter()
+            window.command_Enter(None)
         else:
-            window.command.Execute()
+            window.command_Execute(None)
 
-    def command_SmartEnter(_):
-        smart_enter()
-
-    window.keymap["L"] = command_SmartEnter
+    window.keymap["L"] = keybind(smart_enter)
     window.keymap["H"] = window.command_GotoParentDir
 
     class Selector:
@@ -167,8 +175,8 @@ def configure(window: MainWindow):
             self._window = window
 
         @property
-        def pane(self) -> ActivePane:
-            return ActivePane(self._window)
+        def pane(self) -> Pane:
+            return Pane(self._window)
 
         def mark(self) -> None:
             self._window.paint(PAINT_FOCUSED_ITEMS | PAINT_FOCUSED_HEADER)
@@ -217,43 +225,31 @@ def configure(window: MainWindow):
 
     SELECTOR = Selector(window)
 
-    def command_SelectAllItems(_):
-        SELECTOR.allItems()
+    window.keymap["C-A"] = keybind(SELECTOR.allItems)
+    window.keymap["C-U"] = keybind(SELECTOR.clearAll)
+    window.keymap["F"] = keybind(SELECTOR.allFiles)
+    window.keymap["D"] = keybind(SELECTOR.allDirs)
+    window.keymap["S-Home"] = keybind(SELECTOR.toTop)
+    window.keymap["S-A"] = keybind(SELECTOR.toTop)
+    window.keymap["S-End"] = keybind(SELECTOR.toEnd)
+    window.keymap["S-E"] = keybind(SELECTOR.toEnd)
 
-    window.keymap["C-A"] = command_SelectAllItems
+    def open_to_other():
+        active_pane = Pane(window, True)
+        inactive_pane = Pane(window, False)
+        inactive_pane.openPath(active_pane.focusItemPath)
+        window.command_FocusOther(None)
 
-    def command_UnSelectAllItems(_):
-        SELECTOR.clearAll()
+    window.keymap["S-L"] = keybind(open_to_other)
 
-    window.keymap["C-U"] = command_UnSelectAllItems
+    def open_parent_to_other():
+        active_pane = Pane(window, True)
+        parent = str(Path(active_pane.current_path).parent)
+        inactive_pane = Pane(window, False)
+        inactive_pane.openPath(parent)
+        window.command_FocusOther(None)
 
-    def command_SelectAllFiles(_):
-        SELECTOR.allFiles()
-
-    window.keymap["F"] = command_SelectAllFiles
-
-    def command_SelectAllDirs(_):
-        SELECTOR.allDirs()
-
-    window.keymap["D"] = command_SelectAllDirs
-
-    def command_SelectToTop(_):
-        SELECTOR.toTop()
-
-    window.keymap["S-Home"] = command_SelectToTop
-    window.keymap["S-A"] = command_SelectToTop
-
-    def command_SelectToEnd(_):
-        SELECTOR.toEnd()
-
-    window.keymap["S-End"] = command_SelectToEnd
-    window.keymap["S-E"] = command_SelectToEnd
-
-    def open_parent_side():
-        pass
-
-    def command_OpenParentSide(_):
-        pass
+    window.keymap["U"] = keybind(open_parent_to_other)
 
     def duplicate_with_name():
         pass
@@ -293,7 +289,7 @@ def configure(window: MainWindow):
 
     window.keymap["C-E"] = edit_config
 
-    # https://github.com/crftwr/cfiler/blob/_config.py#L284
+    # https://github.com/crftwr/cfiler/blob/0d1017e93939b53024b9ba80492c428d3ae24b8b/_config.py#L284
     def command_CheckEmpty(_):
 
         pane = window.activePane()
@@ -373,7 +369,7 @@ def configure(window: MainWindow):
         job_item = ckit.JobItem(jobCheckEmpty, jobCheckEmptyFinished)
         window.taskEnqueue(job_item, "CheckEmpty")
 
-    # https://github.com/crftwr/cfiler/blob/_config.py#L361
+    # https://github.com/crftwr/cfiler/blob/0d1017e93939b53024b9ba80492c428d3ae24b8b/_config.py#L361
     def command_CheckDuplicate(_):
 
         left_pane = window.leftPane()
