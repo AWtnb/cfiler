@@ -251,6 +251,14 @@ def configure(window: MainWindow):
 
     window.keymap["U"] = keybind(open_parent_to_other)
 
+    def on_vscode():
+        vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
+        if vscode_path.exists():
+            pane = Pane(window)
+            pyauto.shellExecute(None, str(vscode_path), pane.current_path, "")
+
+    window.keymap["V"] = keybind(on_vscode)
+
     def duplicate_with_name():
         pass
 
