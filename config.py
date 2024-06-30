@@ -1,5 +1,6 @@
 import datetime
 import os
+import shutil
 import hashlib
 from pathlib import Path
 from typing import Callable
@@ -23,7 +24,7 @@ def configure(window: MainWindow):
 
     window.keymap["A-C-H"] = window.command_JumpHistory
     window.keymap["C-D"] = window.command_Delete
-
+    window.keymap["P"] = window.command_FocusOther
     window.keymap["C-S-N"] = window.command_Mkdir
 
     window.keymap["A"] = window.command_CursorTop
@@ -260,10 +261,28 @@ def configure(window: MainWindow):
     window.keymap["V"] = keybind(on_vscode)
 
     def duplicate_with_name():
-        pass
+        pane = Pane(window)
+        focus_path = Path(pane.focusItemPath)
+        if focus_path.is_dir():
+            print("directory copy is dangerous!")
+            return
+        result = window.commandLine(
+            "NewFileName",
+            text=focus_path.name,
+            selection=[0, len(focus_path.stem)],
+        ).strip()
 
-    def command_DuplicateWithName(_):
-        pass
+        if result and result != pane.focusItem.getName():
+            new_path = focus_path.with_name(result)
+            if new_path.exists():
+                print("same file exists!")
+                return
+            try:
+                shutil.copy(str(focus_path), new_path)
+            except Exception as e:
+                print(e)
+
+    window.keymap["S-D"] = keybind(duplicate_with_name)
 
     window.keymap["A-C"] = window.command_ContextMenu
     window.keymap["A-S-C"] = window.command_ContextMenuDir
@@ -544,6 +563,7 @@ def configure(window: MainWindow):
         window.taskEnqueue(job_item, "CheckDuplicate")
 
     window.launcher.command_list += [
+        ("SelectCompare", window.command_SelectCompare),
         ("CheckEmpty", command_CheckEmpty),
         ("CheckDuplicate", command_CheckDuplicate),
     ]
