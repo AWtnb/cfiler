@@ -167,7 +167,7 @@ def configure(window: MainWindow):
         if pane.focusItem.isdir():
             window.command_Enter(None)
         else:
-            window.command_Execute(None)
+            window.command_FocusOther(None)
 
     window.keymap["L"] = keybind(smart_enter)
     window.keymap["H"] = window.command_GotoParentDir
