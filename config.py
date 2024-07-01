@@ -698,6 +698,8 @@ def configure(window: MainWindow):
             item = pane.byIndex(i)
             if item.getName() in other_names:
                 pane.select(i)
+            else:
+                pane.unSelect(i)
         pane.refresh()
 
     def select_unique(_):
@@ -706,7 +708,9 @@ def configure(window: MainWindow):
         pane = Pane(window)
         for i in range(pane.count):
             item = pane.byIndex(i)
-            if not item.getName() in other_names:
+            if item.getName() in other_names:
+                pane.unSelect(i)
+            else:
                 pane.select(i)
         pane.refresh()
 
