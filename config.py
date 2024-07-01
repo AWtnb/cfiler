@@ -67,6 +67,9 @@ def configure(window: MainWindow):
             else:
                 self._pane = self._window.inactivePane()
 
+        def refresh(self) -> None:
+            self._window.paint()
+
         @property
         def cursor(self) -> int:
             return self._pane.cursor
@@ -92,6 +95,14 @@ def configure(window: MainWindow):
 
         def byIndex(self, i: int) -> item_Base:
             return self.file_list.getItem(i)
+
+        @property
+        def names(self) -> list:
+            names = []
+            for i in range(self.count):
+                item = self.byIndex(i)
+                names.append(item.getName())
+            return names
 
         @property
         def selectedItems(self) -> list:
@@ -229,14 +240,11 @@ def configure(window: MainWindow):
         def pane(self) -> Pane:
             return Pane(self._window)
 
-        def mark(self) -> None:
-            self._window.paint(PAINT_FOCUSED_ITEMS | PAINT_FOCUSED_HEADER)
-
         def allItems(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 pane.select(i)
-            self.mark()
+            pane.refresh()
 
         def allFiles(self) -> None:
             self.clearAll()
@@ -244,7 +252,7 @@ def configure(window: MainWindow):
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.select(i)
-            self.mark()
+            pane.refresh()
 
         def allDirs(self) -> None:
             self.clearAll()
@@ -252,27 +260,27 @@ def configure(window: MainWindow):
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.select(i)
-            self.mark()
+            pane.refresh()
 
         def clearAll(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 pane.unSelect(i)
-            self.mark()
+            pane.refresh()
 
         def toTop(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if i <= pane.cursor:
                     pane.select(i)
-            self.mark()
+            pane.refresh()
 
         def toEnd(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.cursor <= i:
                     pane.select(i)
-            self.mark()
+            pane.refresh()
 
     SELECTOR = Selector(window)
 
@@ -680,8 +688,19 @@ def configure(window: MainWindow):
         param = '"{}" "{}"'.format(left_path, right_path)
         pyauto.shellExecute(None, str(exe_path), param, "")
 
+    def select_unique_name(_):
+        inactive = Pane(window, False)
+        other_names = inactive.names
+        pane = Pane(window)
+        for i in range(pane.count):
+            item = pane.byIndex(i)
+            if not item.getName() in other_names:
+                pane.select(i)
+        pane.refresh()
+
     window.launcher.command_list += [
         ("Diffinity", diffinity),
+        ("SelectUnique", select_unique_name),
         ("SelectCompare", window.command_SelectCompare),
         ("CheckEmpty", command_CheckEmpty),
         ("CheckDuplicate", command_CheckDuplicate),
@@ -729,97 +748,6 @@ def configure(window: MainWindow):
         ( "SOURCE",        filter_Default( "*.cpp *.c *.h *.cs *.py *.pyw *.fx", dir_policy=None ) ),
         ( "BOOKMARK",      filter_Bookmark(dir_policy=None) ),
     ]
-
-    # --------------------------------------------------------------------
-    # ソースファイルでEnterされたときの関連付け処理
-
-    def association_Video(item):
-        shellExecute( None, r"wmplayer.exe", '/prefetch:7 /Play "%s"' % item.getFullpath(), "" )
-
-    window.association_list += [
-        ( "*.mpg *.mpeg *.avi *.wmv", association_Video ),
-    ]
-
-
-    # --------------------------------------------------------------------
-    # ファイルアイテムの表示形式
-
-    # 昨日以前については日時、今日については時間、を表示するアイテムの表示形式
-    #
-    #   引数:
-    #       window   : メインウインドウ
-    #       item     : アイテムオブジェクト
-    #       width    : 表示領域の幅
-    #       userdata : ファイルリストの描画中に一貫して使われるユーザデータオブジェクト
-    #
-    def itemformat_Name_Ext_Size_YYYYMMDDorHHMMSS( window, item, width, userdata ):
-
-        if item.isdir():
-            str_size = "<DIR>"
-        else:
-            str_size = "%6s" % getFileSizeString(item.size())
-
-        if not hasattr(userdata,"now"):
-            userdata.now = time.localtime()
-
-        t = item.time()
-        if t[0]==userdata.now[0] and t[1]==userdata.now[1] and t[2]==userdata.now[2]:
-            str_time = "  %02d:%02d:%02d" % ( t[3], t[4], t[5] )
-        else:
-            str_time = "%04d/%02d/%02d" % ( t[0]%10000, t[1], t[2] )
-
-        str_size_time = "%s %s" % ( str_size, str_time )
-
-        width = max(40,width)
-        filename_width = width-len(str_size_time)
-
-        if item.isdir():
-            body, ext = item.getNameNfc(), None
-        else:
-            body, ext = splitExt(item.getNameNfc())
-
-        if ext:
-            body_width = min(width,filename_width-6)
-            return ( adjustStringWidth(window,body,body_width,ALIGN_LEFT,ELLIPSIS_RIGHT)
-                   + adjustStringWidth(window,ext,6,ALIGN_LEFT,ELLIPSIS_NONE)
-                   + str_size_time )
-        else:
-            return ( adjustStringWidth(window,body,filename_width,ALIGN_LEFT,ELLIPSIS_RIGHT)
-                   + str_size_time )
-
-    # Z キーで表示されるファイル表示形式リスト
-    window.itemformat_list = [
-        ( "1 : 全て表示 : filename  .ext  99.9K YY/MM/DD HH:MM:SS", itemformat_Name_Ext_Size_YYMMDD_HHMMSS ),
-        ( "2 : 秒を省略 : filename  .ext  99.9K YY/MM/DD HH:MM",    itemformat_Name_Ext_Size_YYMMDD_HHMM ),
-        ( "3 : 日 or 時 : filename  .ext  99.9K YYYY/MM/DD",        itemformat_Name_Ext_Size_YYYYMMDDorHHMMSS ),
-        ( "0 : 名前のみ : filename.ext",                            itemformat_NameExt ),
-    ]
-
-    # 表示形式の初期設定
-    window.itemformat = itemformat_Name_Ext_Size_YYYYMMDDorHHMMSS
-
-    # --------------------------------------------------------------------
-    # "Subst" コマンド
-    #   任意のパスにドライブを割り当てるか、ドライブの解除を行います。
-    #    subst;H;C:\dirname  : C:\dirname を Hドライブに割り当てます
-    #    subst;H             : Hドライブの割り当てを解除します
-
-    def command_Subst(info):
-
-        if len(info.args)>=1:
-            drive_letter = info.args[0]
-            if len(info.args)>=2:
-                path = info.args[1]
-                if window.subProcessCall( [ "subst", drive_letter+":", os.path.normpath(path) ], cwd=None, env=None, enable_cancel=False )==0:
-                    print( "%s に %sドライブを割り当てました。" % ( path, drive_letter ) )
-            else:
-                if window.subProcessCall( [ "subst", drive_letter+":", "/D" ], cwd=None, env=None, enable_cancel=False )==0:
-                    print( "%sドライブの割り当てを解除しました。" % ( drive_letter ) )
-        else:
-            print( "ドライブの割り当て : Subst;<ドライブ名>;<パス>" )
-            print( "ドライブの解除     : Subst;<ドライブ名>" )
-            raise TypeError
-
 
 
     """
