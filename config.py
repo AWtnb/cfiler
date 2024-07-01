@@ -23,7 +23,7 @@ LINE_BREAK = os.linesep
 
 def configure(window: MainWindow):
 
-    window.setFont("HackGen", 16)
+    window.setFont("UDEV Gothic", 16)
 
     def update_jump_list(jump_table: dict) -> None:
         for name, path in jump_table.items():
@@ -347,10 +347,12 @@ def configure(window: MainWindow):
 
     def reload_config(_):
         window.configure()
+        window.command.MoveSeparatorCenter()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
 
-    window.keymap["C-A-R"] = reload_config
+    window.keymap["C-R"] = reload_config
+    window.keymap["F5"] = reload_config
 
     def open_doc(_):
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
