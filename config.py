@@ -25,22 +25,6 @@ def configure(window: MainWindow):
 
     window.setFont("UDEV Gothic", 16)
 
-    def update_jump_list(jump_table: dict) -> None:
-        for name, path in jump_table.items():
-            p = Path(path)
-            if p.exists() and p.is_dir():
-                window.jump_list += [(name, str(p))]
-
-    update_jump_list(
-        {
-            "Desktop": str(Path(USER_PROFILE, "Desktop")),
-            "Scan": r"X:\scan",
-            "Dropbox Share": str(
-                Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
-            ),
-        }
-    )
-
     window.keymap["A-J"] = window.command_JumpList
 
     window.keymap["A-C-H"] = window.command_JumpHistory
@@ -58,6 +42,22 @@ def configure(window: MainWindow):
     window.keymap["K"] = window.command_CursorUp
     window.keymap["C-J"] = window.command_CursorDownSelected
     window.keymap["C-K"] = window.command_CursorUpSelected
+
+    def update_jump_list(jump_table: dict) -> None:
+        for name, path in jump_table.items():
+            p = Path(path)
+            if p.exists() and p.is_dir():
+                window.jump_list += [(name, str(p))]
+
+    update_jump_list(
+        {
+            "Desktop": str(Path(USER_PROFILE, "Desktop")),
+            "Scan": r"X:\scan",
+            "Dropbox Share": str(
+                Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
+            ),
+        }
+    )
 
     class Pane:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
@@ -92,6 +92,25 @@ def configure(window: MainWindow):
 
         def byIndex(self, i: int) -> item_Base:
             return self.file_list.getItem(i)
+
+        @property
+        def selectedItems(self) -> list:
+            items = []
+            for i in range(self.count):
+                item = self.byIndex(i)
+                if item.selected():
+                    items.append(item)
+            return items
+
+        @property
+        def selectedItemPaths(self) -> list:
+            paths = []
+            for i in range(self.count):
+                item = self.byIndex(i)
+                if item.selected():
+                    path = self.pathByIndex(i)
+                    paths.append(path)
+            return paths
 
         @property
         def focusItem(self) -> item_Base:
@@ -139,6 +158,14 @@ def configure(window: MainWindow):
             lister = lister_Default(self._window, path)
             self._window.jumpLister(self._pane, lister)
             return True
+
+    class LeftPane(Pane):
+        def __init__(self, window: MainWindow) -> None:
+            super().__init__(window, (window.focus == MainWindow.FOCUS_LEFT))
+
+    class RightPane(Pane):
+        def __init__(self, window: MainWindow) -> None:
+            super().__init__(window, (window.focus == MainWindow.FOCUS_RIGHT))
 
     def keybind(func: Callable):
         def _callback(info):
@@ -347,7 +374,8 @@ def configure(window: MainWindow):
 
     def reload_config(_):
         window.configure()
-        window.command.MoveSeparatorCenter()
+        window.maximize()
+        window.command_MoveSeparatorCenter(None)
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
 
@@ -622,7 +650,38 @@ def configure(window: MainWindow):
         job_item = ckit.JobItem(jobCheckDuplicate, jobCheckDuplicateFinished)
         window.taskEnqueue(job_item, "CheckDuplicate")
 
+    def diffinity(_):
+        exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
+        if not exe_path.exists():
+            print("cannnot find diffinity.exe...")
+            return
+
+        left_pane = LeftPane(window)
+        left_selcted = left_pane.selectedItemPaths
+        if len(left_selcted) != 1:
+            print("select just 1 file on left pane.")
+            return
+        left_path = Path(left_selcted[0])
+        if not left_path.is_file():
+            print("selected item on left pane is not comparable.")
+            return
+        left_pane = LeftPane(window)
+
+        right_pane = RightPane(window)
+        right_selcted = right_pane.selectedItemPaths
+        if len(right_selcted) != 1:
+            print("select just 1 file on right pane.")
+            return
+        right_path = Path(right_selcted[0])
+        if not right_path.is_file():
+            print("selected item on right pane is not comparable.")
+            return
+
+        param = '"{}" "{}"'.format(left_path, right_path)
+        pyauto.shellExecute(None, str(exe_path), param, "")
+
     window.launcher.command_list += [
+        ("Diffinity", diffinity),
         ("SelectCompare", window.command_SelectCompare),
         ("CheckEmpty", command_CheckEmpty),
         ("CheckDuplicate", command_CheckDuplicate),
@@ -653,21 +712,6 @@ def configure(window: MainWindow):
 
     window.keymap[ "S-X" ] = command_ProgramMenu
 
-
-    # --------------------------------------------------------------------
-    # テキスト差分エディタを設定する
-    #
-    #   この例では外部テキストマージツールとして、WinMerge( http://winmerge.org/ )
-    #   を使用しています。
-    #   必要に応じてインストールしてください。
-
-    if 0: # プログラムのファイルパスを設定 (単純な使用方法)
-        window.diff_editor = "c:\\ols\\winmerge\\WinMergeU.exe"
-
-    if 0: # 呼び出し可能オブジェクトを設定 (高度な使用方法)
-        def diffEditor( left_item, right_item, location ):
-            shellExecute( None, "c:\\ols\\winmerge\\WinMergeU.exe", '"%s" "%s"'% ( left_item.getFullpath(), right_item.getFullpath() ), location )
-        window.diff_editor = diffEditor
 
     # --------------------------------------------------------------------
 
@@ -778,62 +822,4 @@ def configure(window: MainWindow):
 
 
 
-# テキストビューアの設定処理
-def configure_TextViewer(window):
-
-    # --------------------------------------------------------------------
-    # F1 キーでヘルプファイルを表示する
-
-    def command_Help(info):
-        print( "Helpを起動 :" )
-        help_path = os.path.join( getAppExePath(), 'doc\\index.html' )
-        shellExecute( None, help_path, "", "" )
-        print( "Done.\n" )
-
-    window.keymap[ "F1" ] = command_Help
-
-
-# テキスト差分ビューアの設定処理
-def configure_DiffViewer(window):
-
-    # --------------------------------------------------------------------
-    # F1 キーでヘルプファイルを表示する
-
-    def command_Help(info):
-        print( "Helpを起動 :" )
-        help_path = os.path.join( getAppExePath(), 'doc\\index.html' )
-        shellExecute( None, help_path, "", "" )
-        print( "Done.\n" )
-
-    window.keymap[ "F1" ] = command_Help
-
-
-# イメージビューアの設定処理
-def configure_ImageViewer(window):
-
-    # --------------------------------------------------------------------
-    # F1 キーでヘルプファイルを表示する
-
-    def command_Help(info):
-        print( "Helpを起動 :" )
-        help_path = os.path.join( getAppExePath(), 'doc\\index.html' )
-        shellExecute( None, help_path, "", "" )
-        print( "Done.\n" )
-
-    window.keymap[ "F1" ] = command_Help
-
-
-# リストウインドウの設定処理
-def configure_ListWindow(window):
-
-    # --------------------------------------------------------------------
-    # F1 キーでヘルプファイルを表示する
-
-    def command_Help(info):
-        print( "Helpを起動 :" )
-        help_path = os.path.join( getAppExePath(), 'doc\\index.html' )
-        shellExecute( None, help_path, "", "" )
-        print( "Done.\n" )
-
-    window.keymap[ "F1" ] = command_Help
     """
