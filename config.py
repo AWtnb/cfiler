@@ -26,6 +26,7 @@ def configure(window: MainWindow):
     window.setFont("UDEV Gothic", 16)
 
     window.keymap["A-J"] = window.command_JumpList
+    window.keymap["C-L"] = window.command_Execute
 
     window.keymap["A-C-H"] = window.command_JumpHistory
     window.keymap["C-D"] = window.command_Delete
