@@ -3,6 +3,8 @@ import datetime
 import os
 import shutil
 import hashlib
+import subprocess
+
 from pathlib import Path
 from typing import Callable
 
@@ -22,9 +24,8 @@ LINE_BREAK = os.linesep
 
 
 def configure(window: MainWindow):
-    window.command_MoveSeparatorCenter(None)
 
-    window.setFont("UDEV Gothic", 16)
+    window.maximize()
 
     window.keymap["A-J"] = window.command_JumpList
     window.keymap["C-L"] = window.command_Execute
@@ -187,6 +188,13 @@ def configure(window: MainWindow):
             func()
 
         return _callback
+
+    # def hogehgoe():
+    #     proc = subprocess.run([r"C:\Users\a-watanabe\Desktop\stdouttest\stdouttest.exe"], stdout=subprocess.PIPE)
+    #     result = proc.stdout.decode("utf-8")
+    #     print(result)
+
+    # window.keymap["8"] = keybind(hogehgoe)
 
     def to_top_selection():
         pane = Pane(window)
