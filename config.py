@@ -23,6 +23,8 @@ LINE_BREAK = os.linesep
 
 def configure(window: MainWindow):
 
+    window.setFont("HackGen", 16)
+
     window.keymap["A-C-H"] = window.command_JumpHistory
     window.keymap["C-D"] = window.command_Delete
     window.keymap["P"] = window.command_FocusOther
