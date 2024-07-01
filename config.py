@@ -29,6 +29,8 @@ def configure(window: MainWindow):
     window.keymap["C-D"] = window.command_Delete
     window.keymap["P"] = window.command_FocusOther
     window.keymap["C-S-N"] = window.command_Mkdir
+    window.keymap["S-O"] = window.command.ChdirActivePaneToOther
+    window.keymap["O"] = window.command.ChdirInactivePaneToOther
 
     window.keymap["A"] = window.command_CursorTop
     window.keymap["E"] = window.command_CursorBottom
