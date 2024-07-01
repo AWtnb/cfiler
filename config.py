@@ -1,4 +1,4 @@
-import io
+import sys
 import datetime
 import os
 import shutil
@@ -312,6 +312,38 @@ def configure(window: MainWindow):
 
     window.keymap["A-C"] = window.command_ContextMenu
     window.keymap["A-S-C"] = window.command_ContextMenuDir
+
+    def to_obsolete_dir():
+        pane = Pane(window)
+        if not hasattr(pane.file_list.getLister(), "mkdir"):
+            return
+
+        items = []
+        for i in range(pane.count):
+            item = pane.byIndex(i)
+            if item.selected() and hasattr(item, "delete"):
+                items.append(item)
+        if len(items) < 1:
+            return
+
+        dest_name = "_obsolete"
+        if not Path(pane.current_path, dest_name).exists():
+            window.subThreadCall(
+                pane.file_list.getLister().mkdir, (dest_name, sys.stdout.write)
+            )
+
+        child_lister = pane.file_list.getLister().getChild(dest_name)
+        window._copyMoveCommon(
+            pane,
+            pane.file_list.getLister(),
+            child_lister,
+            items,
+            "m",
+            pane.file_list.getFilter(),
+        )
+        child_lister.destroy()
+
+    window.keymap["A-O"] = keybind(to_obsolete_dir)
 
     def reload_config(_):
         window.configure()
