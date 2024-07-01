@@ -351,6 +351,29 @@ def configure(window: MainWindow):
     window.keymap["A-C"] = window.command_ContextMenu
     window.keymap["A-S-C"] = window.command_ContextMenuDir
 
+    def new_txt():
+        pane = Pane(window)
+        if not hasattr(pane.file_list.getLister(), "touch"):
+            return
+        result = window.commandLine("NewTextFileName")
+        if not result:
+            return
+        filename = result.strip()
+        if len(filename) < 1:
+            return
+        if not filename.endswith(".txt"):
+            filename = filename + ".txt"
+        if Path(pane.current_path, filename).exists():
+            return
+        window.subThreadCall(pane.file_list.getLister().touch, (filename,))
+        window.subThreadCall(pane.file_list.refresh, ())
+        pane.file_list.applyItems()
+        pane.focus(window.cursorFromName(pane.file_list, filename))
+        pane.scroll_info.makeVisible(pane.cursor, window.fileListItemPaneHeight(), 1)
+        pane.refresh()
+
+    window.keymap["T"] = keybind(new_txt)
+
     def to_obsolete_dir():
         pane = Pane(window)
         if not hasattr(pane.file_list.getLister(), "mkdir"):
