@@ -42,6 +42,8 @@ def configure(window: MainWindow):
     window.keymap["K"] = window.command_CursorUp
     window.keymap["C-J"] = window.command_CursorDownSelected
     window.keymap["C-K"] = window.command_CursorUpSelected
+    window.keymap["C-Down"] = window.command_CursorDownSelected
+    window.keymap["C-Up"] = window.command_CursorUpSelected
 
     def update_jump_list(jump_table: dict) -> None:
         for name, path in jump_table.items():
@@ -688,7 +690,17 @@ def configure(window: MainWindow):
         param = '"{}" "{}"'.format(left_path, right_path)
         pyauto.shellExecute(None, str(exe_path), param, "")
 
-    def select_unique_name(_):
+    def select_dupl(_):
+        inactive = Pane(window, False)
+        other_names = inactive.names
+        pane = Pane(window)
+        for i in range(pane.count):
+            item = pane.byIndex(i)
+            if item.getName() in other_names:
+                pane.select(i)
+        pane.refresh()
+
+    def select_unique(_):
         inactive = Pane(window, False)
         other_names = inactive.names
         pane = Pane(window)
@@ -700,8 +712,8 @@ def configure(window: MainWindow):
 
     window.launcher.command_list += [
         ("Diffinity", diffinity),
-        ("SelectUnique", select_unique_name),
-        ("SelectCompare", window.command_SelectCompare),
+        ("SelectUnique", select_unique),
+        ("SelectDupl", select_dupl),
         ("CheckEmpty", command_CheckEmpty),
         ("CheckDuplicate", command_CheckDuplicate),
     ]
