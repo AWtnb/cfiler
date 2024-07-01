@@ -25,6 +25,24 @@ def configure(window: MainWindow):
 
     window.setFont("HackGen", 16)
 
+    def update_jump_list(jump_table: dict) -> None:
+        for name, path in jump_table.items():
+            p = Path(path)
+            if p.exists() and p.is_dir():
+                window.jump_list += [(name, str(p))]
+
+    update_jump_list(
+        {
+            "Desktop": str(Path(USER_PROFILE, "Desktop")),
+            "Scan": r"X:\scan",
+            "Dropbox Share": str(
+                Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
+            ),
+        }
+    )
+
+    window.keymap["A-J"] = window.command_JumpList
+
     window.keymap["A-C-H"] = window.command_JumpHistory
     window.keymap["C-D"] = window.command_Delete
     window.keymap["P"] = window.command_FocusOther
@@ -616,15 +634,6 @@ def configure(window: MainWindow):
         def diffEditor( left_item, right_item, location ):
             shellExecute( None, "c:\\ols\\winmerge\\WinMergeU.exe", '"%s" "%s"'% ( left_item.getFullpath(), right_item.getFullpath() ), location )
         window.diff_editor = diffEditor
-
-    # --------------------------------------------------------------------
-    # J キーで表示されるジャンプリスト
-
-    window.jump_list += [
-        ( "OLS",       "c:\\ols" ),
-        ( "PROJECT",   "c:\\project" ),
-        ( "MUSIC",     "e:\\music" ),
-    ]
 
     # --------------------------------------------------------------------
 
