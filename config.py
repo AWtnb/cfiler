@@ -22,6 +22,7 @@ LINE_BREAK = os.linesep
 
 
 def configure(window: MainWindow):
+    window.command_MoveSeparatorCenter(None)
 
     window.setFont("UDEV Gothic", 16)
 
@@ -408,7 +409,6 @@ def configure(window: MainWindow):
 
     def reload_config(_):
         window.configure()
-        window.maximize()
         window.command_MoveSeparatorCenter(None)
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
