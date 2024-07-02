@@ -14,10 +14,12 @@ import pyauto
 from cfiler import *
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
-from cfiler_mainwindow import MainWindow, PAINT_FOCUSED_ITEMS, PAINT_FOCUSED_HEADER
+from cfiler_mainwindow import MainWindow
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import FileList, item_Base, lister_Default
+
+from cfiler_listwindow import popMenu
 
 USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
@@ -27,6 +29,8 @@ def configure(window: MainWindow):
 
     window.maximize()
 
+    window.keymap["C-Comma"] = window.command_ConfigMenu
+    window.keymap["C-S-Comma"] = window.command_ConfigMenu2
     window.keymap["A-J"] = window.command_JumpList
     window.keymap["C-L"] = window.command_Execute
 
@@ -34,7 +38,6 @@ def configure(window: MainWindow):
     window.keymap["C-D"] = window.command_Delete
     window.keymap["P"] = window.command_FocusOther
     window.keymap["C-L"] = window.command_FocusOther
-    window.keymap["C-S-N"] = window.command_Mkdir
     window.keymap["S-O"] = window.command.ChdirActivePaneToOther
     window.keymap["O"] = window.command.ChdirInactivePaneToOther
 
@@ -65,7 +68,7 @@ def configure(window: MainWindow):
         }
     )
 
-    class Pane:
+    class CPane:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
             self._window = window
             if active:
@@ -176,11 +179,11 @@ def configure(window: MainWindow):
             self._window.jumpLister(self._pane, lister)
             return True
 
-    class LeftPane(Pane):
+    class LeftPane(CPane):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_LEFT))
 
-    class RightPane(Pane):
+    class RightPane(CPane):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_RIGHT))
 
@@ -205,33 +208,73 @@ def configure(window: MainWindow):
             if proc.returncode != 0:
                 return
             result = proc.stdout.decode("utf-8").strip()
-            pane = Pane(window)
+            pane = CPane(window)
             pane.openPath(result)
 
-    window.keymap["Y"] = keybind(zyl)
+    window.keymap["C-S-Z"] = keybind(zyl)
+
+    class zyc:
+        def __init__(self, search_all: bool) -> None:
+            self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyc.exe")
+            self._cmd = [
+                str(self._exe_path),
+                "-exclude=_obsolete,node_modules",
+                "-stdout=True",
+                "-all={}".format(search_all),
+            ]
+
+        def check(self) -> bool:
+            return self._exe_path.exists()
+
+        def for_dir(self, offset: int) -> Callable:
+            def _func() -> None:
+                if not self.check():
+                    return
+                pane = CPane(window)
+                cmd = self._cmd + [
+                    "-offset={}".format(offset),
+                    "-cur={}".format(pane.current_path),
+                ]
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+                if proc.returncode != 0:
+                    return
+                result = proc.stdout.decode("utf-8").strip()
+                if Path(result).is_dir():
+                    pane = CPane(window)
+                    pane.openPath(result)
+                else:
+                    pyauto.shellExecute(None, result, "", "")
+
+            return _func
+
+    window.keymap["Z"] = keybind(zyc(False).for_dir(-1))
+    window.keymap["A-Z"] = keybind(zyc(True).for_dir(-1))
+    window.keymap["S-Z"] = keybind(zyc(False).for_dir(1))
+    window.keymap["A-S-Z"] = keybind(zyc(True).for_dir(1))
+    window.keymap["C-F"] = keybind(zyc(True).for_dir(0))
 
     def to_top_selection():
-        pane = Pane(window)
+        pane = CPane(window)
         i = pane.selectionTop
         if -1 < i:
             pane.focus(i)
             pane.scroll_info.makeVisible(i, window.fileListItemPaneHeight(), 1)
-            window.paint(PAINT_FOCUSED_ITEMS)
+            pane.refresh()
 
     window.keymap["C-A-K"] = keybind(to_top_selection)
 
     def to_bottom_selection():
-        pane = Pane(window)
+        pane = CPane(window)
         i = pane.selectionBottom
         if -1 < i:
             pane.focus(i)
             pane.scroll_info.makeVisible(i, window.fileListItemPaneHeight(), 1)
-            window.paint(PAINT_FOCUSED_ITEMS)
+            pane.refresh()
 
     window.keymap["C-A-J"] = keybind(to_bottom_selection)
 
     def smart_copy_path():
-        pane = Pane(window)
+        pane = CPane(window)
         paths = []
         for i in range(pane.count):
             item = pane.byIndex(i)
@@ -249,7 +292,7 @@ def configure(window: MainWindow):
     window.keymap["C-A-P"] = keybind(smart_copy_path)
 
     def smart_enter():
-        pane = Pane(window)
+        pane = CPane(window)
         if pane.focusItem.isdir():
             window.command_Enter(None)
         else:
@@ -263,8 +306,8 @@ def configure(window: MainWindow):
             self._window = window
 
         @property
-        def pane(self) -> Pane:
-            return Pane(self._window)
+        def pane(self) -> CPane:
+            return CPane(self._window)
 
         def allItems(self) -> None:
             pane = self.pane
@@ -320,17 +363,17 @@ def configure(window: MainWindow):
     window.keymap["S-E"] = keybind(SELECTOR.toEnd)
 
     def open_to_other():
-        active_pane = Pane(window, True)
-        inactive_pane = Pane(window, False)
+        active_pane = CPane(window, True)
+        inactive_pane = CPane(window, False)
         inactive_pane.openPath(active_pane.focusItemPath)
         window.command_FocusOther(None)
 
     window.keymap["S-L"] = keybind(open_to_other)
 
     def open_parent_to_other():
-        active_pane = Pane(window, True)
+        active_pane = CPane(window, True)
         parent = str(Path(active_pane.current_path).parent)
-        inactive_pane = Pane(window, False)
+        inactive_pane = CPane(window, False)
         inactive_pane.openPath(parent)
         window.command_FocusOther(None)
 
@@ -339,13 +382,13 @@ def configure(window: MainWindow):
     def on_vscode():
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
         if vscode_path.exists():
-            pane = Pane(window)
+            pane = CPane(window)
             pyauto.shellExecute(None, str(vscode_path), pane.current_path, "")
 
     window.keymap["A-V"] = keybind(on_vscode)
 
     def duplicate_with_name():
-        pane = Pane(window)
+        pane = CPane(window)
         focus_path = Path(pane.focusItemPath)
         if focus_path.is_dir():
             print("directory copy is dangerous!")
@@ -375,7 +418,7 @@ def configure(window: MainWindow):
     window.keymap["A-S-C"] = window.command_ContextMenuDir
 
     def new_txt():
-        pane = Pane(window)
+        pane = CPane(window)
         if not hasattr(pane.file_list.getLister(), "touch"):
             return
         result = window.commandLine("NewTextFileName")
@@ -398,7 +441,7 @@ def configure(window: MainWindow):
     window.keymap["T"] = keybind(new_txt)
 
     def to_obsolete_dir():
-        pane = Pane(window)
+        pane = CPane(window)
         if not hasattr(pane.file_list.getLister(), "mkdir"):
             return
 
@@ -429,22 +472,22 @@ def configure(window: MainWindow):
 
     window.keymap["A-O"] = keybind(to_obsolete_dir)
 
-    def reload_config(_):
+    def reload_config():
         window.configure()
         window.command_MoveSeparatorCenter(None)
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
 
-    window.keymap["C-R"] = reload_config
-    window.keymap["F5"] = reload_config
+    window.keymap["C-R"] = keybind(reload_config)
+    window.keymap["F5"] = keybind(reload_config)
 
-    def open_doc(_):
+    def open_doc():
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
         pyauto.shellExecute(None, help_path, "", "")
 
-    window.keymap["A-H"] = open_doc
+    window.keymap["A-H"] = keybind(open_doc)
 
-    def edit_config(_):
+    def edit_config():
         dir_path = Path(USER_PROFILE, r"Sync\develop\repo\cfiler")
         if dir_path.exists():
             dp = str(dir_path)
@@ -458,7 +501,80 @@ def configure(window: MainWindow):
             pyauto.shellExecute(None, USER_PROFILE, "", "")
             print("cannot find repo dir. open user profile instead.")
 
-    window.keymap["C-E"] = edit_config
+    window.keymap["C-E"] = keybind(edit_config)
+
+    window.keymap["C-S-N"] = window.command_Mkdir
+
+    def template_mkdir():
+        dir_names = [
+            "plain",
+            "proofed",
+            "send_to_author",
+            "proofed_by_author",
+            "send_to_printshop",
+            "layout_割付",
+            "preprocess_データ整形",
+            "marginalia",
+            "初校",
+            "再校",
+            "三校",
+            "念校",
+            "事前資料",
+            "会合メモ",
+            "議事録",
+            "projectpaper_企画書",
+            "permission_許諾",
+            "galley_ゲラ",
+            "donation_献本",
+            "letter_手紙",
+            "design_装幀",
+            "meeting_会合",
+            "written_お原稿",
+            "promote_販宣",
+            "appendix_付き物",
+            "document_入稿書類",
+            "document_依頼書類",
+            "_legacy",
+            "_wiki",
+            "author_著者紹介",
+            "toc_目次",
+            "preface_まえがき",
+            "preface_はじめに",
+            "postscript_あとがき",
+            "postscript_おわりに",
+            "reference_文献リスト",
+            "index_索引",
+            "endroll_奥付",
+            "websupport",
+        ]
+
+        pane = CPane(window)
+        if not hasattr(pane.file_list.getLister(), "mkdir"):
+            return
+
+        options = []
+        for dn in dir_names:
+            options.append((dn, dn))
+        result = popMenu(window, "DirNames", options, 0)
+        if result < 0:
+            return
+        name = options[result][0]
+        print(name)
+        window.subThreadCall(pane.file_list.getLister().mkdir, (name, sys.stdout.write))
+
+        window.subThreadCall(pane.file_list.refresh, ())
+        pane.file_list.applyItems()
+        pane.focus(window.cursorFromName(pane.file_list, name))
+        pane.scroll_info.makeVisible(pane.cursor, window.fileListItemPaneHeight(), 1)
+        pane.refresh()
+
+    window.keymap["A-S-N"] = keybind(template_mkdir)
+
+    ################################
+    ################################
+    ################################
+    ################################
+    ################################
 
     # https://github.com/crftwr/cfiler/blob/0d1017e93939b53024b9ba80492c428d3ae24b8b/_config.py#L284
     def command_CheckEmpty(_):
@@ -737,9 +853,9 @@ def configure(window: MainWindow):
         pyauto.shellExecute(None, str(exe_path), param, "")
 
     def select_dupl(_):
-        inactive = Pane(window, False)
+        inactive = CPane(window, False)
         other_names = inactive.names
-        pane = Pane(window)
+        pane = CPane(window)
         for i in range(pane.count):
             item = pane.byIndex(i)
             if item.getName() in other_names:
@@ -749,9 +865,9 @@ def configure(window: MainWindow):
         pane.refresh()
 
     def select_unique(_):
-        inactive = Pane(window, False)
+        inactive = CPane(window, False)
         other_names = inactive.names
-        pane = Pane(window)
+        pane = CPane(window)
         for i in range(pane.count):
             item = pane.byIndex(i)
             if item.getName() in other_names:
@@ -769,29 +885,6 @@ def configure(window: MainWindow):
     ]
 
     """
-    # ↓デフォルトの_config.pyをコメントアウト
-
-    # --------------------------------------------------------------------
-    # Shift-X キーでプログラム起動メニューを表示する
-
-    def command_ProgramMenu(info):
-
-        def launch_InternetExplorer():
-            shellExecute( None, r"C:\Program Files\Internet Explorer\iexplore.exe", "", "" )
-
-        def launch_CommandPrompt():
-            shellExecute( None, r"cmd.exe", "", window.activeFileList().getLocation() )
-
-        items = [
-            ( "Internet Explorer", launch_InternetExplorer ),
-            ( "Command Prompt",    launch_CommandPrompt )
-        ]
-
-        result = popMenu( window, "プログラム", items, 0 )
-        if result<0 : return
-        items[result][1]()
-
-    window.keymap[ "S-X" ] = command_ProgramMenu
 
 
     # --------------------------------------------------------------------
