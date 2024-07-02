@@ -214,9 +214,10 @@ def configure(window: MainWindow):
                 "-stdout=True",
             ]
             proc = subprocess.run(cmd, stdout=subprocess.PIPE)
-            if proc.returncode != 0:
-                return
             result = proc.stdout.decode("utf-8").strip()
+            if proc.returncode != 0:
+                print(result)
+                return
             pane = CPane(window)
             pane.openPath(result)
 
@@ -245,9 +246,10 @@ def configure(window: MainWindow):
                     "-cur={}".format(pane.current_path),
                 ]
                 proc = subprocess.run(cmd, stdout=subprocess.PIPE)
-                if proc.returncode != 0:
-                    return
                 result = proc.stdout.decode("utf-8").strip()
+                if proc.returncode != 0:
+                    print(result)
+                    return
                 if Path(result).is_dir():
                     pane = CPane(window)
                     pane.openPath(result)
@@ -262,6 +264,12 @@ def configure(window: MainWindow):
     window.keymap["S-Z"] = keybind(zyc(False).invoke(1))
     window.keymap["A-S-Z"] = keybind(zyc(True).invoke(1))
     window.keymap["F"] = keybind(zyc(True).invoke(0))
+
+    def jump_up_selection():
+        pass
+
+    def jump_down_selection():
+        pass
 
     def to_top_selection():
         pane = CPane(window)
