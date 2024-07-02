@@ -32,10 +32,11 @@ def configure(window: MainWindow):
 
     window.keymap["C-Q"] = window.command_Quit
     window.keymap["A-F4"] = window.command_Quit
-    window.keymap["Q"] = lambda _ : None
+    window.keymap["Q"] = lambda _: None
     window.keymap["C-Comma"] = window.command_ConfigMenu
     window.keymap["C-S-Comma"] = window.command_ConfigMenu2
     window.keymap["A-J"] = window.command_JumpList
+    window.keymap["C-J"] = window.command_JumpList
     window.keymap["C-L"] = window.command_Execute
 
     window.keymap["A-C-H"] = window.command_JumpHistory
@@ -51,8 +52,8 @@ def configure(window: MainWindow):
     window.keymap["End"] = window.command_CursorBottom
     window.keymap["J"] = window.command_CursorDown
     window.keymap["K"] = window.command_CursorUp
-    window.keymap["C-J"] = window.command_CursorDownSelected
-    window.keymap["C-K"] = window.command_CursorUpSelected
+    window.keymap["A-J"] = window.command_CursorDownSelected
+    window.keymap["A-K"] = window.command_CursorUpSelected
     window.keymap["C-Down"] = window.command_CursorDownSelected
     window.keymap["C-Up"] = window.command_CursorUpSelected
 
@@ -174,6 +175,10 @@ def configure(window: MainWindow):
                 return -1
             return idxs[-1]
 
+        def scrollTo(self, i: int) -> None:
+            self.scroll_info.makeVisible(i, self._window.fileListItemPaneHeight(), 1)
+            self.refresh()
+
         def openPath(self, path: str) -> bool:
             # https://github.com/crftwr/cfiler/blob/0d1017e93939b53024b9ba80492c428d3ae24b8b/cfiler_mainwindow.py#L3117
             if not Path(path).exists() or Path(path).is_file():
@@ -263,8 +268,7 @@ def configure(window: MainWindow):
         i = pane.selectionTop
         if -1 < i:
             pane.focus(i)
-            pane.scroll_info.makeVisible(i, window.fileListItemPaneHeight(), 1)
-            pane.refresh()
+            pane.scrollTo(i)
 
     window.keymap["C-A-K"] = keybind(to_top_selection)
 
@@ -273,8 +277,7 @@ def configure(window: MainWindow):
         i = pane.selectionBottom
         if -1 < i:
             pane.focus(i)
-            pane.scroll_info.makeVisible(i, window.fileListItemPaneHeight(), 1)
-            pane.refresh()
+            pane.scrollTo(i)
 
     window.keymap["C-A-J"] = keybind(to_bottom_selection)
 
@@ -321,7 +324,7 @@ def configure(window: MainWindow):
             pane.refresh()
 
         def allFiles(self) -> None:
-            self.clearAll()
+            self.unSelectAll()
             pane = self.pane
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
@@ -329,17 +332,62 @@ def configure(window: MainWindow):
             pane.refresh()
 
         def allDirs(self) -> None:
-            self.clearAll()
+            self.unSelectAll()
             pane = self.pane
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.select(i)
             pane.refresh()
 
-        def clearAll(self) -> None:
+        def unSelectAll(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 pane.unSelect(i)
+            pane.refresh()
+
+        def unSelectFiles(self) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                if pane.byIndex(i).isdir():
+                    pane.unSelect(i)
+            pane.refresh()
+
+        def unSelectDirs(self) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                if not pane.byIndex(i).isdir():
+                    pane.unSelect(i)
+            pane.refresh()
+
+        def selectByExtension(self, s: str) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                if Path(pane.pathByIndex(i)).suffix == s:
+                    pane.select(i)
+            pane.refresh()
+
+        def selectStemContains(self, s: str) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                stem = Path(pane.pathByIndex(i)).stem
+                if s in stem:
+                    pane.select(i)
+            pane.refresh()
+
+        def selectStemStartsWith(self, s: str) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                stem = Path(pane.pathByIndex(i)).stem
+                if stem.startswith(s):
+                    pane.select(i)
+            pane.refresh()
+
+        def selectStemEndsWith(self, s: str) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                stem = Path(pane.pathByIndex(i)).stem
+                if stem.endswith(s):
+                    pane.select(i)
             pane.refresh()
 
         def toTop(self) -> None:
@@ -359,9 +407,11 @@ def configure(window: MainWindow):
     SELECTOR = Selector(window)
 
     window.keymap["C-A"] = keybind(SELECTOR.allItems)
-    window.keymap["C-U"] = keybind(SELECTOR.clearAll)
+    window.keymap["C-U"] = keybind(SELECTOR.unSelectAll)
     window.keymap["A-F"] = keybind(SELECTOR.allFiles)
-    window.keymap["D"] = keybind(SELECTOR.allDirs)
+    window.keymap["A-S-F"] = keybind(SELECTOR.unSelectDirs)
+    window.keymap["A-D"] = keybind(SELECTOR.allDirs)
+    window.keymap["A-S-D"] = keybind(SELECTOR.unSelectFiles)
     window.keymap["S-Home"] = keybind(SELECTOR.toTop)
     window.keymap["S-A"] = keybind(SELECTOR.toTop)
     window.keymap["S-End"] = keybind(SELECTOR.toEnd)
@@ -440,8 +490,7 @@ def configure(window: MainWindow):
         window.subThreadCall(pane.file_list.refresh, ())
         pane.file_list.applyItems()
         pane.focus(window.cursorFromName(pane.file_list, filename))
-        pane.scroll_info.makeVisible(pane.cursor, window.fileListItemPaneHeight(), 1)
-        pane.refresh()
+        pane.scrollTo(pane.cursor)
 
     window.keymap["T"] = keybind(new_txt)
 
@@ -587,8 +636,7 @@ def configure(window: MainWindow):
         window.subThreadCall(pane.file_list.refresh, ())
         pane.file_list.applyItems()
         pane.focus(window.cursorFromName(pane.file_list, name))
-        pane.scroll_info.makeVisible(pane.cursor, window.fileListItemPaneHeight(), 1)
-        pane.refresh()
+        pane.scrollTo(pane.cursor)
 
     window.keymap["A-S-N"] = keybind(template_mkdir)
 
@@ -898,10 +946,26 @@ def configure(window: MainWindow):
                 pane.select(i)
         pane.refresh()
 
+    def select_stem_startswith(_):
+        pass
+
+    def select_stem_endsswith(_):
+        pass
+
+    def select_stem_contains(_):
+        pass
+
+    def select_byext(_):
+        pass
+
     window.launcher.command_list += [
         ("Diffinity", diffinity),
         ("SelectUnique", select_unique),
         ("SelectDupl", select_dupl),
+        ("SelectStemStartsWith", select_stem_startswith),
+        ("SelectStemEndsWith", select_stem_endsswith),
+        ("SelectStemContains", select_stem_contains),
+        ("SelectByExtension", select_byext),
         ("CheckEmpty", command_CheckEmpty),
         ("CheckDuplicate", command_CheckDuplicate),
     ]
