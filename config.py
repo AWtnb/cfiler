@@ -189,12 +189,25 @@ def configure(window: MainWindow):
 
         return _callback
 
-    # def hogehgoe():
-    #     proc = subprocess.run([r"C:\Users\a-watanabe\Desktop\stdouttest\stdouttest.exe"], stdout=subprocess.PIPE)
-    #     result = proc.stdout.decode("utf-8")
-    #     print(result)
+    def zyl():
+        exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
+        src_path = Path(USER_PROFILE, r"Personal\launch.yaml")
+        if exe_path.exists() and src_path.exists():
+            cmd = [
+                str(exe_path),
+                "-src={}".format(src_path),
+                "-all=False",
+                "-exclude=_obsolete,node_modules",
+                "-stdout=True",
+            ]
+            proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+            if proc.returncode != 0:
+                return
+            result = proc.stdout.decode("utf-8").strip()
+            pane = Pane(window)
+            pane.openPath(result)
 
-    # window.keymap["8"] = keybind(hogehgoe)
+    window.keymap["Y"] = keybind(zyl)
 
     def to_top_selection():
         pane = Pane(window)
