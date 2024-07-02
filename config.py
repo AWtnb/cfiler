@@ -507,45 +507,45 @@ def configure(window: MainWindow):
 
     def template_mkdir():
         dir_names = [
-            "plain",
-            "proofed",
-            "send_to_author",
-            "proofed_by_author",
-            "send_to_printshop",
-            "layout_割付",
-            "preprocess_データ整形",
-            "marginalia",
-            "初校",
-            "再校",
-            "三校",
-            "念校",
-            "事前資料",
-            "会合メモ",
-            "議事録",
-            "projectpaper_企画書",
-            "permission_許諾",
-            "galley_ゲラ",
-            "donation_献本",
-            "letter_手紙",
-            "design_装幀",
-            "meeting_会合",
-            "written_お原稿",
-            "promote_販宣",
-            "appendix_付き物",
-            "document_入稿書類",
-            "document_依頼書類",
-            "_legacy",
-            "_wiki",
-            "author_著者紹介",
-            "toc_目次",
-            "preface_まえがき",
-            "preface_はじめに",
-            "postscript_あとがき",
-            "postscript_おわりに",
-            "reference_文献リスト",
-            "index_索引",
-            "endroll_奥付",
-            "websupport",
+            ("_legacy",),
+            ("_wiki",),
+            ("appendix_付き物",),
+            ("author_著者紹介",),
+            ("design_装幀",),
+            ("document_依頼書類",),
+            ("document_入稿書類",),
+            ("donation_献本",),
+            ("endroll_奥付",),
+            ("galley_ゲラ",),
+            ("index_索引",),
+            ("layout_割付",),
+            ("letter_手紙",),
+            ("marginalia",),
+            ("meeting_会合",),
+            ("permission_許諾",),
+            ("plain",),
+            ("postscript_あとがき",),
+            ("postscript_おわりに",),
+            ("preface_はじめに",),
+            ("preface_まえがき",),
+            ("preprocess_データ整形",),
+            ("projectpaper_企画書",),
+            ("promote_販宣",),
+            ("proofed_by_author",),
+            ("proofed",),
+            ("reference_文献リスト",),
+            ("send_to_author",),
+            ("send_to_printshop",),
+            ("toc_目次",),
+            ("websupport",),
+            ("written_お原稿",),
+            ("jizen","事前資料"),
+            ("kaigo", "会合メモ"),
+            ("shoko", "初校"),
+            ("saiko", "再校"),
+            ("sanko", "三校"),
+            ("nenko", "念校"),
+            ("gijiroku", "議事録"),
         ]
 
         pane = CPane(window)
@@ -554,12 +554,15 @@ def configure(window: MainWindow):
 
         options = []
         for dn in dir_names:
-            options.append((dn, dn))
+            if len(dn) == 2:
+                s = "{}[{}]".format(*dn)
+                options.append((s, dn[1]))
+            else:
+                options.append((dn[0], dn[0]))
         result = popMenu(window, "DirNames", options, 0)
         if result < 0:
             return
         name = options[result][0]
-        print(name)
         window.subThreadCall(pane.file_list.getLister().mkdir, (name, sys.stdout.write))
 
         window.subThreadCall(pane.file_list.refresh, ())
