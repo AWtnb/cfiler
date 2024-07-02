@@ -179,14 +179,38 @@ def configure(window: MainWindow):
             self.scroll_info.makeVisible(i, self._window.fileListItemPaneHeight(), 1)
             self.refresh()
 
+        def scrollToCursor(self) -> None:
+            self.scrollTo(self.cursor)
+
+        def openName(self, name: str) -> bool:
+            path = Path(self.current_path, name)
+            if not path.exists() or path.is_file():
+                print("invalid dir path: {}".format(path))
+                return False
+            lister = lister_Default(self._window, str(path))
+            self._window.jumpLister(self._pane, lister)
+            return True
+
         def openPath(self, path: str) -> bool:
-            # https://github.com/crftwr/cfiler/blob/0d1017e93939b53024b9ba80492c428d3ae24b8b/cfiler_mainwindow.py#L3117
             if not Path(path).exists() or Path(path).is_file():
                 print("invalid dir path: {}".format(path))
                 return False
             lister = lister_Default(self._window, path)
             self._window.jumpLister(self._pane, lister)
             return True
+
+        def mkdir(self, name: str, enter: bool) -> None:
+            if not hasattr(self.file_list.getLister(), "mkdir"):
+                print("cannot make directory here.")
+                return
+            if not Path(self.current_path, name).exists():
+                self._window.subThreadCall(
+                    self.file_list.getLister().mkdir, (name, None)
+                )
+                if enter:
+                    self.openName(name)
+                    return
+                # self.focus(self._window.cursorFromName(self.file_list, name))
 
     class LeftPane(CPane):
         def __init__(self, window: MainWindow) -> None:
@@ -201,6 +225,24 @@ def configure(window: MainWindow):
             func()
 
         return _callback
+
+    def zymd():
+        exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zymd.exe")
+        if exe_path.exists():
+            pane = CPane(window)
+            cmd = [
+                str(exe_path),
+                "-cur={}".format(pane.current_path),
+                "-stdout=True",
+            ]
+            proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+            result = proc.stdout.decode("utf-8").strip()
+            if proc.returncode != 0:
+                print(result)
+                return
+            pane.mkdir(result, True)
+
+    window.keymap["A-N"] = keybind(zymd)
 
     def zyl():
         exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
@@ -508,8 +550,6 @@ def configure(window: MainWindow):
 
     def to_obsolete_dir():
         pane = CPane(window)
-        if not hasattr(pane.file_list.getLister(), "mkdir"):
-            return
 
         items = []
         for i in range(pane.count):
@@ -520,10 +560,7 @@ def configure(window: MainWindow):
             return
 
         dest_name = "_obsolete"
-        if not Path(pane.current_path, dest_name).exists():
-            window.subThreadCall(
-                pane.file_list.getLister().mkdir, (dest_name, sys.stdout.write)
-            )
+        pane.mkdir(dest_name)
 
         child_lister = pane.file_list.getLister().getChild(dest_name)
         window._copyMoveCommon(
@@ -570,87 +607,6 @@ def configure(window: MainWindow):
     window.keymap["C-E"] = keybind(edit_config)
 
     window.keymap["C-S-N"] = window.command_Mkdir
-
-    def template_mkdir():
-        dir_names = [
-            ("_legacy",),
-            ("_wiki",),
-            ("appendix_付き物",),
-            ("author_著者紹介",),
-            ("design_装幀",),
-            ("document_依頼書類",),
-            ("document_入稿書類",),
-            ("donation_献本",),
-            ("endroll_奥付",),
-            ("galley_ゲラ",),
-            ("index_索引",),
-            ("layout_割付",),
-            ("letter_手紙",),
-            ("marginalia",),
-            ("meeting_会合",),
-            ("permission_許諾",),
-            ("plain",),
-            ("postscript_あとがき",),
-            ("postscript_おわりに",),
-            ("preface_はじめに",),
-            ("preface_まえがき",),
-            ("preprocess_データ整形",),
-            ("projectpaper_企画書",),
-            ("promote_販宣",),
-            ("proofed_by_author",),
-            ("proofed",),
-            ("reference_文献リスト",),
-            ("send_to_author",),
-            ("send_to_printshop",),
-            ("toc_目次",),
-            ("websupport",),
-            ("written_お原稿",),
-            ("jizen", "事前資料"),
-            ("kaigo", "会合メモ"),
-            ("shoko", "初校"),
-            ("saiko", "再校"),
-            ("sanko", "三校"),
-            ("nenko", "念校"),
-            ("gijiroku", "議事録"),
-        ]
-
-        pane = CPane(window)
-        if not hasattr(pane.file_list.getLister(), "mkdir"):
-            return
-
-        options = []
-        for dn in dir_names:
-            if len(dn) == 2:
-                s = "{}[{}]".format(*dn)
-                options.append((s, dn[1]))
-            else:
-                options.append((dn[0], dn[0]))
-        result = popMenu(window, "DirNames", options, 0)
-        if result < 0:
-            return
-        name = options[result][0]
-
-        indexes = []
-        reg = re.compile(r"^\d+(?=_)")
-        for i in range(pane.count):
-            item = pane.byIndex(i)
-            if Path(pane.pathByIndex(i)).is_dir():
-                n = item.getName()
-                if m := reg.match(n):
-                    indexes.append(m[0])
-        pref = ""
-        if 0 < len(indexes):
-            l = indexes[-1]
-            pref = "0" * (len(l) - 1) + "{}_".format(int(l) + 1)
-        name = pref + name
-        window.subThreadCall(pane.file_list.getLister().mkdir, (name, sys.stdout.write))
-
-        window.subThreadCall(pane.file_list.refresh, ())
-        pane.file_list.applyItems()
-        pane.focus(window.cursorFromName(pane.file_list, name))
-        pane.scrollTo(pane.cursor)
-
-    window.keymap["A-S-N"] = keybind(template_mkdir)
 
     ################################
     ################################
