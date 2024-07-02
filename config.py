@@ -218,8 +218,12 @@ def configure(window: MainWindow):
             if proc.returncode != 0:
                 print(result)
                 return
-            pane = CPane(window)
-            pane.openPath(result)
+            if Path(result).is_dir():
+                pane = CPane(window)
+                pane.openPath(result)
+            else:
+                pyauto.shellExecute(None, result, "", "")
+                print("execute:\n{}".format(result))
 
     window.keymap["Y"] = keybind(zyl)
 
