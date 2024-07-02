@@ -30,6 +30,9 @@ def configure(window: MainWindow):
 
     window.maximize()
 
+    window.keymap["C-Q"] = window.command_Quit
+    window.keymap["A-F4"] = window.command_Quit
+    window.keymap["Q"] = lambda _ : None
     window.keymap["C-Comma"] = window.command_ConfigMenu
     window.keymap["C-S-Comma"] = window.command_ConfigMenu2
     window.keymap["A-J"] = window.command_JumpList
@@ -212,7 +215,7 @@ def configure(window: MainWindow):
             pane = CPane(window)
             pane.openPath(result)
 
-    window.keymap["C-S-Z"] = keybind(zyl)
+    window.keymap["Y"] = keybind(zyl)
 
     class zyc:
         def __init__(self, search_all: bool) -> None:
@@ -227,7 +230,7 @@ def configure(window: MainWindow):
         def check(self) -> bool:
             return self._exe_path.exists()
 
-        def for_dir(self, offset: int) -> Callable:
+        def invoke(self, offset: int) -> Callable:
             def _func() -> None:
                 if not self.check():
                     return
@@ -245,14 +248,15 @@ def configure(window: MainWindow):
                     pane.openPath(result)
                 else:
                     pyauto.shellExecute(None, result, "", "")
+                    print("execute:\n{}".format(result))
 
             return _func
 
-    window.keymap["Z"] = keybind(zyc(False).for_dir(-1))
-    window.keymap["A-Z"] = keybind(zyc(True).for_dir(-1))
-    window.keymap["S-Z"] = keybind(zyc(False).for_dir(1))
-    window.keymap["A-S-Z"] = keybind(zyc(True).for_dir(1))
-    window.keymap["C-F"] = keybind(zyc(True).for_dir(0))
+    window.keymap["Z"] = keybind(zyc(False).invoke(-1))
+    window.keymap["A-Z"] = keybind(zyc(True).invoke(-1))
+    window.keymap["S-Z"] = keybind(zyc(False).invoke(1))
+    window.keymap["A-S-Z"] = keybind(zyc(True).invoke(1))
+    window.keymap["F"] = keybind(zyc(True).invoke(0))
 
     def to_top_selection():
         pane = CPane(window)
@@ -356,7 +360,7 @@ def configure(window: MainWindow):
 
     window.keymap["C-A"] = keybind(SELECTOR.allItems)
     window.keymap["C-U"] = keybind(SELECTOR.clearAll)
-    window.keymap["F"] = keybind(SELECTOR.allFiles)
+    window.keymap["A-F"] = keybind(SELECTOR.allFiles)
     window.keymap["D"] = keybind(SELECTOR.allDirs)
     window.keymap["S-Home"] = keybind(SELECTOR.toTop)
     window.keymap["S-A"] = keybind(SELECTOR.toTop)
