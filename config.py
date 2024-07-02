@@ -1,6 +1,7 @@
 import sys
 import datetime
 import os
+import re
 import shutil
 import hashlib
 import subprocess
@@ -539,7 +540,7 @@ def configure(window: MainWindow):
             ("toc_目次",),
             ("websupport",),
             ("written_お原稿",),
-            ("jizen","事前資料"),
+            ("jizen", "事前資料"),
             ("kaigo", "会合メモ"),
             ("shoko", "初校"),
             ("saiko", "再校"),
@@ -563,6 +564,20 @@ def configure(window: MainWindow):
         if result < 0:
             return
         name = options[result][0]
+
+        indexes = []
+        reg = re.compile(r"^\d+(?=_)")
+        for i in range(pane.count):
+            item = pane.byIndex(i)
+            if Path(pane.pathByIndex(i)).is_dir():
+                n = item.getName()
+                if m := reg.match(n):
+                    indexes.append(m[0])
+        pref = ""
+        if 0 < len(indexes):
+            l = indexes[-1]
+            pref = "0" * (len(l) - 1) + "{}_".format(int(l) + 1)
+        name = pref + name
         window.subThreadCall(pane.file_list.getLister().mkdir, (name, sys.stdout.write))
 
         window.subThreadCall(pane.file_list.refresh, ())
