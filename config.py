@@ -33,6 +33,7 @@ def configure(window: MainWindow):
     window.keymap["A-C-H"] = window.command_JumpHistory
     window.keymap["C-D"] = window.command_Delete
     window.keymap["P"] = window.command_FocusOther
+    window.keymap["C-L"] = window.command_FocusOther
     window.keymap["C-S-N"] = window.command_Mkdir
     window.keymap["S-O"] = window.command.ChdirActivePaneToOther
     window.keymap["O"] = window.command.ChdirInactivePaneToOther
@@ -252,7 +253,7 @@ def configure(window: MainWindow):
         if pane.focusItem.isdir():
             window.command_Enter(None)
         else:
-            window.command_FocusOther(None)
+            window.command_Execute(None)
 
     window.keymap["L"] = keybind(smart_enter)
     window.keymap["H"] = window.command_GotoParentDir
