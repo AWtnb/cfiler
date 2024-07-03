@@ -24,6 +24,19 @@ from cfiler_listwindow import popMenu
 USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
 
+def bind(func: Callable):
+    if inspect.signature(func).parameters.items():
+
+        def _callback_with_arg(arg):
+            func(arg)
+
+        return _callback_with_arg
+
+    def _callback(_):
+        func()
+
+    return _callback
+
 
 def configure(window: MainWindow):
     """
@@ -256,19 +269,6 @@ def configure(window: MainWindow):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_RIGHT))
 
-    def keybind(func: Callable):
-        if inspect.signature(func).parameters.items():
-
-            def _callback_with_arg(arg):
-                func(arg)
-
-            return _callback_with_arg
-
-        def _callback(_):
-            func()
-
-        return _callback
-
     def swap_pane() -> None:
         pane = CPane(window, True)
         current_path = pane.current_path
@@ -277,7 +277,7 @@ def configure(window: MainWindow):
         pane.openPath(other_path)
         other_pane.openPath(current_path)
 
-    window.keymap["A-S"] = keybind(swap_pane)
+    window.keymap["A-S"] = bind(swap_pane)
 
     def zymd():
         exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zymd.exe")
@@ -295,7 +295,7 @@ def configure(window: MainWindow):
                 return
             pane.mkdir(result)
 
-    window.keymap["A-N"] = keybind(zymd)
+    window.keymap["A-N"] = bind(zymd)
 
     def zyl():
         exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
@@ -321,7 +321,7 @@ def configure(window: MainWindow):
                 pyauto.shellExecute(None, result, "", "")
                 print("execute:\n{}".format(result))
 
-    window.keymap["Y"] = keybind(zyl)
+    window.keymap["Y"] = bind(zyl)
 
     class zyc:
         def __init__(self, search_all: bool) -> None:
@@ -360,11 +360,11 @@ def configure(window: MainWindow):
 
             return _func
 
-    window.keymap["Z"] = keybind(zyc(False).invoke(-1))
-    window.keymap["A-Z"] = keybind(zyc(True).invoke(-1))
-    window.keymap["S-Z"] = keybind(zyc(False).invoke(1))
-    window.keymap["A-S-Z"] = keybind(zyc(True).invoke(1))
-    window.keymap["F"] = keybind(zyc(True).invoke(0))
+    window.keymap["Z"] = bind(zyc(False).invoke(-1))
+    window.keymap["A-Z"] = bind(zyc(True).invoke(-1))
+    window.keymap["S-Z"] = bind(zyc(False).invoke(1))
+    window.keymap["A-S-Z"] = bind(zyc(True).invoke(1))
+    window.keymap["F"] = bind(zyc(True).invoke(0))
 
     def jump_up_selection():
         pass
@@ -379,7 +379,7 @@ def configure(window: MainWindow):
             pane.focus(i)
             pane.scrollTo(i)
 
-    window.keymap["C-A-K"] = keybind(to_top_selection)
+    window.keymap["C-A-K"] = bind(to_top_selection)
 
     def to_bottom_selection():
         pane = CPane(window)
@@ -388,7 +388,7 @@ def configure(window: MainWindow):
             pane.focus(i)
             pane.scrollTo(i)
 
-    window.keymap["C-A-J"] = keybind(to_bottom_selection)
+    window.keymap["C-A-J"] = bind(to_bottom_selection)
 
     def smart_copy_path():
         pane = CPane(window)
@@ -409,7 +409,7 @@ def configure(window: MainWindow):
         for path in paths:
             print("- {}".format(Path(path).name))
 
-    window.keymap["C-A-P"] = keybind(smart_copy_path)
+    window.keymap["C-A-P"] = bind(smart_copy_path)
 
     def smart_enter():
         pane = CPane(window)
@@ -418,7 +418,7 @@ def configure(window: MainWindow):
         else:
             window.command_Execute(None)
 
-    window.keymap["L"] = keybind(smart_enter)
+    window.keymap["L"] = bind(smart_enter)
     window.keymap["H"] = window.command_GotoParentDir
 
     class Selector:
@@ -518,16 +518,16 @@ def configure(window: MainWindow):
 
     SELECTOR = Selector(window)
 
-    window.keymap["C-A"] = keybind(SELECTOR.allItems)
-    window.keymap["C-U"] = keybind(SELECTOR.unSelectAll)
-    window.keymap["A-F"] = keybind(SELECTOR.allFiles)
-    window.keymap["A-S-F"] = keybind(SELECTOR.unSelectDirs)
-    window.keymap["A-D"] = keybind(SELECTOR.allDirs)
-    window.keymap["A-S-D"] = keybind(SELECTOR.unSelectFiles)
-    window.keymap["S-Home"] = keybind(SELECTOR.toTop)
-    window.keymap["S-A"] = keybind(SELECTOR.toTop)
-    window.keymap["S-End"] = keybind(SELECTOR.toEnd)
-    window.keymap["S-E"] = keybind(SELECTOR.toEnd)
+    window.keymap["C-A"] = bind(SELECTOR.allItems)
+    window.keymap["C-U"] = bind(SELECTOR.unSelectAll)
+    window.keymap["A-F"] = bind(SELECTOR.allFiles)
+    window.keymap["A-S-F"] = bind(SELECTOR.unSelectDirs)
+    window.keymap["A-D"] = bind(SELECTOR.allDirs)
+    window.keymap["A-S-D"] = bind(SELECTOR.unSelectFiles)
+    window.keymap["S-Home"] = bind(SELECTOR.toTop)
+    window.keymap["S-A"] = bind(SELECTOR.toTop)
+    window.keymap["S-End"] = bind(SELECTOR.toEnd)
+    window.keymap["S-E"] = bind(SELECTOR.toEnd)
 
     def open_to_other():
         active_pane = CPane(window, True)
@@ -535,7 +535,7 @@ def configure(window: MainWindow):
         inactive_pane.openPath(active_pane.focusItemPath)
         window.command_FocusOther(None)
 
-    window.keymap["S-L"] = keybind(open_to_other)
+    window.keymap["S-L"] = bind(open_to_other)
 
     def open_parent_to_other():
         active_pane = CPane(window, True)
@@ -544,7 +544,7 @@ def configure(window: MainWindow):
         inactive_pane.openPath(parent)
         window.command_FocusOther(None)
 
-    window.keymap["U"] = keybind(open_parent_to_other)
+    window.keymap["U"] = bind(open_parent_to_other)
 
     def on_vscode():
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
@@ -552,7 +552,7 @@ def configure(window: MainWindow):
             pane = CPane(window)
             pyauto.shellExecute(None, str(vscode_path), pane.current_path, "")
 
-    window.keymap["A-V"] = keybind(on_vscode)
+    window.keymap["A-V"] = bind(on_vscode)
 
     def duplicate_with_name():
         pane = CPane(window)
@@ -579,7 +579,7 @@ def configure(window: MainWindow):
             except Exception as e:
                 print(e)
 
-    window.keymap["S-D"] = keybind(duplicate_with_name)
+    window.keymap["S-D"] = bind(duplicate_with_name)
 
     window.keymap["A-C"] = window.command_ContextMenu
     window.keymap["A-S-C"] = window.command_ContextMenuDir
@@ -600,7 +600,7 @@ def configure(window: MainWindow):
             return
         pane.touch(filename)
 
-    window.keymap["T"] = keybind(new_txt)
+    window.keymap["T"] = bind(new_txt)
 
     def to_obsolete_dir():
         pane = CPane(window)
@@ -627,7 +627,7 @@ def configure(window: MainWindow):
         )
         child_lister.destroy()
 
-    window.keymap["A-O"] = keybind(to_obsolete_dir)
+    window.keymap["A-O"] = bind(to_obsolete_dir)
 
     def reload_config():
         window.configure()
@@ -635,14 +635,14 @@ def configure(window: MainWindow):
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
 
-    window.keymap["C-R"] = keybind(reload_config)
-    window.keymap["F5"] = keybind(reload_config)
+    window.keymap["C-R"] = bind(reload_config)
+    window.keymap["F5"] = bind(reload_config)
 
     def open_doc():
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
         pyauto.shellExecute(None, help_path, "", "")
 
-    window.keymap["A-H"] = keybind(open_doc)
+    window.keymap["A-H"] = bind(open_doc)
 
     def edit_config():
         dir_path = Path(USER_PROFILE, r"Sync\develop\repo\cfiler")
@@ -658,7 +658,7 @@ def configure(window: MainWindow):
             pyauto.shellExecute(None, USER_PROFILE, "", "")
             print("cannot find repo dir. open user profile instead.")
 
-    window.keymap["C-E"] = keybind(edit_config)
+    window.keymap["C-E"] = bind(edit_config)
 
     window.keymap["C-S-N"] = window.command_Mkdir
 
@@ -982,7 +982,7 @@ def configure(window: MainWindow):
 
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
-            window.launcher.command_list += [(name, keybind(func))]
+            window.launcher.command_list += [(name, bind(func))]
 
     update_command_list(
         {
