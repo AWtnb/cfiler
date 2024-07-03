@@ -1,9 +1,8 @@
-import sys
 import datetime
-import os
-import re
-import shutil
 import hashlib
+import inspect
+import os
+import shutil
 import subprocess
 
 from pathlib import Path
@@ -27,8 +26,6 @@ LINE_BREAK = os.linesep
 
 
 def configure(window: MainWindow):
-
-    window.maximize()
 
     window.keymap["C-Q"] = window.command_Quit
     window.keymap["A-F4"] = window.command_Quit
@@ -238,10 +235,27 @@ def configure(window: MainWindow):
             super().__init__(window, (window.focus == MainWindow.FOCUS_RIGHT))
 
     def keybind(func: Callable):
-        def _callback(info):
+        if inspect.signature(func).parameters.items():
+
+            def _callback_with_arg(arg):
+                func(arg)
+
+            return _callback_with_arg
+
+        def _callback(_):
             func()
 
         return _callback
+
+    def swap_pane() -> None:
+        pane = CPane(window, True)
+        current_path = pane.current_path
+        other_pane = CPane(window, False)
+        other_path = other_pane.current_path
+        pane.openPath(other_path)
+        other_pane.openPath(current_path)
+
+    window.keymap["A-S"] = keybind(swap_pane)
 
     def zymd():
         exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zymd.exe")
