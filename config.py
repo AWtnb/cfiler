@@ -524,75 +524,83 @@ def configure(window: MainWindow):
     window.keymap["S-End"] = bind(SELECTOR.toEnd)
     window.keymap["S-E"] = bind(SELECTOR.toEnd)
 
-    def jump_up_selection_edge():
-        pane = CPane(window)
-        if pane.cursor == 0:
-            return
-        above = pane.byIndex(pane.cursor - 1)
-        dest = -1
-        if pane.focusItem.selected():
-            if above.selected():
-                for i in reversed(range(0, pane.cursor)):
-                    if i == pane.selectionTop:
-                        dest = i
-                        break
-                    if not pane.byIndex(i).selected():
-                        dest = i + 1
-                        break
-            else:
-                for i in reversed(range(0, pane.cursor)):
-                    if pane.byIndex(i).selected():
-                        dest = i
-                        break
-        else:
-            if above.selected():
-                dest = pane.cursor - 1
-            else:
-                for i in reversed(range(0, pane.cursor)):
-                    if pane.byIndex(i).selected():
-                        dest = i
-                        break
-        if dest < 0:
-            return
-        pane.focus(dest)
-        pane.scrollToCursor()
+    class SelectionBlock:
+        def __init__(self, window: MainWindow) -> None:
+            self._pane = CPane(window)
 
-    window.keymap["A-K"] = bind(jump_up_selection_edge)
+        def topOfCurrent(self) -> int:
+            if self._pane.cursor == 0:
+                return -1
+            for i in reversed(range(0, self._pane.cursor)):
+                if i == self._pane.selectionTop:
+                    return i
+                if not self._pane.byIndex(i).selected():
+                    return i + 1
+            return -1
 
-    def jump_down_selection_edge():
-        pane = CPane(window)
-        if pane.cursor == pane.count - 1:
-            return
-        below = pane.byIndex(pane.cursor + 1)
-        dest = -1
-        if pane.focusItem.selected():
-            if below.selected():
-                for i in range(pane.cursor, pane.count):
-                    if i == pane.selectionBottom:
-                        dest = i
-                        break
-                    if not pane.byIndex(i).selected():
-                        dest = i - 1
-                        break
-            else:
-                for i in range(pane.cursor + 1, pane.count):
-                    if pane.byIndex(i).selected():
-                        dest = i
-                        break
-        else:
-            if below.selected():
-                dest = pane.cursor + 1
-            else:
-                for i in range(pane.cursor, pane.count):
-                    if pane.byIndex(i).selected():
-                        dest = i
-                        break
-        if dest < 0:
-            return
-        pane.focus(dest)
-        pane.scrollToCursor()
+        def bottomOfCurrent(self) -> int:
+            for i in range(self._pane.cursor + 1, self._pane.count):
+                if i == self._pane.selectionBottom:
+                    return i
+                if not self._pane.byIndex(i).selected():
+                    return i - 1
+            return -1
 
-    window.keymap["A-J"] = bind(jump_down_selection_edge)
+        def topOfNext(self) -> int:
+            for i in range(self._pane.cursor + 1, self._pane.count):
+                if self._pane.byIndex(i).selected():
+                    return i
+            return -1
+
+        def bottomOfPrevious(self) -> int:
+            for i in reversed(range(0, self._pane.cursor)):
+                if self._pane.byIndex(i).selected():
+                    return i
+            return -1
+
+        def jumpDown(self) -> None:
+            if self._pane.cursor == self._pane.count - 1:
+                return
+            below = self._pane.byIndex(self._pane.cursor + 1)
+            dest = -1
+            if self._pane.focusItem.selected():
+                if below.selected():
+                    dest = self.bottomOfCurrent()
+                else:
+                    dest = self.topOfNext()
+            else:
+                if below.selected():
+                    dest = self._pane.cursor + 1
+                else:
+                    dest = self.topOfNext()
+            if dest < 0:
+                return
+            self._pane.focus(dest)
+            self._pane.scrollToCursor()
+
+        def jumpUp(self) -> None:
+            if self._pane.cursor == 0:
+                return
+            above = self._pane.byIndex(self._pane.cursor - 1)
+            dest = -1
+            if self._pane.focusItem.selected():
+                if above.selected():
+                    dest = self.topOfCurrent()
+                else:
+                    dest = self.bottomOfPrevious()
+            else:
+                if above.selected():
+                    dest = self._pane.cursor - 1
+                else:
+                    dest = self.bottomOfPrevious()
+            if dest < 0:
+                return
+            self._pane.focus(dest)
+            self._pane.scrollToCursor()
+
+    SELECTION_BLOCK = SelectionBlock(window)
+    window.keymap["A-J"] = bind(SELECTION_BLOCK.jumpDown)
+    window.keymap["A-K"] = bind(SELECTION_BLOCK.jumpUp)
 
     def open_to_other():
         active_pane = CPane(window, True)
