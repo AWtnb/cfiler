@@ -26,6 +26,28 @@ LINE_BREAK = os.linesep
 
 
 def configure(window: MainWindow):
+    """
+
+
+    # --------------------------------------------------------------------
+
+    # ; キーで表示されるフィルタリスト
+    window.filter_list += [
+        ( "ALL",               filter_Default( "*" ) ),
+        ( "SOURCE",            filter_Default( "*.cpp *.c *.h *.cs *.py *.pyw *.fx" ) ),
+        ( "BOOKMARK",          filter_Bookmark() ),
+    ]
+
+    # --------------------------------------------------------------------
+    # " キーで表示されるフィルタ選択リスト
+
+    window.select_filter_list += [
+        ( "SOURCE",        filter_Default( "*.cpp *.c *.h *.cs *.py *.pyw *.fx", dir_policy=None ) ),
+        ( "BOOKMARK",      filter_Bookmark(dir_policy=None) ),
+    ]
+
+
+    """
 
     window.keymap["C-Q"] = window.command_Quit
     window.keymap["A-F4"] = window.command_Quit
@@ -188,7 +210,7 @@ def configure(window: MainWindow):
         def openName(self, name: str) -> bool:
             path = Path(self.current_path, name)
             if not path.exists() or path.is_file():
-                print("invalid dir path: {}".format(path))
+                print("invalid dir path: '{}'".format(path))
                 return False
             lister = lister_Default(self._window, str(path))
             self._window.jumpLister(self._pane, lister)
@@ -196,7 +218,7 @@ def configure(window: MainWindow):
 
         def openPath(self, path: str) -> bool:
             if not Path(path).exists() or Path(path).is_file():
-                print("invalid dir path: {}".format(path))
+                print("invalid dir path: '{}'".format(path))
                 return False
             lister = lister_Default(self._window, path)
             self._window.jumpLister(self._pane, lister)
@@ -887,7 +909,7 @@ def configure(window: MainWindow):
         job_item = ckit.JobItem(jobCheckDuplicate, jobCheckDuplicateFinished)
         window.taskEnqueue(job_item, "CheckDuplicate")
 
-    def diffinity(_):
+    def diffinity():
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
         if not exe_path.exists():
             print("cannnot find diffinity.exe...")
@@ -917,7 +939,7 @@ def configure(window: MainWindow):
         param = '"{}" "{}"'.format(left_path, right_path)
         pyauto.shellExecute(None, str(exe_path), param, "")
 
-    def select_dupl(_):
+    def select_dupl():
         inactive = CPane(window, False)
         other_names = inactive.names
         pane = CPane(window)
@@ -929,7 +951,7 @@ def configure(window: MainWindow):
                 pane.unSelect(i)
         pane.repaint()
 
-    def select_unique(_):
+    def select_unique():
         inactive = CPane(window, False)
         other_names = inactive.names
         pane = CPane(window)
@@ -941,49 +963,32 @@ def configure(window: MainWindow):
                 pane.select(i)
         pane.repaint()
 
-    def select_stem_startswith(_):
+    def select_stem_startswith():
         pass
 
-    def select_stem_endsswith(_):
+    def select_stem_endsswith():
         pass
 
-    def select_stem_contains(_):
+    def select_stem_contains():
         pass
 
-    def select_byext(_):
+    def select_byext():
         pass
 
-    window.launcher.command_list += [
-        ("Diffinity", diffinity),
-        ("SelectUnique", select_unique),
-        ("SelectDupl", select_dupl),
-        ("SelectStemStartsWith", select_stem_startswith),
-        ("SelectStemEndsWith", select_stem_endsswith),
-        ("SelectStemContains", select_stem_contains),
-        ("SelectByExtension", select_byext),
-        ("CheckEmpty", command_CheckEmpty),
-        ("CheckDuplicate", command_CheckDuplicate),
-    ]
+    def update_command_list(command_table: dict) -> None:
+        for name, func in command_table.items():
+            window.launcher.command_list += [(name, keybind(func))]
 
-    """
-
-
-    # --------------------------------------------------------------------
-
-    # ; キーで表示されるフィルタリスト
-    window.filter_list += [
-        ( "ALL",               filter_Default( "*" ) ),
-        ( "SOURCE",            filter_Default( "*.cpp *.c *.h *.cs *.py *.pyw *.fx" ) ),
-        ( "BOOKMARK",          filter_Bookmark() ),
-    ]
-
-    # --------------------------------------------------------------------
-    # " キーで表示されるフィルタ選択リスト
-
-    window.select_filter_list += [
-        ( "SOURCE",        filter_Default( "*.cpp *.c *.h *.cs *.py *.pyw *.fx", dir_policy=None ) ),
-        ( "BOOKMARK",      filter_Bookmark(dir_policy=None) ),
-    ]
-
-
-    """
+    update_command_list(
+        {
+            "Diffinity": diffinity,
+            "SelectUnique": select_unique,
+            "SelectDupl": select_dupl,
+            "SelectStemStartsWith": select_stem_startswith,
+            "SelectStemEndsWith": select_stem_endsswith,
+            "SelectStemContains": select_stem_contains,
+            "SelectByExtension": select_byext,
+            "CheckEmpty": command_CheckEmpty,
+            "CheckDuplicate": command_CheckDuplicate,
+        }
+    )
