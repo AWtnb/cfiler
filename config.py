@@ -19,10 +19,10 @@ from cfiler_mainwindow import MainWindow
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import FileList, item_Base, lister_Default
 
-from cfiler_listwindow import popMenu
 
 USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
+
 
 def bind(func: Callable):
     if inspect.signature(func).parameters.items():
@@ -70,6 +70,8 @@ def configure(window: MainWindow):
     window.keymap["A-J"] = window.command_JumpList
     window.keymap["C-J"] = window.command_JumpList
     window.keymap["C-L"] = window.command_Execute
+
+    window.keymap["N"] = window.command_Rename
 
     window.keymap["A-C-H"] = window.command_JumpHistory
     window.keymap["C-D"] = window.command_Delete
@@ -389,6 +391,28 @@ def configure(window: MainWindow):
             pane.scrollTo(i)
 
     window.keymap["C-A-J"] = bind(to_bottom_selection)
+
+    def smart_copy_name():
+        pane = CPane(window)
+        names = []
+        for i in range(pane.count):
+            item = pane.byIndex(i)
+            if item.selected():
+                names.append(item.getName())
+
+        if len(names) < 1:
+            name = pane.focusItem.getName()
+            ckit.setClipboardText(name)
+            print("\ncopied focused item name:\n{}".format(name))
+            return
+
+        lines = LINE_BREAK.join(names)
+        ckit.setClipboardText(lines)
+        print("\ncopied name of items below:")
+        for name in names:
+            print("- {}".format(Path(name).name))
+
+    window.keymap["C-S-C"] = bind(smart_copy_name)
 
     def smart_copy_path():
         pane = CPane(window)
