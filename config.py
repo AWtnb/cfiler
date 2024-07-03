@@ -67,7 +67,6 @@ def configure(window: MainWindow):
     window.keymap["Q"] = lambda _: None
     window.keymap["C-Comma"] = window.command_ConfigMenu
     window.keymap["C-S-Comma"] = window.command_ConfigMenu2
-    window.keymap["A-J"] = window.command_JumpList
     window.keymap["C-J"] = window.command_JumpList
     window.keymap["C-L"] = window.command_Execute
 
@@ -86,10 +85,6 @@ def configure(window: MainWindow):
     window.keymap["End"] = window.command_CursorBottom
     window.keymap["J"] = window.command_CursorDown
     window.keymap["K"] = window.command_CursorUp
-    window.keymap["A-J"] = window.command_CursorDownSelected
-    window.keymap["A-K"] = window.command_CursorUpSelected
-    window.keymap["C-Down"] = window.command_CursorDownSelected
-    window.keymap["C-Up"] = window.command_CursorUpSelected
 
     def update_jump_list(jump_table: dict) -> None:
         for name, path in jump_table.items():
@@ -368,30 +363,6 @@ def configure(window: MainWindow):
     window.keymap["A-S-Z"] = bind(zyc(True).invoke(1))
     window.keymap["F"] = bind(zyc(True).invoke(0))
 
-    def jump_up_selection():
-        pass
-
-    def jump_down_selection():
-        pass
-
-    def to_top_selection():
-        pane = CPane(window)
-        i = pane.selectionTop
-        if -1 < i:
-            pane.focus(i)
-            pane.scrollTo(i)
-
-    window.keymap["C-A-K"] = bind(to_top_selection)
-
-    def to_bottom_selection():
-        pane = CPane(window)
-        i = pane.selectionBottom
-        if -1 < i:
-            pane.focus(i)
-            pane.scrollTo(i)
-
-    window.keymap["C-A-J"] = bind(to_bottom_selection)
-
     def smart_copy_name():
         pane = CPane(window)
         names = []
@@ -460,7 +431,7 @@ def configure(window: MainWindow):
             pane.repaint()
 
         def allFiles(self) -> None:
-            self.unSelectAll()
+            self.clearAll()
             pane = self.pane
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
@@ -468,41 +439,41 @@ def configure(window: MainWindow):
             pane.repaint()
 
         def allDirs(self) -> None:
-            self.unSelectAll()
+            self.clearAll()
             pane = self.pane
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.select(i)
             pane.repaint()
 
-        def unSelectAll(self) -> None:
+        def clearAll(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 pane.unSelect(i)
             pane.repaint()
 
-        def unSelectFiles(self) -> None:
+        def clearFiles(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.unSelect(i)
             pane.repaint()
 
-        def unSelectDirs(self) -> None:
+        def clearDirs(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.unSelect(i)
             pane.repaint()
 
-        def selectByExtension(self, s: str) -> None:
+        def byExtension(self, s: str) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if Path(pane.pathByIndex(i)).suffix == s:
                     pane.select(i)
             pane.repaint()
 
-        def selectStemContains(self, s: str) -> None:
+        def stemContains(self, s: str) -> None:
             pane = self.pane
             for i in range(pane.count):
                 stem = Path(pane.pathByIndex(i)).stem
@@ -510,7 +481,7 @@ def configure(window: MainWindow):
                     pane.select(i)
             pane.repaint()
 
-        def selectStemStartsWith(self, s: str) -> None:
+        def stemStartsWith(self, s: str) -> None:
             pane = self.pane
             for i in range(pane.count):
                 stem = Path(pane.pathByIndex(i)).stem
@@ -518,7 +489,7 @@ def configure(window: MainWindow):
                     pane.select(i)
             pane.repaint()
 
-        def selectStemEndsWith(self, s: str) -> None:
+        def stemEndsWith(self, s: str) -> None:
             pane = self.pane
             for i in range(pane.count):
                 stem = Path(pane.pathByIndex(i)).stem
@@ -543,15 +514,85 @@ def configure(window: MainWindow):
     SELECTOR = Selector(window)
 
     window.keymap["C-A"] = bind(SELECTOR.allItems)
-    window.keymap["C-U"] = bind(SELECTOR.unSelectAll)
+    window.keymap["C-U"] = bind(SELECTOR.clearAll)
     window.keymap["A-F"] = bind(SELECTOR.allFiles)
-    window.keymap["A-S-F"] = bind(SELECTOR.unSelectDirs)
+    window.keymap["A-S-F"] = bind(SELECTOR.clearDirs)
     window.keymap["A-D"] = bind(SELECTOR.allDirs)
-    window.keymap["A-S-D"] = bind(SELECTOR.unSelectFiles)
+    window.keymap["A-S-D"] = bind(SELECTOR.clearFiles)
     window.keymap["S-Home"] = bind(SELECTOR.toTop)
     window.keymap["S-A"] = bind(SELECTOR.toTop)
     window.keymap["S-End"] = bind(SELECTOR.toEnd)
     window.keymap["S-E"] = bind(SELECTOR.toEnd)
+
+    def jump_up_selection_edge():
+        pane = CPane(window)
+        if pane.cursor == 0:
+            return
+        above = pane.byIndex(pane.cursor - 1)
+        dest = -1
+        if pane.focusItem.selected():
+            if above.selected():
+                for i in reversed(range(0, pane.cursor)):
+                    if i == pane.selectionTop:
+                        dest = i
+                        break
+                    if not pane.byIndex(i).selected():
+                        dest = i + 1
+                        break
+            else:
+                for i in reversed(range(0, pane.cursor)):
+                    if pane.byIndex(i).selected():
+                        dest = i
+                        break
+        else:
+            if above.selected():
+                dest = pane.cursor - 1
+            else:
+                for i in reversed(range(0, pane.cursor)):
+                    if pane.byIndex(i).selected():
+                        dest = i
+                        break
+        if dest < 0:
+            return
+        pane.focus(dest)
+        pane.scrollToCursor()
+
+    window.keymap["A-K"] = bind(jump_up_selection_edge)
+
+    def jump_down_selection_edge():
+        pane = CPane(window)
+        if pane.cursor == pane.count - 1:
+            return
+        below = pane.byIndex(pane.cursor + 1)
+        dest = -1
+        if pane.focusItem.selected():
+            if below.selected():
+                for i in range(pane.cursor, pane.count):
+                    if i == pane.selectionBottom:
+                        dest = i
+                        break
+                    if not pane.byIndex(i).selected():
+                        dest = i - 1
+                        break
+            else:
+                for i in range(pane.cursor + 1, pane.count):
+                    if pane.byIndex(i).selected():
+                        dest = i
+                        break
+        else:
+            if below.selected():
+                dest = pane.cursor + 1
+            else:
+                for i in range(pane.cursor, pane.count):
+                    if pane.byIndex(i).selected():
+                        dest = i
+                        break
+        if dest < 0:
+            return
+        pane.focus(dest)
+        pane.scrollToCursor()
+
+    window.keymap["A-J"] = bind(jump_down_selection_edge)
 
     def open_to_other():
         active_pane = CPane(window, True)
