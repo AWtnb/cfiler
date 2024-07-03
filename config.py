@@ -941,7 +941,7 @@ def configure(window: MainWindow):
         param = '"{}" "{}"'.format(left_path, right_path)
         pyauto.shellExecute(None, str(exe_path), param, "")
 
-    def select_dupl():
+    def select_common_name():
         inactive = CPane(window, False)
         other_names = inactive.names
         pane = CPane(window)
@@ -953,7 +953,7 @@ def configure(window: MainWindow):
                 pane.unSelect(i)
         pane.repaint()
 
-    def select_unique():
+    def select_unique_name():
         inactive = CPane(window, False)
         other_names = inactive.names
         pane = CPane(window)
@@ -984,8 +984,8 @@ def configure(window: MainWindow):
     update_command_list(
         {
             "Diffinity": diffinity,
-            "SelectUnique": select_unique,
-            "SelectDupl": select_dupl,
+            "SelectUniqueName": select_unique_name,
+            "SelectCommonName": select_common_name,
             "SelectStemStartsWith": select_stem_startswith,
             "SelectStemEndsWith": select_stem_endsswith,
             "SelectStemContains": select_stem_contains,
