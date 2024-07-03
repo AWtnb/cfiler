@@ -311,7 +311,8 @@ def configure(window: MainWindow):
             proc = subprocess.run(cmd, stdout=subprocess.PIPE)
             result = proc.stdout.decode("utf-8").strip()
             if proc.returncode != 0:
-                print(result)
+                if result:
+                    print(result)
                 return
             if Path(result).is_dir():
                 pane = CPane(window)
@@ -347,7 +348,8 @@ def configure(window: MainWindow):
                 proc = subprocess.run(cmd, stdout=subprocess.PIPE)
                 result = proc.stdout.decode("utf-8").strip()
                 if proc.returncode != 0:
-                    print(result)
+                    if result:
+                        print(result)
                     return
                 if Path(result).is_dir():
                     pane = CPane(window)
