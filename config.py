@@ -399,12 +399,15 @@ def configure(window: MainWindow):
                 paths.append(pane.pathByIndex(i))
 
         if len(paths) < 1:
-            path = pane.focusItemPath
-            paths.append(path)
+            ckit.setClipboardText(pane.current_path)
+            print("\ncopied current directory path:\n{}".format(pane.current_path))
+            return
 
         lines = LINE_BREAK.join(paths)
         ckit.setClipboardText(lines)
-        print("copied:\n{}\n".format(lines))
+        print("\ncopied fullpath of items below:")
+        for path in paths:
+            print("- {}".format(Path(path).name))
 
     window.keymap["C-A-P"] = keybind(smart_copy_path)
 
