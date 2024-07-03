@@ -81,15 +81,21 @@ def configure(window: MainWindow):
             else:
                 self._pane = self._window.inactivePane()
 
-        def refresh(self) -> None:
+        def repaint(self) -> None:
             self._window.paint()
+
+        def refresh(self) -> None:
+            self._window.subThreadCall(self.file_list.refresh, ())
+            self.file_list.applyItems()
 
         @property
         def cursor(self) -> int:
             return self._pane.cursor
 
-        def focus(self, i: int) -> None:
+        def focus(self, i: int, scroll: bool = True) -> None:
             self._pane.cursor = i
+            if scroll:
+                self.scrollToCursor()
 
         @property
         def file_list(self) -> FileList:
@@ -177,7 +183,7 @@ def configure(window: MainWindow):
 
         def scrollTo(self, i: int) -> None:
             self.scroll_info.makeVisible(i, self._window.fileListItemPaneHeight(), 1)
-            self.refresh()
+            self.repaint()
 
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
@@ -199,18 +205,29 @@ def configure(window: MainWindow):
             self._window.jumpLister(self._pane, lister)
             return True
 
-        def mkdir(self, name: str, enter: bool) -> None:
+        def touch(self, name: str) -> None:
+            if not hasattr(self.file_list.getLister(), "touch"):
+                print("cannot make file here.")
+                return
+            dp = Path(self.current_path, name)
+            if dp.exists() and dp.is_file():
+                print("file '{}' already exists.".format(name))
+                return
+            self._window.subThreadCall(self.file_list.getLister().touch, (name,))
+            self.refresh()
+            self.focus(self._window.cursorFromName(self.file_list, name), True)
+
+        def mkdir(self, name: str) -> None:
             if not hasattr(self.file_list.getLister(), "mkdir"):
                 print("cannot make directory here.")
                 return
-            if not Path(self.current_path, name).exists():
-                self._window.subThreadCall(
-                    self.file_list.getLister().mkdir, (name, None)
-                )
-                if enter:
-                    self.openName(name)
-                    return
-                # self.focus(self._window.cursorFromName(self.file_list, name))
+            dp = Path(self.current_path, name)
+            if dp.exists() and dp.is_dir():
+                print("directory '{}' already exists.".format(name))
+                return
+            self._window.subThreadCall(self.file_list.getLister().mkdir, (name, None))
+            self.refresh()
+            self.focus(self._window.cursorFromName(self.file_list, name), True)
 
     class LeftPane(CPane):
         def __init__(self, window: MainWindow) -> None:
@@ -240,7 +257,7 @@ def configure(window: MainWindow):
             if proc.returncode != 0:
                 print(result)
                 return
-            pane.mkdir(result, True)
+            pane.mkdir(result)
 
     window.keymap["A-N"] = keybind(zymd)
 
@@ -375,7 +392,7 @@ def configure(window: MainWindow):
             pane = self.pane
             for i in range(pane.count):
                 pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
         def allFiles(self) -> None:
             self.unSelectAll()
@@ -383,7 +400,7 @@ def configure(window: MainWindow):
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
         def allDirs(self) -> None:
             self.unSelectAll()
@@ -391,34 +408,34 @@ def configure(window: MainWindow):
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
         def unSelectAll(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 pane.unSelect(i)
-            pane.refresh()
+            pane.repaint()
 
         def unSelectFiles(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.unSelect(i)
-            pane.refresh()
+            pane.repaint()
 
         def unSelectDirs(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.unSelect(i)
-            pane.refresh()
+            pane.repaint()
 
         def selectByExtension(self, s: str) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if Path(pane.pathByIndex(i)).suffix == s:
                     pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
         def selectStemContains(self, s: str) -> None:
             pane = self.pane
@@ -426,7 +443,7 @@ def configure(window: MainWindow):
                 stem = Path(pane.pathByIndex(i)).stem
                 if s in stem:
                     pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
         def selectStemStartsWith(self, s: str) -> None:
             pane = self.pane
@@ -434,7 +451,7 @@ def configure(window: MainWindow):
                 stem = Path(pane.pathByIndex(i)).stem
                 if stem.startswith(s):
                     pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
         def selectStemEndsWith(self, s: str) -> None:
             pane = self.pane
@@ -442,21 +459,21 @@ def configure(window: MainWindow):
                 stem = Path(pane.pathByIndex(i)).stem
                 if stem.endswith(s):
                     pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
         def toTop(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if i <= pane.cursor:
                     pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
         def toEnd(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.cursor <= i:
                     pane.select(i)
-            pane.refresh()
+            pane.repaint()
 
     SELECTOR = Selector(window)
 
@@ -540,11 +557,7 @@ def configure(window: MainWindow):
             filename = filename + ".txt"
         if Path(pane.current_path, filename).exists():
             return
-        window.subThreadCall(pane.file_list.getLister().touch, (filename,))
-        window.subThreadCall(pane.file_list.refresh, ())
-        pane.file_list.applyItems()
-        pane.focus(window.cursorFromName(pane.file_list, filename))
-        pane.scrollTo(pane.cursor)
+        pane.touch(filename)
 
     window.keymap["T"] = keybind(new_txt)
 
@@ -900,7 +913,7 @@ def configure(window: MainWindow):
                 pane.select(i)
             else:
                 pane.unSelect(i)
-        pane.refresh()
+        pane.repaint()
 
     def select_unique(_):
         inactive = CPane(window, False)
@@ -912,7 +925,7 @@ def configure(window: MainWindow):
                 pane.unSelect(i)
             else:
                 pane.select(i)
-        pane.refresh()
+        pane.repaint()
 
     def select_stem_startswith(_):
         pass
