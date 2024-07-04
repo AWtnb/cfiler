@@ -577,7 +577,7 @@ def configure(window: MainWindow):
                 return
             below = self._pane.byIndex(self._pane.cursor + 1)
             dest = -1
-            if self._pane.focusItem.selected():
+            if self._pane.focusedItem.selected():
                 if below.selected():
                     dest = self.bottomOfCurrent()
                 else:
@@ -597,7 +597,7 @@ def configure(window: MainWindow):
                 return
             above = self._pane.byIndex(self._pane.cursor - 1)
             dest = -1
-            if self._pane.focusItem.selected():
+            if self._pane.focusedItem.selected():
                 if above.selected():
                     dest = self.topOfCurrent()
                 else:
