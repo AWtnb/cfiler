@@ -1143,3 +1143,8 @@ def configure(window: MainWindow):
             "CheckDuplicate": command_CheckDuplicate,
         }
     )
+
+
+def configure_TextViewer(window: ckit.TextWindow):
+    window.keymap["J"] = window.command_ScrollDown
+    window.keymap["K"] = window.command_ScrollUp
