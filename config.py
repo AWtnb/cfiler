@@ -620,7 +620,7 @@ def configure(window: MainWindow):
         active_pane = CPane(window, True)
         inactive_pane = CPane(window, False)
         inactive_pane.openPath(active_pane.focusItemPath)
-        window.command_FocusOther(None)
+        active_pane.focusOther()
 
     window.keymap["S-L"] = bind(open_to_other)
 
