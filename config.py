@@ -585,7 +585,7 @@ def configure(window: MainWindow):
 
         def bottomOfCurrent(self) -> int:
             pane = self._pane
-            if  not pane.focusedItem.selected():
+            if not pane.focusedItem.selected():
                 return -1
             for i in range(pane.cursor + 1, pane.count):
                 if i == pane.selectionBottom:
@@ -625,7 +625,7 @@ def configure(window: MainWindow):
                 else:
                     dest = self.topOfNext()
             if dest < 0:
-                dest = pane.count -1
+                dest = pane.count - 1
             pane.focus(dest)
             pane.scrollToCursor()
 
@@ -653,6 +653,15 @@ def configure(window: MainWindow):
     SELECTION_BLOCK = SelectionBlock(window)
     window.keymap["A-J"] = bind(SELECTION_BLOCK.jumpDown)
     window.keymap["A-K"] = bind(SELECTION_BLOCK.jumpUp)
+
+    def duplicate_pane():
+        pane = CPane(window, True)
+        other = CPane(window, False)
+        other.openPath(pane.current_path)
+        pane.focusOther()
+        other.focus(pane.cursor)
+
+    window.keymap["W"] = bind(duplicate_pane)
 
     def open_to_other():
         active_pane = CPane(window, True)
