@@ -284,6 +284,22 @@ def configure(window: MainWindow):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_RIGHT))
 
+    def quick_move():
+        pane = CPane(window)
+        if not pane.file_list.selected():
+            window.command_Select(None)
+        window.command_Move(None)
+
+    window.keymap["C-X"] = bind(quick_move)
+
+    def quick_copy():
+        pane = CPane(window)
+        if not pane.file_list.selected():
+            window.command_Select(None)
+        window.command_Copy(None)
+
+    window.keymap["C-C"] = bind(quick_copy)
+
     def history_back():
         pane = CPane(window)
         hist = pane.history
