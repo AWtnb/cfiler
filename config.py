@@ -16,6 +16,9 @@ from cfiler import *
 # https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
 from cfiler_mainwindow import MainWindow, History
 
+# https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
+from cfiler_listwindow import popMenu
+
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import FileList, item_Base, lister_Default
 
@@ -720,23 +723,32 @@ def configure(window: MainWindow):
     window.keymap["A-C"] = window.command_ContextMenu
     window.keymap["A-S-C"] = window.command_ContextMenuDir
 
-    def new_txt():
+    def touch_textfile():
         pane = CPane(window)
         if not hasattr(pane.file_list.getLister(), "touch"):
             return
+
+        extensions = ["txt", "md", "html"]
+        sel = popMenu(window, "Extension", extensions, 0)
+        if sel < 0:
+            ext = ""
+        else:
+            ext = extensions[sel]
+
         result = window.commandLine("NewTextFileName")
         if not result:
             return
         filename = result.strip()
         if len(filename) < 1:
             return
-        if not filename.endswith(".txt"):
-            filename = filename + ".txt"
+        if len(ext):
+            filename = filename + "." + ext
         if Path(pane.current_path, filename).exists():
+            print("'{}' already exists.".format(filename))
             return
         pane.touch(filename)
 
-    window.keymap["T"] = bind(new_txt)
+    window.keymap["T"] = bind(touch_textfile)
 
     def to_obsolete_dir():
         pane = CPane(window)
