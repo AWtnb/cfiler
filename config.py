@@ -42,52 +42,50 @@ def bind(func: Callable):
 
 
 def configure(window: MainWindow):
-    """
 
+    def reset_default_keys(keys: list) -> None:
+        for key in keys:
 
-    # --------------------------------------------------------------------
+            def _do_nothing(_):
+                pass
 
-    # ; キーで表示されるフィルタリスト
-    window.filter_list += [
-        ( "ALL",               filter_Default( "*" ) ),
-        ( "SOURCE",            filter_Default( "*.cpp *.c *.h *.cs *.py *.pyw *.fx" ) ),
-        ( "BOOKMARK",          filter_Bookmark() ),
-    ]
+            window.keymap[key] = _do_nothing
 
-    # --------------------------------------------------------------------
-    # " キーで表示されるフィルタ選択リスト
+    reset_default_keys(
+        [
+            "Q",
+            "Period",
+            "S-Period",
+        ]
+    )
 
-    window.select_filter_list += [
-        ( "SOURCE",        filter_Default( "*.cpp *.c *.h *.cs *.py *.pyw *.fx", dir_policy=None ) ),
-        ( "BOOKMARK",      filter_Bookmark(dir_policy=None) ),
-    ]
+    def apply_cfiler_command(mapping: dict) -> None:
+        for key, func in mapping.items():
+            window.keymap[key] = func
 
-
-    """
-
-    window.keymap["C-Q"] = window.command_Quit
-    window.keymap["A-F4"] = window.command_Quit
-    window.keymap["Q"] = lambda _: None
-    window.keymap["C-Comma"] = window.command_ConfigMenu
-    window.keymap["C-S-Comma"] = window.command_ConfigMenu2
-    window.keymap["C-J"] = window.command_JumpList
-    window.keymap["C-L"] = window.command_Execute
-
-    window.keymap["N"] = window.command_Rename
-
-    window.keymap["A-C-H"] = window.command_JumpHistory
-    window.keymap["C-D"] = window.command_Delete
-    window.keymap["P"] = window.command_FocusOther
-    window.keymap["C-L"] = window.command_FocusOther
-    window.keymap["O"] = window.command.ChdirActivePaneToOther
-    window.keymap["S-O"] = window.command.ChdirInactivePaneToOther
-
-    window.keymap["A"] = window.command_CursorTop
-    window.keymap["E"] = window.command_CursorBottom
-    window.keymap["Home"] = window.command_CursorTop
-    window.keymap["End"] = window.command_CursorBottom
-    window.keymap["J"] = window.command_CursorDown
-    window.keymap["K"] = window.command_CursorUp
+    apply_cfiler_command(
+        {
+            "C-Q": window.command_Quit,
+            "A-F4": window.command_Quit,
+            "C-Comma": window.command_ConfigMenu,
+            "C-S-Comma": window.command_ConfigMenu2,
+            "C-J": window.command_JumpList,
+            "C-L": window.command_Execute,
+            "N": window.command_Rename,
+            "A-C-H": window.command_JumpHistory,
+            "C-D": window.command_Delete,
+            "P": window.command_FocusOther,
+            "C-L": window.command_FocusOther,
+            "O": window.command.ChdirActivePaneToOther,
+            "S-O": window.command.ChdirInactivePaneToOther,
+            "A": window.command_CursorTop,
+            "E": window.command_CursorBottom,
+            "Home": window.command_CursorTop,
+            "End": window.command_CursorBottom,
+            "J": window.command_CursorDown,
+            "K": window.command_CursorUp,
+        }
+    )
 
     def update_jump_list(jump_table: dict) -> None:
         for name, path in jump_table.items():
