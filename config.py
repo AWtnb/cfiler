@@ -125,6 +125,12 @@ def configure(window: MainWindow):
         def history(self) -> History:
             return self._pane.history
 
+        def appendHistory(self, path: str) -> History:
+            p = Path(path)
+            lister = self._pane.file_list.getLister()
+            visible = isinstance(lister, lister_Default)
+            return self._pane.history.append(str(p.parent), p.name, visible, False)
+
         @property
         def cursor(self) -> int:
             return self._pane.cursor
@@ -355,12 +361,12 @@ def configure(window: MainWindow):
                 if result:
                     print(result)
                 return
+            pane = CPane(window)
             if Path(result).is_dir():
-                pane = CPane(window)
                 pane.openPath(result)
             else:
                 pyauto.shellExecute(None, result, "", "")
-                print("execute:\n{}".format(result))
+                pane.appendHistory(result)
 
     window.keymap["Y"] = bind(zyl)
 
@@ -398,7 +404,7 @@ def configure(window: MainWindow):
                         pane.openPath(result)
                     else:
                         pyauto.shellExecute(None, result, "", "")
-                        print("execute:\n{}".format(result))
+                        pane.appendHistory(result)
 
             return _func
 
