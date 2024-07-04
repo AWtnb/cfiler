@@ -573,74 +573,82 @@ def configure(window: MainWindow):
             self._pane = CPane(window)
 
         def topOfCurrent(self) -> int:
-            if self._pane.cursor == 0:
+            pane = self._pane
+            if pane.cursor == 0 or not pane.focusedItem.selected():
                 return -1
-            for i in reversed(range(0, self._pane.cursor)):
-                if i == self._pane.selectionTop:
+            for i in reversed(range(0, pane.cursor)):
+                if i == pane.selectionTop:
                     return i
-                if not self._pane.byIndex(i).selected():
+                if not pane.byIndex(i).selected():
                     return i + 1
             return -1
 
         def bottomOfCurrent(self) -> int:
-            for i in range(self._pane.cursor + 1, self._pane.count):
-                if i == self._pane.selectionBottom:
+            pane = self._pane
+            if  not pane.focusedItem.selected():
+                return -1
+            for i in range(pane.cursor + 1, pane.count):
+                if i == pane.selectionBottom:
                     return i
-                if not self._pane.byIndex(i).selected():
+                if not pane.byIndex(i).selected():
                     return i - 1
             return -1
 
         def topOfNext(self) -> int:
-            for i in range(self._pane.cursor + 1, self._pane.count):
-                if self._pane.byIndex(i).selected():
+            pane = self._pane
+            for i in range(pane.cursor + 1, pane.count):
+                if pane.byIndex(i).selected():
                     return i
             return -1
 
         def bottomOfPrevious(self) -> int:
-            for i in reversed(range(0, self._pane.cursor)):
-                if self._pane.byIndex(i).selected():
+            pane = self._pane
+            for i in reversed(range(0, pane.cursor)):
+                if pane.byIndex(i).selected():
                     return i
             return -1
 
         def jumpDown(self) -> None:
-            if self._pane.cursor == self._pane.count - 1:
+            pane = self._pane
+            if pane.cursor == pane.count - 1:
                 return
-            below = self._pane.byIndex(self._pane.cursor + 1)
+            below = pane.byIndex(pane.cursor + 1)
             dest = -1
-            if self._pane.focusedItem.selected():
+            if pane.focusedItem.selected():
                 if below.selected():
                     dest = self.bottomOfCurrent()
                 else:
                     dest = self.topOfNext()
             else:
                 if below.selected():
-                    dest = self._pane.cursor + 1
+                    dest = pane.cursor + 1
                 else:
                     dest = self.topOfNext()
             if dest < 0:
-                return
-            self._pane.focus(dest)
-            self._pane.scrollToCursor()
+                dest = pane.count -1
+            pane.focus(dest)
+            pane.scrollToCursor()
 
         def jumpUp(self) -> None:
-            if self._pane.cursor == 0:
+            pane = self._pane
+            if pane.cursor == 0:
                 return
-            above = self._pane.byIndex(self._pane.cursor - 1)
+            above = pane.byIndex(pane.cursor - 1)
             dest = -1
-            if self._pane.focusedItem.selected():
+            if pane.focusedItem.selected():
                 if above.selected():
                     dest = self.topOfCurrent()
                 else:
                     dest = self.bottomOfPrevious()
             else:
                 if above.selected():
-                    dest = self._pane.cursor - 1
+                    dest = pane.cursor - 1
                 else:
                     dest = self.bottomOfPrevious()
             if dest < 0:
-                return
-            self._pane.focus(dest)
-            self._pane.scrollToCursor()
+                dest = 0
+            pane.focus(dest)
+            pane.scrollToCursor()
 
     SELECTION_BLOCK = SelectionBlock(window)
     window.keymap["A-J"] = bind(SELECTION_BLOCK.jumpDown)
