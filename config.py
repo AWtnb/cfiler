@@ -14,7 +14,7 @@ import pyauto
 from cfiler import *
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
-from cfiler_mainwindow import MainWindow
+from cfiler_mainwindow import MainWindow, History
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import FileList, item_Base, lister_Default
@@ -119,6 +119,10 @@ def configure(window: MainWindow):
         def refresh(self) -> None:
             self._window.subThreadCall(self.file_list.refresh, ())
             self.file_list.applyItems()
+
+        @property
+        def history(self) -> History:
+            return self._pane.history
 
         @property
         def cursor(self) -> int:
@@ -280,6 +284,15 @@ def configure(window: MainWindow):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_RIGHT))
 
+    def history_back():
+        pane = CPane(window)
+        hist = pane.history
+        if 1 < len(hist.items):
+            p = hist.items[1][0]
+            pane.openPath(p)
+
+    window.keymap["Back"] = bind(history_back)
+
     def swap_pane() -> None:
         pane = CPane(window, True)
         current_path = pane.current_path
@@ -358,16 +371,17 @@ def configure(window: MainWindow):
                 ]
                 proc = subprocess.run(cmd, stdout=subprocess.PIPE)
                 result = proc.stdout.decode("utf-8").strip()
-                if proc.returncode != 0:
-                    if result:
-                        print(result)
-                    return
-                if Path(result).is_dir():
-                    pane = CPane(window)
-                    pane.openPath(result)
-                else:
-                    pyauto.shellExecute(None, result, "", "")
-                    print("execute:\n{}".format(result))
+                if result:
+                    if proc.returncode != 0:
+                        if result:
+                            print(result)
+                        return
+                    if Path(result).is_dir():
+                        pane = CPane(window)
+                        pane.openPath(result)
+                    else:
+                        pyauto.shellExecute(None, result, "", "")
+                        print("execute:\n{}".format(result))
 
             return _func
 
