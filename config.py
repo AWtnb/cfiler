@@ -76,8 +76,8 @@ def configure(window: MainWindow):
     window.keymap["C-D"] = window.command_Delete
     window.keymap["P"] = window.command_FocusOther
     window.keymap["C-L"] = window.command_FocusOther
-    window.keymap["S-O"] = window.command.ChdirActivePaneToOther
-    window.keymap["O"] = window.command.ChdirInactivePaneToOther
+    window.keymap["O"] = window.command.ChdirActivePaneToOther
+    window.keymap["S-O"] = window.command.ChdirInactivePaneToOther
 
     window.keymap["A"] = window.command_CursorTop
     window.keymap["E"] = window.command_CursorBottom
@@ -89,8 +89,11 @@ def configure(window: MainWindow):
     def update_jump_list(jump_table: dict) -> None:
         for name, path in jump_table.items():
             p = Path(path)
-            if p.exists() and p.is_dir():
-                window.jump_list += [(name, str(p))]
+            try:
+                if p.exists() and p.is_dir():
+                    window.jump_list += [(name, str(p))]
+            except Exception as e:
+                print(e)
 
     update_jump_list(
         {
@@ -121,10 +124,21 @@ def configure(window: MainWindow):
         def cursor(self) -> int:
             return self._pane.cursor
 
-        def focus(self, i: int, scroll: bool = True) -> None:
+        def focus(self, i: int) -> None:
             self._pane.cursor = i
-            if scroll:
-                self.scrollToCursor()
+            self.scrollToCursor()
+
+        def byName(self, name: str) -> int:
+            i = self.file_list.indexOf(name)
+            if i < 0:
+                return 0
+            return i
+
+        def focusByName(self, name: str) -> None:
+            self.focus(self.byName(name))
+
+        def focusOther(self) -> None:
+            self._window.command_FocusOther(None)
 
         @property
         def file_list(self) -> FileList:
@@ -173,7 +187,7 @@ def configure(window: MainWindow):
             return paths
 
         @property
-        def focusItem(self) -> item_Base:
+        def focusedItem(self) -> item_Base:
             return self.byIndex(self.cursor)
 
         def pathByIndex(self, i: int) -> str:
@@ -244,7 +258,7 @@ def configure(window: MainWindow):
                 return
             self._window.subThreadCall(self.file_list.getLister().touch, (name,))
             self.refresh()
-            self.focus(self._window.cursorFromName(self.file_list, name), True)
+            self.focus(self._window.cursorFromName(self.file_list, name))
 
         def mkdir(self, name: str) -> None:
             if not hasattr(self.file_list.getLister(), "mkdir"):
@@ -256,7 +270,7 @@ def configure(window: MainWindow):
                 return
             self._window.subThreadCall(self.file_list.getLister().mkdir, (name, None))
             self.refresh()
-            self.focus(self._window.cursorFromName(self.file_list, name), True)
+            self.focus(self._window.cursorFromName(self.file_list, name))
 
     class LeftPane(CPane):
         def __init__(self, window: MainWindow) -> None:
@@ -372,7 +386,7 @@ def configure(window: MainWindow):
                 names.append(item.getName())
 
         if len(names) < 1:
-            name = pane.focusItem.getName()
+            name = pane.focusedItem.getName()
             ckit.setClipboardText(name)
             print("\ncopied focused item name:\n{}".format(name))
             return
@@ -408,7 +422,7 @@ def configure(window: MainWindow):
 
     def smart_enter():
         pane = CPane(window)
-        if pane.focusItem.isdir():
+        if pane.focusedItem.isdir():
             window.command_Enter(None)
         else:
             window.command_Execute(None)
@@ -613,9 +627,11 @@ def configure(window: MainWindow):
     def open_parent_to_other():
         active_pane = CPane(window, True)
         parent = str(Path(active_pane.current_path).parent)
+        current_name = str(Path(active_pane.current_path).name)
         inactive_pane = CPane(window, False)
         inactive_pane.openPath(parent)
-        window.command_FocusOther(None)
+        active_pane.focusOther()
+        inactive_pane.focusByName(current_name)
 
     window.keymap["U"] = bind(open_parent_to_other)
 
@@ -639,7 +655,7 @@ def configure(window: MainWindow):
             selection=[0, len(focus_path.stem)],
         )
 
-        if result and result != pane.focusItem.getName():
+        if result and result != pane.focusedItem.getName():
             result = result.strip()
             if len(result) < 1:
                 return
