@@ -39,6 +39,12 @@ from cfiler_mainwindow import (
     PAINT_ALL,
 )
 
+# https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
+from cfiler_filelist import FileList, item_Base, lister_Default
+
+# https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
+from cfiler_listwindow import ListWindow
+
 
 class PaintOption:
     LeftLocation = PAINT_LEFT_LOCATION
@@ -62,10 +68,8 @@ class PaintOption:
     Upper = PAINT_UPPER
     All = PAINT_ALL
 
-PO = PaintOption()
 
-# https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
-from cfiler_filelist import FileList, item_Base, lister_Default
+PO = PaintOption()
 
 
 USER_PROFILE = os.environ.get("USERPROFILE") or ""
@@ -114,7 +118,6 @@ def configure(window: MainWindow):
             "A-F4": window.command_Quit,
             "C-Comma": window.command_ConfigMenu,
             "C-S-Comma": window.command_ConfigMenu2,
-            "C-J": window.command_JumpList,
             "C-L": window.command_Execute,
             "N": window.command_Rename,
             "A-C-H": window.command_JumpHistory,
@@ -132,22 +135,77 @@ def configure(window: MainWindow):
         }
     )
 
-    def update_jump_list(jump_table: dict) -> None:
-        for name, path in jump_table.items():
-            p = Path(path)
-            try:
-                if p.exists() and p.is_dir():
-                    window.jump_list += [(name, str(p))]
-            except Exception as e:
-                print(e)
+    class JumpList:
+        def __init__(self, window: MainWindow) -> None:
+            self._window = window
 
-    update_jump_list(
+        def update(self, jump_table: dict) -> None:
+            for name, path in jump_table.items():
+                p = Path(path)
+                try:
+                    if p.exists() and p.is_dir():
+                        self._window.jump_list += [(name, str(p))]
+                except Exception as e:
+                    print(e)
+
+        def jump(self, active_pane: bool = True) -> None:
+            if active_pane:
+                title = "Jump on active pane"
+            else:
+                title = "Jump on inactive pane"
+
+            wnd = self._window
+            pos = wnd.centerOfFocusedPaneInPixel()
+            list_window = ListWindow(
+                pos[0],
+                pos[1],
+                5,
+                1,
+                wnd.width() - 5,
+                wnd.height() - 3,
+                wnd,
+                wnd.ini,
+                title,
+                wnd.jump_list,
+                initial_select=0,
+            )
+            wnd.enable(False)
+            list_window.messageLoop()
+            result = list_window.getResult()
+            wnd.enable(True)
+            wnd.activate()
+            list_window.destroy()
+
+            if result < 0:
+                return
+
+            dest = wnd.jump_list[result][1]
+            CPane(wnd, active_pane).openPath(dest)
+
+        def apply(self, mapping: dict) -> None:
+            for key, active_pane in mapping.items():
+
+                def _func(_) -> None:
+                    self.jump(active_pane)
+
+                self._window.keymap[key] = _func
+
+    JUMP_LIST = JumpList(window)
+
+    JUMP_LIST.update(
         {
             "Desktop": str(Path(USER_PROFILE, "Desktop")),
             "Scan": r"X:\scan",
             "Dropbox Share": str(
                 Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
             ),
+        }
+    )
+
+    JUMP_LIST.apply(
+        {
+            "C-J": True,
+            "C-S-J": False,
         }
     )
 
