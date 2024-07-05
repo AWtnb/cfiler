@@ -150,9 +150,9 @@ def configure(window: MainWindow):
 
         def jump(self, active_pane: bool = True) -> None:
             if active_pane:
-                title = "Jump on active pane"
+                title = "On active pane:"
             else:
-                title = "Jump on inactive pane"
+                title = "On inactive pane:"
 
             wnd = self._window
             pos = wnd.centerOfFocusedPaneInPixel()
@@ -180,7 +180,14 @@ def configure(window: MainWindow):
                 return
 
             dest = wnd.jump_list[result][1]
-            CPane(wnd, active_pane).openPath(dest)
+            active = CPane(wnd, True)
+            other = CPane(wnd, False)
+            if active_pane:
+                active.openPath(dest)
+            else:
+                other.openPath(dest)
+                active.focusOther()
+
 
         def invoke_jumper(self, active_pane: bool) -> None:
             def _func(_) -> None:
@@ -886,7 +893,8 @@ def configure(window: MainWindow):
     TEXT_FILE_MAKER = TextFileMaker(window)
 
     window.keymap["T"] = bind(TEXT_FILE_MAKER.invoke("txt"))
-    window.keymap["M"] = bind(TEXT_FILE_MAKER.invoke("md"))
+    window.keymap["C-T"] = bind(TEXT_FILE_MAKER.invoke("md"))
+    window.keymap["S-T"] = bind(TEXT_FILE_MAKER.invoke(""))
 
     def to_obsolete_dir():
         pane = CPane(window)
