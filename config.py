@@ -700,25 +700,27 @@ def configure(window: MainWindow):
     def duplicate_with_name():
         pane = CPane(window)
         focus_path = Path(pane.focusItemPath)
-        if focus_path.is_dir():
-            print("directory copy is dangerous!")
-            return
         result = window.commandLine(
-            "NewFileName",
+            "NewName",
             text=focus_path.name,
             selection=[0, len(focus_path.stem)],
         )
 
-        if result and result != pane.focusedItem.getName():
+        if result:
             result = result.strip()
             if len(result) < 1:
                 return
             new_path = focus_path.with_name(result)
             if new_path.exists():
-                print("same file exists!")
+                print("same item exists!")
                 return
             try:
-                shutil.copy(str(focus_path), new_path)
+                if focus_path.is_dir():
+                    shutil.copytree(str(focus_path), new_path)
+                    CPane(window, False).openPath(new_path)
+                    pane.focusOther()
+                else:
+                    shutil.copy(str(focus_path), new_path)
             except Exception as e:
                 print(e)
 
