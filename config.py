@@ -14,10 +14,55 @@ import pyauto
 from cfiler import *
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
-from cfiler_mainwindow import MainWindow, History
+from cfiler_mainwindow import (
+    MainWindow,
+    History,
+    PAINT_LEFT_LOCATION,
+    PAINT_LEFT_HEADER,
+    PAINT_LEFT_ITEMS,
+    PAINT_LEFT_FOOTER,
+    PAINT_RIGHT_LOCATION,
+    PAINT_RIGHT_HEADER,
+    PAINT_RIGHT_ITEMS,
+    PAINT_RIGHT_FOOTER,
+    PAINT_FOCUSED_LOCATION,
+    PAINT_FOCUSED_HEADER,
+    PAINT_FOCUSED_ITEMS,
+    PAINT_FOCUSED_FOOTER,
+    PAINT_VERTICAL_SEPARATOR,
+    PAINT_LOG,
+    PAINT_STATUS_BAR,
+    PAINT_LEFT,
+    PAINT_RIGHT,
+    PAINT_FOCUSED,
+    PAINT_UPPER,
+    PAINT_ALL,
+)
 
-# https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
-from cfiler_listwindow import popMenu
+
+class PaintOption:
+    LeftLocation = PAINT_LEFT_LOCATION
+    LeftHeader = PAINT_LEFT_HEADER
+    LeftItems = PAINT_LEFT_ITEMS
+    LeftFooter = PAINT_LEFT_FOOTER
+    RightLocation = PAINT_RIGHT_LOCATION
+    RightHeader = PAINT_RIGHT_HEADER
+    RightItems = PAINT_RIGHT_ITEMS
+    RightFooter = PAINT_RIGHT_FOOTER
+    FocusedLocation = PAINT_FOCUSED_LOCATION
+    FocusedHeader = PAINT_FOCUSED_HEADER
+    FocusedItems = PAINT_FOCUSED_ITEMS
+    FocusedFooter = PAINT_FOCUSED_FOOTER
+    VerticalSeparator = PAINT_VERTICAL_SEPARATOR
+    Log = PAINT_LOG
+    StatusBar = PAINT_STATUS_BAR
+    Left = PAINT_LEFT
+    Right = PAINT_RIGHT
+    Focused = PAINT_FOCUSED
+    Upper = PAINT_UPPER
+    All = PAINT_ALL
+
+PO = PaintOption()
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import FileList, item_Base, lister_Default
@@ -114,8 +159,8 @@ def configure(window: MainWindow):
             else:
                 self._pane = self._window.inactivePane()
 
-        def repaint(self) -> None:
-            self._window.paint()
+        def repaint(self, option: PaintOption = PO.All) -> None:
+            self._window.paint(option)
 
         def refresh(self) -> None:
             self._window.subThreadCall(self.file_list.refresh, ())
@@ -237,7 +282,7 @@ def configure(window: MainWindow):
 
         def scrollTo(self, i: int) -> None:
             self.scroll_info.makeVisible(i, self._window.fileListItemPaneHeight(), 1)
-            self.repaint()
+            self.repaint(PO.FocusedItems)
 
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
@@ -287,9 +332,19 @@ def configure(window: MainWindow):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_LEFT))
 
+        def activate(self) -> None:
+            if self._window.focus == MainWindow.FOCUS_RIGHT:
+                self._window.focus = MainWindow.FOCUS_LEFT
+            self.repaint(PO.Left | PO.Right)
+
     class RightPane(CPane):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_RIGHT))
+
+        def activate(self) -> None:
+            if self._window.focus == MainWindow.FOCUS_LEFT:
+                self._window.focus = MainWindow.FOCUS_RIGHT
+            self.repaint(PO.Left | PO.Right)
 
     def quick_move():
         pane = CPane(window)
@@ -479,7 +534,7 @@ def configure(window: MainWindow):
             pane = self.pane
             for i in range(pane.count):
                 pane.select(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def allFiles(self) -> None:
             self.clearAll()
@@ -491,7 +546,7 @@ def configure(window: MainWindow):
                     idx.append(i)
             if 0 < len(idx):
                 pane.focus(idx[0])
-                pane.repaint()
+                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def allDirs(self) -> None:
             self.clearAll()
@@ -503,34 +558,34 @@ def configure(window: MainWindow):
                     idx.append(i)
             if 0 < len(idx):
                 pane.focus(idx[-1])
-                pane.repaint()
+                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def clearAll(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 pane.unSelect(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def clearFiles(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.unSelect(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def clearDirs(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.unSelect(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def byExtension(self, s: str) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if Path(pane.pathByIndex(i)).suffix == s:
                     pane.select(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def stemContains(self, s: str) -> None:
             pane = self.pane
@@ -538,7 +593,7 @@ def configure(window: MainWindow):
                 stem = Path(pane.pathByIndex(i)).stem
                 if s in stem:
                     pane.select(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def stemStartsWith(self, s: str) -> None:
             pane = self.pane
@@ -546,7 +601,7 @@ def configure(window: MainWindow):
                 stem = Path(pane.pathByIndex(i)).stem
                 if stem.startswith(s):
                     pane.select(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def stemEndsWith(self, s: str) -> None:
             pane = self.pane
@@ -554,21 +609,21 @@ def configure(window: MainWindow):
                 stem = Path(pane.pathByIndex(i)).stem
                 if stem.endswith(s):
                     pane.select(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def toTop(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if i <= pane.cursor:
                     pane.select(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def toEnd(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.cursor <= i:
                     pane.select(i)
-            pane.repaint()
+            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
     SELECTOR = Selector(window)
 
@@ -585,10 +640,14 @@ def configure(window: MainWindow):
 
     class SelectionBlock:
         def __init__(self, window: MainWindow) -> None:
-            self._pane = CPane(window)
+            self._window = window
+
+        @property
+        def pane(self) -> CPane:
+            return CPane(self._window)
 
         def topOfCurrent(self) -> int:
-            pane = self._pane
+            pane = self.pane
             if pane.cursor == 0 or not pane.focusedItem.selected():
                 return -1
             for i in reversed(range(0, pane.cursor)):
@@ -599,7 +658,7 @@ def configure(window: MainWindow):
             return -1
 
         def bottomOfCurrent(self) -> int:
-            pane = self._pane
+            pane = self.pane
             if not pane.focusedItem.selected():
                 return -1
             for i in range(pane.cursor + 1, pane.count):
@@ -610,21 +669,21 @@ def configure(window: MainWindow):
             return -1
 
         def topOfNext(self) -> int:
-            pane = self._pane
+            pane = self.pane
             for i in range(pane.cursor + 1, pane.count):
                 if pane.byIndex(i).selected():
                     return i
             return -1
 
         def bottomOfPrevious(self) -> int:
-            pane = self._pane
+            pane = self.pane
             for i in reversed(range(0, pane.cursor)):
                 if pane.byIndex(i).selected():
                     return i
             return -1
 
         def jumpDown(self) -> None:
-            pane = self._pane
+            pane = self.pane
             if pane.cursor == pane.count - 1:
                 return
             below = pane.byIndex(pane.cursor + 1)
@@ -645,7 +704,7 @@ def configure(window: MainWindow):
             pane.scrollToCursor()
 
         def jumpUp(self) -> None:
-            pane = self._pane
+            pane = self.pane
             if pane.cursor == 0:
                 return
             above = pane.byIndex(pane.cursor - 1)
@@ -799,6 +858,7 @@ def configure(window: MainWindow):
     def reload_config():
         window.configure()
         window.command_MoveSeparatorCenter(None)
+        LeftPane(window).activate()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
 
@@ -1121,7 +1181,7 @@ def configure(window: MainWindow):
                 pane.select(i)
             else:
                 pane.unSelect(i)
-        pane.repaint()
+        pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
     def select_name_unique():
         inactive = CPane(window, False)
@@ -1133,7 +1193,7 @@ def configure(window: MainWindow):
                 pane.unSelect(i)
             else:
                 pane.select(i)
-        pane.repaint()
+        pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
     def select_stem_startswith():
         pass
