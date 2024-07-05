@@ -484,18 +484,26 @@ def configure(window: MainWindow):
         def allFiles(self) -> None:
             self.clearAll()
             pane = self.pane
+            idx = []
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.select(i)
-            pane.repaint()
+                    idx.append(i)
+            if 0 < len(idx):
+                pane.focus(idx[0])
+                pane.repaint()
 
         def allDirs(self) -> None:
             self.clearAll()
             pane = self.pane
+            idx = []
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.select(i)
-            pane.repaint()
+                    idx.append(i)
+            if 0 < len(idx):
+                pane.focus(idx[-1])
+                pane.repaint()
 
         def clearAll(self) -> None:
             pane = self.pane
