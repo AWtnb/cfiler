@@ -182,13 +182,15 @@ def configure(window: MainWindow):
             dest = wnd.jump_list[result][1]
             CPane(wnd, active_pane).openPath(dest)
 
+        def invoke_jumper(self, active_pane: bool) -> None:
+            def _func(_) -> None:
+                self.jump(active_pane)
+
+            return _func
+
         def apply(self, mapping: dict) -> None:
             for key, active_pane in mapping.items():
-
-                def _func(_) -> None:
-                    self.jump(active_pane)
-
-                self._window.keymap[key] = _func
+                self._window.keymap[key] = self.invoke_jumper(active_pane)
 
     JUMP_LIST = JumpList(window)
 
