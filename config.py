@@ -737,32 +737,37 @@ def configure(window: MainWindow):
     window.keymap["A-C"] = window.command_ContextMenu
     window.keymap["A-S-C"] = window.command_ContextMenuDir
 
-    def touch_textfile():
-        pane = CPane(window)
-        if not hasattr(pane.file_list.getLister(), "touch"):
-            return
+    class TextFileMaker:
+        def __init__(self, window: MainWindow) -> None:
+            self._pane = CPane(window)
 
-        extensions = ["txt", "md", "html"]
-        sel = popMenu(window, "Extension", extensions, 0)
-        if sel < 0:
-            ext = ""
-        else:
-            ext = extensions[sel]
+        def invoke(self, extension: str = "") -> None:
+            def _func() -> None:
+                if not hasattr(self._pane.file_list.getLister(), "touch"):
+                    return
 
-        result = window.commandLine("NewTextFileName")
-        if not result:
-            return
-        filename = result.strip()
-        if len(filename) < 1:
-            return
-        if len(ext):
-            filename = filename + "." + ext
-        if Path(pane.current_path, filename).exists():
-            print("'{}' already exists.".format(filename))
-            return
-        pane.touch(filename)
+                prompt = "NewFileName"
+                if 0 < len(extension):
+                    prompt = prompt + " (.{})".format(extension)
+                result = window.commandLine(prompt)
+                if not result:
+                    return
+                filename = result.strip()
+                if len(filename) < 1:
+                    return
+                if 0 < len(extension):
+                    filename = filename + "." + extension
+                if Path(self._pane.current_path, filename).exists():
+                    print("'{}' already exists.".format(filename))
+                    return
+                self._pane.touch(filename)
 
-    window.keymap["T"] = bind(touch_textfile)
+            return _func
+
+    TEXT_FILE_MAKER = TextFileMaker(window)
+
+    window.keymap["T"] = bind(TEXT_FILE_MAKER.invoke("txt"))
+    window.keymap["M"] = bind(TEXT_FILE_MAKER.invoke("md"))
 
     def to_obsolete_dir():
         pane = CPane(window)
