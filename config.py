@@ -618,12 +618,13 @@ def configure(window: MainWindow):
     window.keymap["L"] = bind(smart_enter)
 
     class Selector:
-        def __init__(self, window: MainWindow) -> None:
+        def __init__(self, window: MainWindow, active: bool = True) -> None:
             self._window = window
+            self._active = active
 
         @property
         def pane(self) -> CPane:
-            return CPane(self._window)
+            return CPane(self._window, self._active)
 
         def allItems(self) -> None:
             pane = self.pane
@@ -948,6 +949,8 @@ def configure(window: MainWindow):
     def reload_config():
         window.configure()
         window.command_MoveSeparatorCenter(None)
+        Selector(window, True).clearAll()
+        Selector(window, False).clearAll()
         LeftPane(window).activate()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
@@ -994,6 +997,13 @@ def configure(window: MainWindow):
             digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
             table[digest] = table.get(digest, []) + [name]
 
+        print("==================")
+        print(" compare md5 hash ")
+        print("==================")
+
+        Selector(window, True).clearAll()
+        Selector(window, False).clearAll()
+
         for item in active_pane.files:
             name = item.getName()
             digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
@@ -1002,6 +1012,9 @@ def configure(window: MainWindow):
                 active_pane.select(active_pane.byName(name))
                 for n in table[digest]:
                     print("  === '{}'".format(n))
+                    inactive_pane.select(inactive_pane.byName(n))
+        inactive_pane.repaint()
+        print("DONE\n")
 
     def diffinity():
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
