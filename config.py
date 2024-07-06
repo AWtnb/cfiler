@@ -234,8 +234,8 @@ def configure(window: MainWindow):
             self._window.paint(option)
 
         def refresh(self) -> None:
-            self._window.subThreadCall(self.file_list.refresh, ())
-            self.file_list.applyItems()
+            self._window.subThreadCall(self.fileList.refresh, ())
+            self.fileList.applyItems()
 
         @property
         def dirs(self) -> item_Base:
@@ -274,7 +274,7 @@ def configure(window: MainWindow):
             self.scrollToCursor()
 
         def byName(self, name: str) -> int:
-            i = self.file_list.indexOf(name)
+            i = self.fileList.indexOf(name)
             if i < 0:
                 return 0
             return i
@@ -286,27 +286,27 @@ def configure(window: MainWindow):
             self._window.command_FocusOther(None)
 
         @property
-        def file_list(self) -> FileList:
+        def fileList(self) -> FileList:
             return self._pane.file_list
 
         @property
-        def has_selection(self) -> bool:
-            return self.file_list.selected()
+        def hasSelection(self) -> bool:
+            return self.fileList.selected()
 
         @property
-        def scroll_info(self) -> ckit.ScrollInfo:
+        def scrollInfo(self) -> ckit.ScrollInfo:
             return self._pane.scroll_info
 
         @property
-        def current_path(self) -> str:
-            return self.file_list.getLocation()
+        def currentPath(self) -> str:
+            return self.fileList.getLocation()
 
         @property
         def count(self) -> int:
-            return self.file_list.numItems()
+            return self.fileList.numItems()
 
         def byIndex(self, i: int) -> item_Base:
-            return self.file_list.getItem(i)
+            return self.fileList.getItem(i)
 
         @property
         def names(self) -> list:
@@ -341,22 +341,22 @@ def configure(window: MainWindow):
 
         def pathByIndex(self, i: int) -> str:
             item = self.byIndex(i)
-            return str(Path(self.current_path, item.getName()))
+            return str(Path(self.currentPath, item.getName()))
 
         @property
         def focusItemPath(self) -> str:
             return self.pathByIndex(self.cursor)
 
         def toggleSelect(self, i: int) -> None:
-            self.file_list.selectItem(i, None)
+            self.fileList.selectItem(i, None)
             self.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def select(self, i: int) -> None:
-            self.file_list.selectItem(i, True)
+            self.fileList.selectItem(i, True)
             self.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def unSelect(self, i: int) -> None:
-            self.file_list.selectItem(i, False)
+            self.fileList.selectItem(i, False)
             self.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         @property
@@ -377,14 +377,14 @@ def configure(window: MainWindow):
             return idxs[-1]
 
         def scrollTo(self, i: int) -> None:
-            self.scroll_info.makeVisible(i, self._window.fileListItemPaneHeight(), 1)
+            self.scrollInfo.makeVisible(i, self._window.fileListItemPaneHeight(), 1)
             self.repaint(PO.FocusedItems)
 
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
 
         def openName(self, name: str) -> bool:
-            path = Path(self.current_path, name)
+            path = Path(self.currentPath, name)
             if not path.exists() or path.is_file():
                 print("invalid dir path: '{}'".format(path))
                 return False
@@ -401,28 +401,28 @@ def configure(window: MainWindow):
             return True
 
         def touch(self, name: str) -> None:
-            if not hasattr(self.file_list.getLister(), "touch"):
+            if not hasattr(self.fileList.getLister(), "touch"):
                 print("cannot make file here.")
                 return
-            dp = Path(self.current_path, name)
+            dp = Path(self.currentPath, name)
             if dp.exists() and dp.is_file():
                 print("file '{}' already exists.".format(name))
                 return
-            self._window.subThreadCall(self.file_list.getLister().touch, (name,))
+            self._window.subThreadCall(self.fileList.getLister().touch, (name,))
             self.refresh()
-            self.focus(self._window.cursorFromName(self.file_list, name))
+            self.focus(self._window.cursorFromName(self.fileList, name))
 
         def mkdir(self, name: str) -> None:
-            if not hasattr(self.file_list.getLister(), "mkdir"):
+            if not hasattr(self.fileList.getLister(), "mkdir"):
                 print("cannot make directory here.")
                 return
-            dp = Path(self.current_path, name)
+            dp = Path(self.currentPath, name)
             if dp.exists() and dp.is_dir():
                 print("directory '{}' already exists.".format(name))
                 return
-            self._window.subThreadCall(self.file_list.getLister().mkdir, (name, None))
+            self._window.subThreadCall(self.fileList.getLister().mkdir, (name, None))
             self.refresh()
-            self.focus(self._window.cursorFromName(self.file_list, name))
+            self.focus(self._window.cursorFromName(self.fileList, name))
 
     class LeftPane(CPane):
         def __init__(self, window: MainWindow) -> None:
@@ -444,7 +444,7 @@ def configure(window: MainWindow):
 
     def quick_move():
         pane = CPane(window)
-        if not pane.file_list.selected():
+        if not pane.fileList.selected():
             window.command_Select(None)
         window.command_Move(None)
 
@@ -452,7 +452,7 @@ def configure(window: MainWindow):
 
     def quick_copy():
         pane = CPane(window)
-        if not pane.file_list.selected():
+        if not pane.fileList.selected():
             window.command_Select(None)
         window.command_Copy(None)
 
@@ -469,9 +469,9 @@ def configure(window: MainWindow):
 
     def swap_pane() -> None:
         pane = CPane(window, True)
-        current_path = pane.current_path
+        current_path = pane.currentPath
         other_pane = CPane(window, False)
-        other_path = other_pane.current_path
+        other_path = other_pane.currentPath
         pane.openPath(other_path)
         other_pane.openPath(current_path)
 
@@ -483,7 +483,7 @@ def configure(window: MainWindow):
             pane = CPane(window)
             cmd = [
                 str(exe_path),
-                "-cur={}".format(pane.current_path),
+                "-cur={}".format(pane.currentPath),
                 "-stdout=True",
             ]
             proc = subprocess.run(cmd, stdout=subprocess.PIPE)
@@ -541,7 +541,7 @@ def configure(window: MainWindow):
                 pane = CPane(window)
                 cmd = self._cmd + [
                     "-offset={}".format(offset),
-                    "-cur={}".format(pane.current_path),
+                    "-cur={}".format(pane.currentPath),
                 ]
                 proc = subprocess.run(cmd, stdout=subprocess.PIPE)
                 result = proc.stdout.decode("utf-8").strip()
@@ -596,8 +596,8 @@ def configure(window: MainWindow):
                 paths.append(pane.pathByIndex(i))
 
         if len(paths) < 1:
-            ckit.setClipboardText(pane.current_path)
-            print("\ncopied current directory path:\n{}".format(pane.current_path))
+            ckit.setClipboardText(pane.currentPath)
+            print("\ncopied current directory path:\n{}".format(pane.currentPath))
             return
 
         lines = LINE_BREAK.join(paths)
@@ -632,26 +632,24 @@ def configure(window: MainWindow):
 
         def allFiles(self) -> None:
             pane = self.pane
-            selecting = pane.has_selection
             self.clearAll()
             idx = []
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.select(i)
                     idx.append(i)
-            if 0 < len(idx) and not selecting:
+            if 0 < len(idx):
                 pane.focus(idx[0])
 
         def allDirs(self) -> None:
             pane = self.pane
-            selecting = pane.has_selection
             self.clearAll()
             idx = []
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.select(i)
                     idx.append(i)
-            if 0 < len(idx) and not selecting:
+            if 0 < len(idx):
                 pane.focus(idx[-1])
 
         def clearAll(self) -> None:
@@ -673,7 +671,6 @@ def configure(window: MainWindow):
 
         def byFunction(self, func: Callable) -> None:
             pane = self.pane
-            selecting = pane.has_selection
             self.clearAll()
             idx = []
             for i in range(pane.count):
@@ -681,7 +678,7 @@ def configure(window: MainWindow):
                 if func(path):
                     pane.select(i)
                     idx.append(i)
-            if 0 < len(idx) and not selecting:
+            if 0 < len(idx):
                 pane.focus(idx[0])
 
         def byExtension(self, s: str) -> None:
@@ -826,7 +823,7 @@ def configure(window: MainWindow):
     def duplicate_pane():
         pane = CPane(window, True)
         other = CPane(window, False)
-        other.openPath(pane.current_path)
+        other.openPath(pane.currentPath)
         pane.focusOther()
         other.focus(pane.cursor)
 
@@ -842,8 +839,8 @@ def configure(window: MainWindow):
 
     def open_parent_to_other():
         active_pane = CPane(window, True)
-        parent = str(Path(active_pane.current_path).parent)
-        current_name = str(Path(active_pane.current_path).name)
+        parent = str(Path(active_pane.currentPath).parent)
+        current_name = str(Path(active_pane.currentPath).name)
         inactive_pane = CPane(window, False)
         inactive_pane.openPath(parent)
         active_pane.focusOther()
@@ -855,7 +852,7 @@ def configure(window: MainWindow):
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
         if vscode_path.exists():
             pane = CPane(window)
-            pyauto.shellExecute(None, str(vscode_path), pane.current_path, "")
+            pyauto.shellExecute(None, str(vscode_path), pane.currentPath, "")
 
     window.keymap["A-V"] = bind(on_vscode)
 
@@ -894,7 +891,7 @@ def configure(window: MainWindow):
 
         def invoke(self, extension: str = "") -> None:
             def _func() -> None:
-                if not hasattr(self._pane.file_list.getLister(), "touch"):
+                if not hasattr(self._pane.fileList.getLister(), "touch"):
                     return
 
                 prompt = "NewFileName"
@@ -908,7 +905,7 @@ def configure(window: MainWindow):
                     return
                 if 0 < len(extension):
                     filename = filename + "." + extension
-                if Path(self._pane.current_path, filename).exists():
+                if Path(self._pane.currentPath, filename).exists():
                     print("'{}' already exists.".format(filename))
                     return
                 self._pane.touch(filename)
@@ -935,14 +932,14 @@ def configure(window: MainWindow):
         dest_name = "_obsolete"
         pane.mkdir(dest_name)
 
-        child_lister = pane.file_list.getLister().getChild(dest_name)
+        child_lister = pane.fileList.getLister().getChild(dest_name)
         window._copyMoveCommon(
             pane,
-            pane.file_list.getLister(),
+            pane.fileList.getLister(),
             child_lister,
             items,
             "m",
-            pane.file_list.getFilter(),
+            pane.fileList.getFilter(),
         )
         child_lister.destroy()
 
