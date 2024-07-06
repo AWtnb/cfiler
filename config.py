@@ -124,14 +124,15 @@ def configure(window: MainWindow):
             "C-D": window.command_Delete,
             "P": window.command_FocusOther,
             "C-L": window.command_FocusOther,
-            "O": window.command.ChdirActivePaneToOther,
-            "S-O": window.command.ChdirInactivePaneToOther,
+            "O": window.command_ChdirActivePaneToOther,
+            "S-O": window.command_ChdirInactivePaneToOther,
             "A": window.command_CursorTop,
             "E": window.command_CursorBottom,
             "Home": window.command_CursorTop,
             "End": window.command_CursorBottom,
             "J": window.command_CursorDown,
             "K": window.command_CursorUp,
+            "C-S-P": window.command_CommandLine,
         }
     )
 
@@ -187,7 +188,6 @@ def configure(window: MainWindow):
             else:
                 other.openPath(dest)
                 active.focusOther()
-
 
         def invoke_jumper(self, active_pane: bool) -> None:
             def _func(_) -> None:
@@ -649,34 +649,51 @@ def configure(window: MainWindow):
 
         def byExtension(self, s: str) -> None:
             pane = self.pane
+            idx = []
             for i in range(pane.count):
                 if Path(pane.pathByIndex(i)).suffix == s:
                     pane.select(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
+                    idx.append(i)
+            if 0 < len(idx):
+                pane.focus(idx[0])
+                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def stemContains(self, s: str) -> None:
             pane = self.pane
+            idx = []
             for i in range(pane.count):
                 stem = Path(pane.pathByIndex(i)).stem
                 if s in stem:
+                    print(stem)
                     pane.select(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
+                    idx.append(i)
+            if 0 < len(idx):
+                pane.focus(idx[0])
+                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def stemStartsWith(self, s: str) -> None:
             pane = self.pane
+            idx = []
             for i in range(pane.count):
                 stem = Path(pane.pathByIndex(i)).stem
                 if stem.startswith(s):
                     pane.select(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
+                    idx.append(i)
+            if 0 < len(idx):
+                pane.focus(idx[0])
+                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def stemEndsWith(self, s: str) -> None:
             pane = self.pane
+            idx = []
             for i in range(pane.count):
                 stem = Path(pane.pathByIndex(i)).stem
                 if stem.endswith(s):
                     pane.select(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
+                    idx.append(i)
+            if 0 < len(idx):
+                pane.focus(idx[0])
+                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def toTop(self) -> None:
             pane = self.pane
@@ -1264,16 +1281,26 @@ def configure(window: MainWindow):
         pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
     def select_stem_startswith():
-        pass
+        result = window.commandLine("StartsWith")
+        if result:
+            SELECTOR.stemStartsWith(result)
 
     def select_stem_endsswith():
-        pass
+        result = window.commandLine("EndsWith")
+        if result:
+            SELECTOR.stemEndsWith(result)
 
     def select_stem_contains():
-        pass
+        result = window.commandLine("Contains")
+        if result:
+            SELECTOR.stemContains(result)
 
     def select_byext():
-        pass
+        result = window.commandLine("Extension")
+        if result:
+            if not result.startswith("."):
+                result = "." + result
+            SELECTOR.byExtension(result)
 
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
