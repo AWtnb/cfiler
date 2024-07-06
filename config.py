@@ -137,6 +137,7 @@ def configure(window: MainWindow):
             "H": window.command_GotoParentDir,
             "A-C": window.command_ContextMenu,
             "A-S-C": window.command_ContextMenuDir,
+            "F": window.command_JumpInput,
         }
     )
 
@@ -563,7 +564,8 @@ def configure(window: MainWindow):
     window.keymap["A-Z"] = bind(zyc(True).invoke(-1))
     window.keymap["S-Z"] = bind(zyc(False).invoke(1))
     window.keymap["A-S-Z"] = bind(zyc(True).invoke(1))
-    window.keymap["F"] = bind(zyc(True).invoke(0))
+    window.keymap["S-F"] = bind(zyc(False).invoke(0))
+    window.keymap["C-S-F"] = bind(zyc(True).invoke(0))
 
     def smart_copy_name():
         pane = CPane(window)
