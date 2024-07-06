@@ -650,53 +650,41 @@ def configure(window: MainWindow):
                     pane.unSelect(i)
             pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
-        def byExtension(self, s: str) -> None:
+        def byFunction(self, func: Callable) -> None:
             pane = self.pane
             idx = []
             for i in range(pane.count):
-                if Path(pane.pathByIndex(i)).suffix == s:
+                path = pane.pathByIndex(i)
+                if func(path):
                     pane.select(i)
                     idx.append(i)
             if 0 < len(idx):
                 pane.focus(idx[0])
                 pane.repaint(PO.FocusedItems | PO.FocusedHeader)
+
+        def byExtension(self, s: str) -> None:
+            def selector(path: str) -> None:
+                return Path(path).suffix == s
+
+            self.byFunction(selector)
 
         def stemContains(self, s: str) -> None:
-            pane = self.pane
-            idx = []
-            for i in range(pane.count):
-                stem = Path(pane.pathByIndex(i)).stem
-                if s in stem:
-                    print(stem)
-                    pane.select(i)
-                    idx.append(i)
-            if 0 < len(idx):
-                pane.focus(idx[0])
-                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
+            def selector(path: str) -> None:
+                return s in Path(path).stem
+
+            self.byFunction(selector)
 
         def stemStartsWith(self, s: str) -> None:
-            pane = self.pane
-            idx = []
-            for i in range(pane.count):
-                stem = Path(pane.pathByIndex(i)).stem
-                if stem.startswith(s):
-                    pane.select(i)
-                    idx.append(i)
-            if 0 < len(idx):
-                pane.focus(idx[0])
-                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
+            def selector(path: str) -> None:
+                return Path(path).stem.startswith(s)
+
+            self.byFunction(selector)
 
         def stemEndsWith(self, s: str) -> None:
-            pane = self.pane
-            idx = []
-            for i in range(pane.count):
-                stem = Path(pane.pathByIndex(i)).stem
-                if stem.endswith(s):
-                    pane.select(i)
-                    idx.append(i)
-            if 0 < len(idx):
-                pane.focus(idx[0])
-                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
+            def selector(path: str) -> None:
+                return Path(path).stem.endswith(s)
+
+            self.byFunction(selector)
 
         def toTop(self) -> None:
             pane = self.pane
@@ -971,6 +959,9 @@ def configure(window: MainWindow):
             print("cannot find repo dir. open user profile instead.")
 
     window.keymap["C-E"] = bind(edit_config)
+
+    def select_same_hash_file():
+        pass
 
     ################################
     ################################
