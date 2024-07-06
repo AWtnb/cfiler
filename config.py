@@ -133,6 +133,10 @@ def configure(window: MainWindow):
             "J": window.command_CursorDown,
             "K": window.command_CursorUp,
             "C-S-P": window.command_CommandLine,
+            "C-S-N": window.command_Mkdir,
+            "H": window.command_GotoParentDir,
+            "A-C": window.command_ContextMenu,
+            "A-S-C": window.command_ContextMenuDir,
         }
     )
 
@@ -587,7 +591,6 @@ def configure(window: MainWindow):
             window.command_Execute(None)
 
     window.keymap["L"] = bind(smart_enter)
-    window.keymap["H"] = window.command_GotoParentDir
 
     class Selector:
         def __init__(self, window: MainWindow) -> None:
@@ -877,9 +880,6 @@ def configure(window: MainWindow):
 
     window.keymap["S-D"] = bind(duplicate_with_name)
 
-    window.keymap["A-C"] = window.command_ContextMenu
-    window.keymap["A-S-C"] = window.command_ContextMenuDir
-
     class TextFileMaker:
         def __init__(self, window: MainWindow) -> None:
             self._pane = CPane(window)
@@ -971,8 +971,6 @@ def configure(window: MainWindow):
             print("cannot find repo dir. open user profile instead.")
 
     window.keymap["C-E"] = bind(edit_config)
-
-    window.keymap["C-S-N"] = window.command_Mkdir
 
     ################################
     ################################
