@@ -238,6 +238,24 @@ def configure(window: MainWindow):
             self.file_list.applyItems()
 
         @property
+        def dirs(self) -> item_Base:
+            items = []
+            for i in range(self.count):
+                item = self.byIndex(i)
+                if item.isdir():
+                    items.append(item)
+            return items
+
+        @property
+        def files(self) -> item_Base:
+            items = []
+            for i in range(self.count):
+                item = self.byIndex(i)
+                if not item.isdir():
+                    items.append(item)
+            return items
+
+        @property
         def history(self) -> History:
             return self._pane.history
 
@@ -270,6 +288,10 @@ def configure(window: MainWindow):
         @property
         def file_list(self) -> FileList:
             return self._pane.file_list
+
+        @property
+        def has_selection(self) -> bool:
+            return self.file_list.selected()
 
         @property
         def scroll_info(self) -> ckit.ScrollInfo:
@@ -327,12 +349,15 @@ def configure(window: MainWindow):
 
         def toggleSelect(self, i: int) -> None:
             self.file_list.selectItem(i, None)
+            self.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def select(self, i: int) -> None:
             self.file_list.selectItem(i, True)
+            self.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def unSelect(self, i: int) -> None:
             self.file_list.selectItem(i, False)
+            self.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         @property
         def selectionTop(self) -> int:
@@ -604,63 +629,60 @@ def configure(window: MainWindow):
             pane = self.pane
             for i in range(pane.count):
                 pane.select(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def allFiles(self) -> None:
-            self.clearAll()
             pane = self.pane
+            selecting = pane.has_selection
+            self.clearAll()
             idx = []
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.select(i)
                     idx.append(i)
-            if 0 < len(idx):
+            if 0 < len(idx) and not selecting:
                 pane.focus(idx[0])
-                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def allDirs(self) -> None:
-            self.clearAll()
             pane = self.pane
+            selecting = pane.has_selection
+            self.clearAll()
             idx = []
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.select(i)
                     idx.append(i)
-            if 0 < len(idx):
+            if 0 < len(idx) and not selecting:
                 pane.focus(idx[-1])
-                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def clearAll(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 pane.unSelect(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def clearFiles(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.byIndex(i).isdir():
                     pane.unSelect(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def clearDirs(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if not pane.byIndex(i).isdir():
                     pane.unSelect(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def byFunction(self, func: Callable) -> None:
             pane = self.pane
+            selecting = pane.has_selection
+            self.clearAll()
             idx = []
             for i in range(pane.count):
                 path = pane.pathByIndex(i)
                 if func(path):
                     pane.select(i)
                     idx.append(i)
-            if 0 < len(idx):
+            if 0 < len(idx) and not selecting:
                 pane.focus(idx[0])
-                pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def byExtension(self, s: str) -> None:
             def selector(path: str) -> None:
@@ -691,14 +713,12 @@ def configure(window: MainWindow):
             for i in range(pane.count):
                 if i <= pane.cursor:
                     pane.select(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
         def toEnd(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.cursor <= i:
                     pane.select(i)
-            pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
     SELECTOR = Selector(window)
 
@@ -961,259 +981,30 @@ def configure(window: MainWindow):
     window.keymap["C-E"] = bind(edit_config)
 
     def select_same_hash_file():
-        pass
-
-    ################################
-    ################################
-    ################################
-    ################################
-    ################################
-
-    # https://github.com/crftwr/cfiler/blob/0d1017e93939b53024b9ba80492c428d3ae24b8b/_config.py#L284
-    def command_CheckEmpty(_):
-
-        pane = window.activePane()
-        location = window.activeFileList().getLocation()
-        items = window.activeItems()
-
-        result_items = []
-        message = [""]
-
-        def jobCheckEmpty(job_item):
-
-            def printBoth(s):
-                print(s)
-                message[0] += s + "\n"
-
-            def appendResult(item):
-                result_items.append(item)
-                printBoth("   %s" % item.getName())
-
-            printBoth("空のディレクトリを検索 :")
-
-            # ビジーインジケータ On
-            window.setProgressValue(None)
-
-            for item in items:
-
-                if not item.isdir():
-                    continue
-
-                if job_item.isCanceled():
-                    break
-                if job_item.waitPaused():
-                    window.setProgressValue(None)
-
-                empty = True
-
-                for root, dirs, files in item.walk(False):
-
-                    if job_item.isCanceled():
-                        break
-                    if job_item.waitPaused():
-                        window.setProgressValue(None)
-
-                    if not empty:
-                        break
-                    for file in files:
-                        empty = False
-                        break
-
-                if empty:
-                    appendResult(item)
-
-            message[0] += "\n"
-            message[0] += "検索結果をファイルリストに反映しますか？(Enter/Esc):\n"
-
-        def jobCheckEmptyFinished(job_item):
-
-            # ビジーインジケータ Off
-            window.clearProgress()
-
-            if job_item.isCanceled():
-                print("中断しました.\n")
-            else:
-                print("Done.\n")
-
-            if job_item.isCanceled():
-                return
-
-            result = popResultWindow(window, "検索完了", message[0])
-            if not result:
-                return
-
-            window.jumpLister(
-                pane, lister_Custom(window, "[empty] ", location, result_items)
-            )
-
-        job_item = ckit.JobItem(jobCheckEmpty, jobCheckEmptyFinished)
-        window.taskEnqueue(job_item, "CheckEmpty")
-
-    # https://github.com/crftwr/cfiler/blob/0d1017e93939b53024b9ba80492c428d3ae24b8b/_config.py#L361
-    def command_CheckDuplicate(_):
-
-        left_pane = window.leftPane()
-        right_pane = window.rightPane()
-
-        left_location = window.leftFileList().getLocation()
-        right_location = window.rightFileList().getLocation()
-
-        left_items = window.leftItems()
-        right_items = window.rightItems()
-
-        items = []
-        for item in left_items:
-            if not item.isdir() and hasattr(item, "getFullpath"):
-                items.append([item, None, False])
-        for item in right_items:
-            if not item.isdir() and hasattr(item, "getFullpath"):
-                items.append([item, None, False])
-
-        if len(items) <= 1:
+        active_pane = CPane(window, True)
+        if len(active_pane.files) < 1:
+            print("no files to compare in active pane.")
             return
 
-        result_left_items = set()
-        result_right_items = set()
-        message = [""]
+        inactive_pane = CPane(window, False)
+        if len(inactive_pane.files) < 1:
+            print("no files to compare in inactive pane.")
+            return
 
-        def jobCheckDuplicate(job_item):
+        table = {}
+        for item in inactive_pane.files:
+            name = item.getName()
+            digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
+            table[digest] = table.get(digest, []) + [name]
 
-            def printBoth(s):
-                print(s)
-                message[0] += s + "\n"
-
-            def appendResult(item):
-                if item in left_items:
-                    result_left_items.add(item)
-                    printBoth("   Left: %s" % item.getName())
-                else:
-                    result_right_items.add(item)
-                    printBoth("  Right: %s" % item.getName())
-
-            def leftOrRight(item):
-                if item in left_items:
-                    return "Left"
-                else:
-                    return "Right"
-
-            printBoth("重複するファイルを検索 :")
-
-            # ビジーインジケータ On
-            window.setProgressValue(None)
-
-            for i, item in enumerate(items):
-
-                if job_item.isCanceled():
-                    break
-                if job_item.waitPaused():
-                    window.setProgressValue(None)
-
-                digest = hashlib.md5(item[0].open().read(64 * 1024)).hexdigest()
-                print("MD5 : %s : %s" % (item[0].getName(), digest))
-                items[i][1] = digest
-
-            # ファイルサイズとハッシュでソート
-            if not job_item.isCanceled():
-                items.sort(key=lambda item: (item[0].size(), item[1]))
-
-            for i in range(len(items)):
-
-                if job_item.isCanceled():
-                    break
-                if job_item.waitPaused():
-                    window.setProgressValue(None)
-
-                item1 = items[i]
-                if item1[2]:
-                    continue
-
-                dumplicate_items = []
-                dumplicate_filenames = [item1[0].getFullpath()]
-
-                for k in range(i + 1, len(items)):
-
-                    if job_item.isCanceled():
-                        break
-                    if job_item.waitPaused():
-                        window.setProgressValue(None)
-
-                    item2 = items[k]
-                    if item1[1] != item2[1]:
-                        break
-                    if item2[2]:
-                        continue
-                    if item2[0].getFullpath() in dumplicate_filenames:
-                        item2[2] = True
-                        continue
-
-                    print(
-                        "比較 : %5s : %s" % (leftOrRight(item1[0]), item1[0].getName())
-                    )
-                    print(
-                        "     : %5s : %s …"
-                        % (leftOrRight(item2[0]), item2[0].getName()),
-                    )
-
-                    try:
-                        result = compareFile(
-                            item1[0].getFullpath(),
-                            item2[0].getFullpath(),
-                            shallow=1,
-                            schedule_handler=job_item.isCanceled,
-                        )
-                    except CanceledError:
-                        print("中断")
-                        break
-
-                    if result:
-                        print("一致")
-                        dumplicate_items.append(item2)
-                        dumplicate_filenames.append(item2[0].getFullpath())
-                        item2[2] = True
-                    else:
-                        print("不一致")
-
-                    print("")
-
-                if dumplicate_items:
-                    appendResult(item1[0])
-                    for item2 in dumplicate_items:
-                        appendResult(item2[0])
-                    printBoth("")
-
-            message[0] += "\n"
-            message[0] += "検索結果をファイルリストに反映しますか？(Enter/Esc):\n"
-
-        def jobCheckDuplicateFinished(job_item):
-
-            # ビジーインジケータ Off
-            window.clearProgress()
-
-            if job_item.isCanceled():
-                print("中断しました.\n")
-            else:
-                print("Done.\n")
-
-            if job_item.isCanceled():
-                return
-
-            result = popResultWindow(window, "検索完了", message[0])
-            if not result:
-                return
-
-            window.leftJumpLister(
-                lister_Custom(
-                    window, "[duplicate] ", left_location, list(result_left_items)
-                )
-            )
-            window.rightJumpLister(
-                lister_Custom(
-                    window, "[duplicate] ", right_location, list(result_right_items)
-                )
-            )
-
-        job_item = ckit.JobItem(jobCheckDuplicate, jobCheckDuplicateFinished)
-        window.taskEnqueue(job_item, "CheckDuplicate")
+        for item in active_pane.files:
+            name = item.getName()
+            digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
+            if digest in table:
+                print("'{}':".format(name))
+                active_pane.select(active_pane.byName(name))
+                for n in table[digest]:
+                    print("  === '{}'".format(n))
 
     def diffinity():
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
@@ -1255,7 +1046,6 @@ def configure(window: MainWindow):
                 pane.select(i)
             else:
                 pane.unSelect(i)
-        pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
     def select_name_unique():
         inactive = CPane(window, False)
@@ -1267,7 +1057,6 @@ def configure(window: MainWindow):
                 pane.unSelect(i)
             else:
                 pane.select(i)
-        pane.repaint(PO.FocusedItems | PO.FocusedHeader)
 
     def select_stem_startswith():
         result = window.commandLine("StartsWith")
@@ -1298,14 +1087,13 @@ def configure(window: MainWindow):
     update_command_list(
         {
             "Diffinity": diffinity,
+            "SelectSameHashFile": select_same_hash_file,
             "SelectNameUnique": select_name_unique,
             "SelectNameCommon": select_name_common,
             "SelectStemStartsWith": select_stem_startswith,
             "SelectStemEndsWith": select_stem_endsswith,
             "SelectStemContains": select_stem_contains,
             "SelectByExtension": select_byext,
-            "CheckEmpty": command_CheckEmpty,
-            "CheckDuplicate": command_CheckDuplicate,
         }
     )
 
