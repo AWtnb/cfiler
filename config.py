@@ -980,7 +980,7 @@ def configure(window: MainWindow):
 
     window.keymap["C-E"] = bind(edit_config)
 
-    def select_same_hash_file():
+    def compare_file_hash():
         active_pane = CPane(window, True)
         if len(active_pane.files) < 1:
             print("no files to compare in active pane.")
@@ -1097,7 +1097,7 @@ def configure(window: MainWindow):
     update_command_list(
         {
             "Diffinity": diffinity,
-            "SelectSameHashFile": select_same_hash_file,
+            "CompareFileHash": compare_file_hash,
             "SelectNameUnique": select_name_unique,
             "SelectNameCommon": select_name_common,
             "SelectStemStartsWith": select_stem_startswith,
