@@ -154,30 +154,31 @@ def configure(window: MainWindow):
                 except Exception as e:
                     print(e)
 
-        def jump(self, active_pane: bool = True) -> None:
-            if active_pane:
-                title = "On active pane:"
-            else:
-                title = "On inactive pane:"
+        def jump(self) -> None:
 
             wnd = self._window
             pos = wnd.centerOfFocusedPaneInPixel()
             list_window = ListWindow(
-                pos[0],
-                pos[1],
-                5,
-                1,
-                wnd.width() - 5,
-                wnd.height() - 3,
-                wnd,
-                wnd.ini,
-                title,
-                wnd.jump_list,
+                x=pos[0],
+                y=pos[1],
+                min_width=40,
+                min_height=1,
+                max_width=wnd.width() - 5,
+                max_height=wnd.height() - 3,
+                parent_window=wnd,
+                ini=wnd.ini,
+                title="Jump (other pane with Shift)",
+                items=wnd.jump_list,
                 initial_select=0,
+                onekey_search=False,
+                onekey_decide=False,
+                return_modkey=True,
+                keydown_hook=None,
+                statusbar_handler=None,
             )
             wnd.enable(False)
             list_window.messageLoop()
-            result = list_window.getResult()
+            result, mod = list_window.getResult()
             wnd.enable(True)
             wnd.activate()
             list_window.destroy()
@@ -186,23 +187,14 @@ def configure(window: MainWindow):
                 return
 
             dest = wnd.jump_list[result][1]
+            modified = mod == ckit.MODKEY_SHIFT
             active = CPane(wnd, True)
             other = CPane(wnd, False)
-            if active_pane:
-                active.openPath(dest)
-            else:
+            if modified:
                 other.openPath(dest)
                 active.focusOther()
-
-        def invoke_jumper(self, active_pane: bool) -> None:
-            def _func(_) -> None:
-                self.jump(active_pane)
-
-            return _func
-
-        def apply(self, mapping: dict) -> None:
-            for key, active_pane in mapping.items():
-                self._window.keymap[key] = self.invoke_jumper(active_pane)
+            else:
+                active.openPath(dest)
 
     JUMP_LIST = JumpList(window)
 
@@ -216,12 +208,7 @@ def configure(window: MainWindow):
         }
     )
 
-    JUMP_LIST.apply(
-        {
-            "C-J": True,
-            "C-S-J": False,
-        }
-    )
+    window.keymap["C-J"] = bind(JUMP_LIST.jump)
 
     class CPane:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
@@ -1113,3 +1100,10 @@ def configure(window: MainWindow):
 def configure_TextViewer(window: ckit.TextWindow):
     window.keymap["J"] = window.command_ScrollDown
     window.keymap["K"] = window.command_ScrollUp
+
+
+def configure_ListWindow(window: ckit.TextWindow):
+    window.keymap["J"] = window.command_CursorDown
+    window.keymap["K"] = window.command_CursorUp
+    for mod in ["", "S-"]:
+        window.keymap[mod + "Space"] = window.command_Enter
