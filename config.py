@@ -70,24 +70,8 @@ class PaintOption:
 
 
 PO = PaintOption()
-
-
 USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
-
-
-def bind(func: Callable):
-    if inspect.signature(func).parameters.items():
-
-        def _callback_with_arg(arg):
-            func(arg)
-
-        return _callback_with_arg
-
-    def _callback(_):
-        func()
-
-    return _callback
 
 
 def configure(window: MainWindow):
@@ -140,6 +124,29 @@ def configure(window: MainWindow):
             "F": window.command_JumpInput,
         }
     )
+
+    class Keybinder:
+        def __init__(self, window: MainWindow) -> None:
+            self._window = window
+
+        @staticmethod
+        def wrap(func: Callable) -> Callable:
+            if inspect.signature(func).parameters.items():
+
+                def _callback_with_arg(arg):
+                    func(arg)
+
+                return _callback_with_arg
+
+            def _callback(_):
+                func()
+
+            return _callback
+
+        def bind(self, key: str, func: Callable) -> None:
+            self._window.keymap[key] = self.wrap(func)
+
+    KEYBINDER = Keybinder(window)
 
     class JumpList:
         def __init__(self, window: MainWindow) -> None:
@@ -208,7 +215,7 @@ def configure(window: MainWindow):
         }
     )
 
-    window.keymap["C-J"] = bind(JUMP_LIST.jump)
+    KEYBINDER.bind("C-J", JUMP_LIST.jump)
 
     class CPane:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
@@ -436,7 +443,7 @@ def configure(window: MainWindow):
             window.command_Select(None)
         window.command_Move(None)
 
-    window.keymap["C-X"] = bind(quick_move)
+    KEYBINDER.bind("C-X", quick_move)
 
     def quick_copy():
         pane = CPane(window)
@@ -444,7 +451,7 @@ def configure(window: MainWindow):
             window.command_Select(None)
         window.command_Copy(None)
 
-    window.keymap["C-C"] = bind(quick_copy)
+    KEYBINDER.bind("C-C", quick_copy)
 
     def history_back():
         pane = CPane(window)
@@ -453,7 +460,7 @@ def configure(window: MainWindow):
             p = hist.items[1][0]
             pane.openPath(p)
 
-    window.keymap["Back"] = bind(history_back)
+    KEYBINDER.bind("Back", history_back)
 
     def swap_pane() -> None:
         pane = CPane(window, True)
@@ -463,7 +470,7 @@ def configure(window: MainWindow):
         pane.openPath(other_path)
         other_pane.openPath(current_path)
 
-    window.keymap["A-S"] = bind(swap_pane)
+    KEYBINDER.bind("A-S", swap_pane)
 
     def zymd():
         exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zymd.exe")
@@ -481,7 +488,7 @@ def configure(window: MainWindow):
                 return
             pane.mkdir(result)
 
-    window.keymap["A-N"] = bind(zymd)
+    KEYBINDER.bind("A-N", zymd)
 
     def zyl():
         exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
@@ -507,7 +514,7 @@ def configure(window: MainWindow):
                 pyauto.shellExecute(None, result, "", "")
                 pane.appendHistory(result)
 
-    window.keymap["Y"] = bind(zyl)
+    KEYBINDER.bind("Y", zyl)
 
     class zyc:
         def __init__(self, search_all: bool) -> None:
@@ -547,12 +554,12 @@ def configure(window: MainWindow):
 
             return _func
 
-    window.keymap["Z"] = bind(zyc(False).invoke(-1))
-    window.keymap["A-Z"] = bind(zyc(True).invoke(-1))
-    window.keymap["S-Z"] = bind(zyc(False).invoke(1))
-    window.keymap["A-S-Z"] = bind(zyc(True).invoke(1))
-    window.keymap["S-F"] = bind(zyc(False).invoke(0))
-    window.keymap["C-S-F"] = bind(zyc(True).invoke(0))
+    KEYBINDER.bind("Z", zyc(False).invoke(-1))
+    KEYBINDER.bind("A-Z", zyc(True).invoke(-1))
+    KEYBINDER.bind("S-Z", zyc(False).invoke(1))
+    KEYBINDER.bind("A-S-Z", zyc(True).invoke(1))
+    KEYBINDER.bind("S-F", zyc(False).invoke(0))
+    KEYBINDER.bind("C-S-F", zyc(True).invoke(0))
 
     def smart_copy_name():
         pane = CPane(window)
@@ -574,7 +581,7 @@ def configure(window: MainWindow):
         for name in names:
             print("- {}".format(Path(name).name))
 
-    window.keymap["C-S-C"] = bind(smart_copy_name)
+    KEYBINDER.bind("C-S-C", smart_copy_name)
 
     def smart_copy_path():
         pane = CPane(window)
@@ -595,7 +602,7 @@ def configure(window: MainWindow):
         for path in paths:
             print("- {}".format(Path(path).name))
 
-    window.keymap["C-A-P"] = bind(smart_copy_path)
+    KEYBINDER.bind("C-A-P", smart_copy_path)
 
     def smart_enter():
         pane = CPane(window)
@@ -604,7 +611,7 @@ def configure(window: MainWindow):
         else:
             window.command_Execute(None)
 
-    window.keymap["L"] = bind(smart_enter)
+    KEYBINDER.bind("L", smart_enter)
 
     class Selector:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
@@ -709,16 +716,16 @@ def configure(window: MainWindow):
 
     SELECTOR = Selector(window)
 
-    window.keymap["C-A"] = bind(SELECTOR.allItems)
-    window.keymap["C-U"] = bind(SELECTOR.clearAll)
-    window.keymap["A-F"] = bind(SELECTOR.allFiles)
-    window.keymap["A-S-F"] = bind(SELECTOR.clearDirs)
-    window.keymap["A-D"] = bind(SELECTOR.allDirs)
-    window.keymap["A-S-D"] = bind(SELECTOR.clearFiles)
-    window.keymap["S-Home"] = bind(SELECTOR.toTop)
-    window.keymap["S-A"] = bind(SELECTOR.toTop)
-    window.keymap["S-End"] = bind(SELECTOR.toEnd)
-    window.keymap["S-E"] = bind(SELECTOR.toEnd)
+    KEYBINDER.bind("C-A", SELECTOR.allItems)
+    KEYBINDER.bind("C-U", SELECTOR.clearAll)
+    KEYBINDER.bind("A-F", SELECTOR.allFiles)
+    KEYBINDER.bind("A-S-F", SELECTOR.clearDirs)
+    KEYBINDER.bind("A-D", SELECTOR.allDirs)
+    KEYBINDER.bind("A-S-D", SELECTOR.clearFiles)
+    KEYBINDER.bind("S-Home", SELECTOR.toTop)
+    KEYBINDER.bind("S-A", SELECTOR.toTop)
+    KEYBINDER.bind("S-End", SELECTOR.toEnd)
+    KEYBINDER.bind("S-E", SELECTOR.toEnd)
 
     class SelectionBlock:
         def __init__(self, window: MainWindow) -> None:
@@ -807,8 +814,8 @@ def configure(window: MainWindow):
             pane.scrollToCursor()
 
     SELECTION_BLOCK = SelectionBlock(window)
-    window.keymap["A-J"] = bind(SELECTION_BLOCK.jumpDown)
-    window.keymap["A-K"] = bind(SELECTION_BLOCK.jumpUp)
+    KEYBINDER.bind("A-J", SELECTION_BLOCK.jumpDown)
+    KEYBINDER.bind("A-K", SELECTION_BLOCK.jumpUp)
 
     def duplicate_pane():
         pane = CPane(window, True)
@@ -817,7 +824,7 @@ def configure(window: MainWindow):
         pane.focusOther()
         other.focus(pane.cursor)
 
-    window.keymap["W"] = bind(duplicate_pane)
+    KEYBINDER.bind("W", duplicate_pane)
 
     def open_to_other():
         active_pane = CPane(window, True)
@@ -825,7 +832,7 @@ def configure(window: MainWindow):
         inactive_pane.openPath(active_pane.focusItemPath)
         active_pane.focusOther()
 
-    window.keymap["S-L"] = bind(open_to_other)
+    KEYBINDER.bind("S-L", open_to_other)
 
     def open_parent_to_other():
         active_pane = CPane(window, True)
@@ -836,7 +843,7 @@ def configure(window: MainWindow):
         active_pane.focusOther()
         inactive_pane.focusByName(current_name)
 
-    window.keymap["U"] = bind(open_parent_to_other)
+    KEYBINDER.bind("U", open_parent_to_other)
 
     def on_vscode():
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
@@ -844,7 +851,7 @@ def configure(window: MainWindow):
             pane = CPane(window)
             pyauto.shellExecute(None, str(vscode_path), pane.currentPath, "")
 
-    window.keymap["A-V"] = bind(on_vscode)
+    KEYBINDER.bind("A-V", on_vscode)
 
     def duplicate_with_name():
         pane = CPane(window)
@@ -873,7 +880,7 @@ def configure(window: MainWindow):
             except Exception as e:
                 print(e)
 
-    window.keymap["S-D"] = bind(duplicate_with_name)
+    KEYBINDER.bind("S-D", duplicate_with_name)
 
     class TextFileMaker:
         def __init__(self, window: MainWindow) -> None:
@@ -904,9 +911,9 @@ def configure(window: MainWindow):
 
     TEXT_FILE_MAKER = TextFileMaker(window)
 
-    window.keymap["T"] = bind(TEXT_FILE_MAKER.invoke("txt"))
-    window.keymap["C-T"] = bind(TEXT_FILE_MAKER.invoke("md"))
-    window.keymap["S-T"] = bind(TEXT_FILE_MAKER.invoke(""))
+    KEYBINDER.bind("T", TEXT_FILE_MAKER.invoke("txt"))
+    KEYBINDER.bind("C-T", TEXT_FILE_MAKER.invoke("md"))
+    KEYBINDER.bind("S-T", TEXT_FILE_MAKER.invoke(""))
 
     def to_obsolete_dir():
         pane = CPane(window)
@@ -933,7 +940,7 @@ def configure(window: MainWindow):
         )
         child_lister.destroy()
 
-    window.keymap["A-O"] = bind(to_obsolete_dir)
+    KEYBINDER.bind("A-O", to_obsolete_dir)
 
     def reload_config():
         window.configure()
@@ -944,14 +951,14 @@ def configure(window: MainWindow):
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
 
-    window.keymap["C-R"] = bind(reload_config)
-    window.keymap["F5"] = bind(reload_config)
+    KEYBINDER.bind("C-R", reload_config)
+    KEYBINDER.bind("F5", reload_config)
 
     def open_doc():
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
         pyauto.shellExecute(None, help_path, "", "")
 
-    window.keymap["A-H"] = bind(open_doc)
+    KEYBINDER.bind("A-H", open_doc)
 
     def edit_config():
         dir_path = Path(USER_PROFILE, r"Sync\develop\repo\cfiler")
@@ -967,7 +974,7 @@ def configure(window: MainWindow):
             pyauto.shellExecute(None, USER_PROFILE, "", "")
             print("cannot find repo dir. open user profile instead.")
 
-    window.keymap["C-E"] = bind(edit_config)
+    KEYBINDER.bind("C-E", edit_config)
 
     def compare_file_hash():
         active_pane = CPane(window, True)
@@ -1081,7 +1088,7 @@ def configure(window: MainWindow):
 
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
-            window.launcher.command_list += [(name, bind(func))]
+            window.launcher.command_list += [(name, Keybinder.wrap(func))]
 
     update_command_list(
         {
