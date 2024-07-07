@@ -342,17 +342,20 @@ def configure(window: MainWindow):
         def focusItemPath(self) -> str:
             return self.pathByIndex(self.cursor)
 
+        def finishSelect(self) -> None:
+            self.repaint(PO.FocusedItems | PO.FocusedHeader)
+
         def toggleSelect(self, i: int) -> None:
             self.fileList.selectItem(i, None)
-            self.repaint(PO.FocusedItems | PO.FocusedHeader)
+            self.finishSelect()
 
         def select(self, i: int) -> None:
             self.fileList.selectItem(i, True)
-            self.repaint(PO.FocusedItems | PO.FocusedHeader)
+            self.finishSelect()
 
         def unSelect(self, i: int) -> None:
             self.fileList.selectItem(i, False)
-            self.repaint(PO.FocusedItems | PO.FocusedHeader)
+            self.finishSelect()
 
         @property
         def selectionTop(self) -> int:
