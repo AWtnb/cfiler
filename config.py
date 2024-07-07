@@ -1004,10 +1004,9 @@ def configure(window: MainWindow):
             name = item.getName()
             digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
             if digest in table:
-                print("'{}':".format(name))
                 active_pane.select(active_pane.byName(name))
                 for n in table[digest]:
-                    print("  === '{}'".format(n))
+                    print("'{}' === '{}'".format(name, n))
                     inactive_pane.select(inactive_pane.byName(n))
         inactive_pane.repaint()
         print("DONE\n")
