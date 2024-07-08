@@ -514,31 +514,39 @@ def configure(window: MainWindow):
 
     KEYBINDER.bind("A-N", zymd)
 
-    def zyl():
-        exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
-        src_path = Path(USER_PROFILE, r"Personal\launch.yaml")
-        if exe_path.exists() and src_path.exists():
-            cmd = [
-                str(exe_path),
-                "-src={}".format(src_path),
-                "-all=False",
-                "-exclude=_obsolete,node_modules",
-                "-stdout=True",
-            ]
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE)
-            result = proc.stdout.decode("utf-8").strip()
-            if proc.returncode != 0:
-                if result:
-                    print(result)
-                return
-            pane = CPane(window)
-            if Path(result).is_dir():
-                pane.openPath(result)
-            else:
-                runExe(result)
-                pane.appendHistory(result)
+    class zyl:
+        def __init__(self) -> None:
+            self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
+            self._src_path = Path(USER_PROFILE, r"Personal\launch.yaml")
 
-    KEYBINDER.bind("Y", zyl)
+        def check(self) -> bool:
+            return self._exe_path.exists() and self._src_path.exists()
+
+        def invoke(self, active_pane: bool = True) -> Callable:
+            def _func() -> None:
+                if not self.check():
+                    return
+                pane = CPane(window, active_pane)
+                cmd = [
+                    str(self._exe_path),
+                    "-src={}".format(self._src_path),
+                    "-all=False",
+                    "-exclude=_obsolete,node_modules",
+                    "-stdout=True",
+                ]
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+                result = proc.stdout.decode("utf-8").strip()
+                if proc.returncode != 0:
+                    if result:
+                        print(result)
+                    return
+                pane.openPath(result)
+                if not active_pane:
+                    pane.focusOther()
+            return _func
+
+    KEYBINDER.bind("Y", zyl().invoke(True))
+    KEYBINDER.bind("S-Y", zyl().invoke(False))
 
     class zyc:
         def __init__(self, search_all: bool) -> None:
