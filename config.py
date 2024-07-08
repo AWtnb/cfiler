@@ -921,7 +921,7 @@ def configure(window: MainWindow):
             pane = CPane(window)
             runExe(str(vscode_path), pane.currentPath)
 
-    KEYBINDER.bind("A-V", on_vscode)
+    KEYBINDER.bind("V", on_vscode)
 
     def duplicate_with_name():
         pane = CPane(window)
