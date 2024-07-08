@@ -86,7 +86,6 @@ def configure(window: MainWindow):
 
     reset_default_keys(
         [
-            "Q",
             "Period",
             "S-Period",
         ]
@@ -98,6 +97,7 @@ def configure(window: MainWindow):
 
     apply_cfiler_command(
         {
+            "Q": window.command_CancelTask,
             "C-Q": window.command_Quit,
             "A-F4": window.command_Quit,
             "C-Comma": window.command_ConfigMenu,
@@ -887,11 +887,12 @@ def configure(window: MainWindow):
 
     class TextFileMaker:
         def __init__(self, window: MainWindow) -> None:
-            self._pane = CPane(window)
+            self._window = window
 
         def invoke(self, extension: str = "") -> None:
             def _func() -> None:
-                if not hasattr(self._pane.fileList.getLister(), "touch"):
+                pane = CPane(self._window)
+                if not hasattr(pane.fileList.getLister(), "touch"):
                     return
 
                 prompt = "NewFileName"
@@ -905,10 +906,10 @@ def configure(window: MainWindow):
                     return
                 if 0 < len(extension):
                     filename = filename + "." + extension
-                if Path(self._pane.currentPath, filename).exists():
+                if Path(pane.currentPath, filename).exists():
                     print("'{}' already exists.".format(filename))
                     return
-                self._pane.touch(filename)
+                pane.touch(filename)
 
             return _func
 
