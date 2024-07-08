@@ -45,6 +45,8 @@ from cfiler_filelist import FileList, item_Base, lister_Default, item_Empty
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow
 
+from cfiler_misc import candidate_Filename
+
 
 class PaintOption:
     LeftLocation = PAINT_LEFT_LOCATION
@@ -137,7 +139,6 @@ def configure(window: MainWindow):
             "H": window.command_GotoParentDir,
             "A-C": window.command_ContextMenu,
             "A-S-C": window.command_ContextMenuDir,
-            "F": window.command_JumpInput,
         }
     )
 
@@ -584,6 +585,35 @@ def configure(window: MainWindow):
     KEYBINDER.bind("S-F", zyc(False).invoke(0))
     KEYBINDER.bind("C-S-F", zyc(True).invoke(0))
 
+    def smart_jump_input():
+        pane = CPane(window)
+        result, mod = window.commandLine(
+            title="JumpInputSmart",
+            auto_complete=True,
+            autofix_list=["\\/", "."],
+            candidate_handler=candidate_Filename(pane.fileList.getLocation()),
+            return_modkey=True,
+        )
+        if result == None:
+            return
+        result = result.strip()
+        if len(result) < 1:
+            return
+        open_path = Path(pane.currentPath, result)
+        if not open_path.exists():
+            print("invalid-path!")
+            return
+        if open_path.is_dir():
+            if mod == ckit.MODKEY_SHIFT:
+                CPane(window, False).openPath(str(open_path))
+            else:
+                pane.openName(result)
+        else:
+            runExe(open_path)
+            pane.appendHistory(str(open_path))
+
+    KEYBINDER.bind("F", smart_jump_input)
+
     def smart_copy_name():
         pane = CPane(window)
         names = []
@@ -889,7 +919,7 @@ def configure(window: MainWindow):
         pane = CPane(window)
         focus_path = Path(pane.focusItemPath)
         result = window.commandLine(
-            "NewName",
+            title="NewName",
             text=focus_path.name,
             selection=[0, len(focus_path.stem)],
         )
