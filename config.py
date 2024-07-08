@@ -74,6 +74,22 @@ USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
 
 
+def runExe(path: str, *args) -> None:
+    if type(path) is not str:
+        path = str(path)
+    if not Path(path).exists():
+        print("invalid path: '{}'".format(path))
+        return
+    params = []
+    for arg in args:
+        if len(arg.strip()):
+            if " " in arg:
+                params.append('"{}"'.format(arg))
+            else:
+                params.append(arg)
+    pyauto.shellExecute(None, path, " ".join(params), "")
+
+
 def configure(window: MainWindow):
 
     def reset_default_keys(keys: list) -> None:
@@ -492,21 +508,6 @@ def configure(window: MainWindow):
             pane.mkdir(result)
 
     KEYBINDER.bind("A-N", zymd)
-
-    def runExe(path: str, *args) -> None:
-        if type(path) is not str:
-            path = str(path)
-        if not Path(path).exists():
-            print("invalid path: '{}'".format(path))
-            return
-        params = []
-        for arg in args:
-            if len(arg.strip()):
-                if " " in arg:
-                    params.append('"{}"'.format(arg))
-                else:
-                    params.append(arg)
-        pyauto.shellExecute(None, path, " ".join(params), "")
 
     def zyl():
         exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
@@ -970,8 +971,6 @@ def configure(window: MainWindow):
     def reload_config():
         window.configure()
         window.command_MoveSeparatorCenter(None)
-        Selector(window, True).clearAll()
-        Selector(window, False).clearAll()
         LeftPane(window).activate()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print("{} reloaded config.py\n".format(ts))
@@ -1131,6 +1130,13 @@ def configure(window: MainWindow):
 def configure_TextViewer(window: ckit.TextWindow):
     window.keymap["J"] = window.command_ScrollDown
     window.keymap["K"] = window.command_ScrollUp
+
+    def open_original(_):
+        path = window.item.getFullpath()
+        window.command_Close(None)
+        runExe(path)
+
+    window.keymap["O"] = open_original
 
 
 def configure_ListWindow(window: ckit.TextWindow):
