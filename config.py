@@ -493,6 +493,21 @@ def configure(window: MainWindow):
 
     KEYBINDER.bind("A-N", zymd)
 
+    def runExe(path: str, *args) -> None:
+        if type(path) is not str:
+            path = str(path)
+        if not Path(path).exists():
+            print("invalid path: '{}'".format(path))
+            return
+        params = []
+        for arg in args:
+            if len(arg.strip()):
+                if " " in arg:
+                    params.append('"{}"'.format(arg))
+                else:
+                    params.append(arg)
+        pyauto.shellExecute(None, path, " ".join(params), "")
+
     def zyl():
         exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
         src_path = Path(USER_PROFILE, r"Personal\launch.yaml")
@@ -514,7 +529,7 @@ def configure(window: MainWindow):
             if Path(result).is_dir():
                 pane.openPath(result)
             else:
-                pyauto.shellExecute(None, result, "", "")
+                runExe(result)
                 pane.appendHistory(result)
 
     KEYBINDER.bind("Y", zyl)
@@ -552,7 +567,7 @@ def configure(window: MainWindow):
                         pane = CPane(window)
                         pane.openPath(result)
                     else:
-                        pyauto.shellExecute(None, result, "", "")
+                        runExe(result)
                         pane.appendHistory(result)
 
             return _func
@@ -829,6 +844,12 @@ def configure(window: MainWindow):
 
     KEYBINDER.bind("W", duplicate_pane)
 
+    def open_on_explorer():
+        pane = CPane(window, True)
+        runExe(pane.currentPath)
+
+    KEYBINDER.bind("C-S-E", open_on_explorer)
+
     def open_to_other():
         active_pane = CPane(window, True)
         inactive_pane = CPane(window, False)
@@ -852,7 +873,7 @@ def configure(window: MainWindow):
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
         if vscode_path.exists():
             pane = CPane(window)
-            pyauto.shellExecute(None, str(vscode_path), pane.currentPath, "")
+            runExe(str(vscode_path), pane.currentPath)
 
     KEYBINDER.bind("A-V", on_vscode)
 
@@ -960,7 +981,7 @@ def configure(window: MainWindow):
 
     def open_doc():
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
-        pyauto.shellExecute(None, help_path, "", "")
+        runExe(help_path)
 
     KEYBINDER.bind("A-H", open_doc)
 
@@ -971,11 +992,11 @@ def configure(window: MainWindow):
             vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
             if vscode_path.exists():
                 vp = str(vscode_path)
-                pyauto.shellExecute(None, vp, dp, "")
+                runExe(vp, dp)
             else:
-                pyauto.shellExecute(None, dp, "", "")
+                runExe(dp)
         else:
-            pyauto.shellExecute(None, USER_PROFILE, "", "")
+            runExe(USER_PROFILE)
             print("cannot find repo dir. open user profile instead.")
 
     KEYBINDER.bind("C-E", edit_config)
@@ -1043,7 +1064,7 @@ def configure(window: MainWindow):
             return
 
         param = '"{}" "{}"'.format(left_path, right_path)
-        pyauto.shellExecute(None, str(exe_path), param, "")
+        runExe(exe_path, param)
 
     def select_name_common():
         inactive = CPane(window, False)
