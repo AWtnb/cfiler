@@ -40,7 +40,7 @@ from cfiler_mainwindow import (
 )
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
-from cfiler_filelist import FileList, item_Base, lister_Default
+from cfiler_filelist import FileList, item_Base, lister_Default, item_Empty
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow
@@ -318,6 +318,10 @@ def configure(window: MainWindow):
 
         def byIndex(self, i: int) -> item_Base:
             return self.fileList.getItem(i)
+
+        @property
+        def isBlank(self) -> bool:
+            return isinstance(self.byIndex(0), item_Empty)
 
         @property
         def names(self) -> list:
@@ -625,6 +629,9 @@ def configure(window: MainWindow):
 
     def smart_enter():
         pane = CPane(window)
+        if pane.isBlank:
+            pane.focusOther()
+            return
         if pane.focusedItem.isdir():
             window.command_Enter(None)
         else:
