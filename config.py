@@ -242,6 +242,10 @@ def configure(window: MainWindow):
             else:
                 self._pane = self._window.inactivePane()
 
+        @property
+        def entity(self):
+            return self._pane
+
         def repaint(self, option: PaintOption = PO.All) -> None:
             self._window.paint(option)
 
@@ -1003,7 +1007,7 @@ def configure(window: MainWindow):
 
         child_lister = pane.fileList.getLister().getChild(dest_name)
         window._copyMoveCommon(
-            pane,
+            pane.entity,
             pane.fileList.getLister(),
             child_lister,
             items,
