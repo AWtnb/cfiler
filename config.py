@@ -337,6 +337,16 @@ def configure(window: MainWindow):
             return names
 
         @property
+        def extensions(self) -> list:
+            exts = []
+            for i in range(self.count):
+                path = Path(self.pathByIndex(i))
+                ext = path.suffix.replace(".", "")
+                if path.is_file() and ext not in exts:
+                    exts.append(ext)
+            return exts
+
+        @property
         def selectedItems(self) -> list:
             items = []
             for i in range(self.count):
@@ -1185,7 +1195,20 @@ def configure(window: MainWindow):
             SELECTOR.stemContains(result)
 
     def select_byext():
-        result = window.commandLine("Extension")
+        pane = CPane(window)
+        exts = pane.extensions
+
+        def _listup_extensions(update_info) -> tuple:
+            found = []
+            cursor_offset = 0
+            for e in exts:
+                if e.startswith(update_info.text):
+                    found.append(e)
+            return found, cursor_offset
+
+        result = window.commandLine(
+            "Extension", auto_complete=True, candidate_handler=_listup_extensions
+        )
         if result:
             if not result.startswith("."):
                 result = "." + result
