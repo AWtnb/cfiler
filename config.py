@@ -543,6 +543,7 @@ def configure(window: MainWindow):
                 pane.openPath(result)
                 if not active_pane:
                     pane.focusOther()
+
             return _func
 
     KEYBINDER.bind("Y", zyl().invoke(True))
@@ -1056,29 +1057,61 @@ def configure(window: MainWindow):
             print("no files to compare in inactive pane.")
             return
 
-        table = {}
-        for item in inactive_pane.files:
-            name = item.getName()
-            digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
-            table[digest] = table.get(digest, []) + [name]
-
         print("==================")
         print(" compare md5 hash ")
         print("==================")
 
-        Selector(window, True).clearAll()
-        Selector(window, False).clearAll()
+        table = {}
+        window.setProgressValue(None)
 
-        for item in active_pane.files:
-            name = item.getName()
-            digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
-            if digest in table:
-                active_pane.select(active_pane.byName(name))
-                for n in table[digest]:
-                    print("'{}' === '{}'".format(name, n))
-                    inactive_pane.select(inactive_pane.byName(n))
-        inactive_pane.repaint()
-        print("DONE\n")
+        def _storeInactivePaneHash(job_item: ckit.JobItem) -> None:
+            for item in inactive_pane.files:
+                if job_item.isCanceled():
+                    break
+                if job_item.waitPaused():
+                    window.setProgressValue(None)
+                name = str(
+                    Path(item.getFullpath()).relative_to(inactive_pane.currentPath)
+                )
+                digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
+                table[digest] = table.get(digest, []) + [name]
+
+        def _clearSelection(job_item: ckit.JobItem) -> None:
+            window.clearProgress()
+            if job_item.isCanceled():
+                return
+            if job_item.waitPaused():
+                window.setProgressValue(None)
+            Selector(window, True).clearAll()
+            Selector(window, False).clearAll()
+
+        def _compareHash(job_item: ckit.JobItem) -> None:
+            window.setProgressValue(None)
+            for item in active_pane.files:
+                if job_item.isCanceled():
+                    break
+                if job_item.waitPaused():
+                    window.setProgressValue(None)
+                name = item.getName()
+                digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
+                if digest in table:
+                    active_pane.select(active_pane.byName(name))
+                    for n in table[digest]:
+                        print("'{}' === '{}'".format(name, n))
+
+        def _finish(job_item: ckit.JobItem) -> None:
+            window.clearProgress()
+            if job_item.isCanceled():
+                print("Canceled.\n")
+                return
+            print("==================")
+            print("     FINISHED     ")
+            print("==================")
+
+        job_prepare = ckit.JobItem(_storeInactivePaneHash, _clearSelection)
+        job_compare = ckit.JobItem(_compareHash, _finish)
+        window.taskEnqueue(job_prepare, create_new_queue=False)
+        window.taskEnqueue(job_compare, create_new_queue=False)
 
     def diffinity():
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
