@@ -896,6 +896,18 @@ def configure(window: MainWindow):
     KEYBINDER.bind("A-J", SELECTION_BLOCK.jumpDown)
     KEYBINDER.bind("A-K", SELECTION_BLOCK.jumpUp)
 
+    def focus_bottom_of_dir() -> None:
+        pane = CPane(window)
+        idx = -1
+        for i in range(pane.count):
+            if pane.byIndex(i).isdir():
+                idx = i
+        if idx < 0:
+            return
+        pane.focus(idx)
+
+    KEYBINDER.bind("A-E", focus_bottom_of_dir)
+
     def duplicate_pane():
         pane = CPane(window, True)
         other = CPane(window, False)
