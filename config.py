@@ -142,6 +142,10 @@ def configure(window: MainWindow):
             "A-C": window.command_ContextMenu,
             "A-S-C": window.command_ContextMenuDir,
             "C-N": window.command_DuplicateCfiler,
+            "C-Up": window.command.CursorUpSelectedOrBookmark,
+            "C-K": window.command.CursorUpSelectedOrBookmark,
+            "C-Down": window.command.CursorDownSelectedOrBookmark,
+            "C-J": window.command.CursorDownSelectedOrBookmark,
         }
     )
 
@@ -1325,5 +1329,7 @@ def configure_TextViewer(window: ckit.TextWindow):
 def configure_ListWindow(window: ckit.TextWindow):
     window.keymap["J"] = window.command_CursorDown
     window.keymap["K"] = window.command_CursorUp
+    window.keymap["C-J"] = window.command_CursorDownMark
+    window.keymap["C-K"] = window.command_CursorUpMark
     for mod in ["", "S-"]:
         window.keymap[mod + "Space"] = window.command_Enter
