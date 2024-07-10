@@ -233,6 +233,7 @@ def configure(window: MainWindow):
     )
 
     KEYBINDER.bind("SemiColon", JUMP_LIST.jump)
+    KEYBINDER.bind("C-Space", JUMP_LIST.jump)
 
     class CPane:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
