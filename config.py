@@ -139,6 +139,7 @@ def configure(window: MainWindow):
             "H": window.command_GotoParentDir,
             "A-C": window.command_ContextMenu,
             "A-S-C": window.command_ContextMenuDir,
+            "C-N": window.command_DuplicateCfiler,
         }
     )
 
