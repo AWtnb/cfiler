@@ -166,6 +166,10 @@ def configure(window: MainWindow):
         def bind(self, key: str, func: Callable) -> None:
             self._window.keymap[key] = self.wrap(func)
 
+        def bindmulti(self, mapping: dict) -> None:
+            for key, func in mapping.items():
+                self._window.keymap[key] = self.wrap(func)
+
     KEYBINDER = Keybinder(window)
 
     class JumpList:
@@ -214,10 +218,9 @@ def configure(window: MainWindow):
                 return
 
             dest = wnd.jump_list[result][1]
-            modified = mod == ckit.MODKEY_SHIFT
             active = CPane(wnd, True)
             other = CPane(wnd, False)
-            if modified:
+            if mod == ckit.MODKEY_SHIFT:
                 other.openPath(dest)
                 active.focusOther()
             else:
@@ -235,7 +238,6 @@ def configure(window: MainWindow):
         }
     )
 
-    KEYBINDER.bind("SemiColon", JUMP_LIST.jump)
     KEYBINDER.bind("C-Space", JUMP_LIST.jump)
 
     class CPane:
@@ -506,7 +508,9 @@ def configure(window: MainWindow):
             mode = "c"
             action = "COPY"
 
-        result = popMessageBox(window, MessageBox.TYPE_YESNO, "{} from inactive pane".format(action), "OK?")
+        result = popMessageBox(
+            window, MessageBox.TYPE_YESNO, "{} from inactive pane".format(action), "OK?"
+        )
         if result == MessageBox.RESULT_YES:
             window._copyMoveCommon(
                 inactive_pane.entity,
@@ -646,12 +650,16 @@ def configure(window: MainWindow):
 
             return _func
 
-    KEYBINDER.bind("Z", zyc(False).invoke(-1))
-    KEYBINDER.bind("A-Z", zyc(True).invoke(-1))
-    KEYBINDER.bind("S-Z", zyc(False).invoke(1))
-    KEYBINDER.bind("A-S-Z", zyc(True).invoke(1))
-    KEYBINDER.bind("S-F", zyc(False).invoke(0))
-    KEYBINDER.bind("C-S-F", zyc(True).invoke(0))
+    KEYBINDER.bindmulti(
+        {
+            "Z": zyc(False).invoke(-1),
+            "A-Z": zyc(True).invoke(-1),
+            "S-Z": zyc(False).invoke(1),
+            "A-S-Z": zyc(True).invoke(1),
+            "S-F": zyc(False).invoke(0),
+            "C-S-F": zyc(True).invoke(0),
+        }
+    )
 
     def smart_jump_input():
         pane = CPane(window)
@@ -790,41 +798,45 @@ def configure(window: MainWindow):
                 if not pane.byIndex(i).isdir():
                     pane.unSelect(i)
 
-        def byFunction(self, func: Callable) -> None:
+        def byFunction(self, func: Callable, unselect: bool = False) -> None:
             pane = self.pane
-            self.clearAll()
+            if not unselect:
+                self.clearAll()
             idx = []
             for i in range(pane.count):
                 path = pane.pathByIndex(i)
                 if func(path):
-                    pane.select(i)
-                    idx.append(i)
-            if 0 < len(idx):
+                    if unselect:
+                        pane.unSelect(i)
+                    else:
+                        pane.select(i)
+                        idx.append(i)
+            if not unselect and 0 < len(idx):
                 pane.focus(idx[0])
 
-        def byExtension(self, s: str) -> None:
-            def selector(path: str) -> None:
+        def byExtension(self, s: str, unselect: bool = False) -> None:
+            def _checkPath(path: str) -> bool:
                 return Path(path).suffix == s
 
-            self.byFunction(selector)
+            self.byFunction(_checkPath, unselect)
 
-        def stemContains(self, s: str) -> None:
-            def selector(path: str) -> None:
+        def stemContains(self, s: str, unselect: bool = False) -> None:
+            def _checkPath(path: str) -> bool:
                 return s in Path(path).stem
 
-            self.byFunction(selector)
+            self.byFunction(_checkPath, unselect)
 
-        def stemStartsWith(self, s: str) -> None:
-            def selector(path: str) -> None:
+        def stemStartsWith(self, s: str, unselect: bool = False) -> None:
+            def _checkPath(path: str) -> bool:
                 return Path(path).stem.startswith(s)
 
-            self.byFunction(selector)
+            self.byFunction(_checkPath, unselect)
 
-        def stemEndsWith(self, s: str) -> None:
-            def selector(path: str) -> None:
+        def stemEndsWith(self, s: str, unselect: bool = False) -> None:
+            def _checkPath(path: str) -> bool:
                 return Path(path).stem.endswith(s)
 
-            self.byFunction(selector)
+            self.byFunction(_checkPath, unselect)
 
         def toTop(self) -> None:
             pane = self.pane
@@ -840,16 +852,20 @@ def configure(window: MainWindow):
 
     SELECTOR = Selector(window)
 
-    KEYBINDER.bind("C-A", SELECTOR.allItems)
-    KEYBINDER.bind("C-U", SELECTOR.clearAll)
-    KEYBINDER.bind("A-F", SELECTOR.allFiles)
-    KEYBINDER.bind("A-S-F", SELECTOR.clearDirs)
-    KEYBINDER.bind("A-D", SELECTOR.allDirs)
-    KEYBINDER.bind("A-S-D", SELECTOR.clearFiles)
-    KEYBINDER.bind("S-Home", SELECTOR.toTop)
-    KEYBINDER.bind("S-A", SELECTOR.toTop)
-    KEYBINDER.bind("S-End", SELECTOR.toEnd)
-    KEYBINDER.bind("S-E", SELECTOR.toEnd)
+    KEYBINDER.bindmulti(
+        {
+            "C-A": SELECTOR.allItems,
+            "C-U": SELECTOR.clearAll,
+            "A-F": SELECTOR.allFiles,
+            "A-S-F": SELECTOR.clearDirs,
+            "A-D": SELECTOR.allDirs,
+            "A-S-D": SELECTOR.clearFiles,
+            "S-Home": SELECTOR.toTop,
+            "S-A": SELECTOR.toTop,
+            "S-End": SELECTOR.toEnd,
+            "S-E": SELECTOR.toEnd,
+        }
+    )
 
     class SelectionBlock:
         def __init__(self, window: MainWindow) -> None:
@@ -1237,19 +1253,19 @@ def configure(window: MainWindow):
                 pane.select(i)
 
     def select_stem_startswith():
-        result = window.commandLine("StartsWith")
+        result, mod = window.commandLine("StartsWith", return_modkey=True)
         if result:
-            SELECTOR.stemStartsWith(result)
+            SELECTOR.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
     def select_stem_endsswith():
-        result = window.commandLine("EndsWith")
+        result, mod = window.commandLine("EndsWith", return_modkey=True)
         if result:
-            SELECTOR.stemEndsWith(result)
+            SELECTOR.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
     def select_stem_contains():
-        result = window.commandLine("Contains")
+        result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
-            SELECTOR.stemContains(result)
+            SELECTOR.stemContains(result, mod == ckit.MODKEY_SHIFT)
 
     def select_byext():
         pane = CPane(window)
@@ -1263,13 +1279,16 @@ def configure(window: MainWindow):
                     found.append(e)
             return found, cursor_offset
 
-        result = window.commandLine(
-            "Extension", auto_complete=True, candidate_handler=_listup_extensions
+        result, mod = window.commandLine(
+            "Extension",
+            auto_complete=True,
+            candidate_handler=_listup_extensions,
+            return_modkey=True,
         )
         if result:
             if not result.startswith("."):
                 result = "." + result
-            SELECTOR.byExtension(result)
+            SELECTOR.byExtension(result, mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("S-X", select_byext)
 
