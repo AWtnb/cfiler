@@ -306,6 +306,10 @@ def configure(window: MainWindow):
             return self._pane.file_list
 
         @property
+        def lister(self):
+            return self.fileList.getLister()
+
+        @property
         def hasSelection(self) -> bool:
             return self.fileList.selected()
 
@@ -434,26 +438,26 @@ def configure(window: MainWindow):
             return True
 
         def touch(self, name: str) -> None:
-            if not hasattr(self.fileList.getLister(), "touch"):
+            if not hasattr(self.lister, "touch"):
                 print("cannot make file here.")
                 return
             dp = Path(self.currentPath, name)
             if dp.exists() and dp.is_file():
                 print("file '{}' already exists.".format(name))
                 return
-            self._window.subThreadCall(self.fileList.getLister().touch, (name,))
+            self._window.subThreadCall(self.lister.touch, (name,))
             self.refresh()
             self.focus(self._window.cursorFromName(self.fileList, name))
 
         def mkdir(self, name: str) -> None:
-            if not hasattr(self.fileList.getLister(), "mkdir"):
+            if not hasattr(self.lister, "mkdir"):
                 print("cannot make directory here.")
                 return
             dp = Path(self.currentPath, name)
             if dp.exists() and dp.is_dir():
                 print("directory '{}' already exists.".format(name))
                 return
-            self._window.subThreadCall(self.fileList.getLister().mkdir, (name, None))
+            self._window.subThreadCall(self.lister.mkdir, (name, None))
             self.refresh()
             self.focus(self._window.cursorFromName(self.fileList, name))
 
@@ -475,7 +479,35 @@ def configure(window: MainWindow):
                 self._window.focus = MainWindow.FOCUS_RIGHT
             self.repaint(PO.Left | PO.Right)
 
-    def quick_move():
+    def fetch_items(delete_origin: bool = False):
+        active_pane = CPane(window, True)
+        inactive_pane = CPane(window, False)
+
+        if not hasattr(active_pane.lister, "getCopyDst"):
+            return
+
+        items = inactive_pane.selectedItems
+
+        if len(items) < 1:
+            return
+
+        if delete_origin:
+            mode = "m"
+        else:
+            mode = "c"
+        window._copyMoveCommon(
+            inactive_pane.entity,
+            inactive_pane.lister,
+            active_pane.lister,
+            items,
+            mode,
+            inactive_pane.fileList.getFilter(),
+        )
+
+    KEYBINDER.bind("S-C", lambda: fetch_items(False))
+    KEYBINDER.bind("S-X", lambda: fetch_items(True))
+
+    def quick_move() -> None:
         pane = CPane(window)
         if not pane.fileList.selected():
             window.command_Select(None)
@@ -483,7 +515,7 @@ def configure(window: MainWindow):
 
     KEYBINDER.bind("C-X", quick_move)
 
-    def quick_copy():
+    def quick_copy() -> None:
         pane = CPane(window)
         if not pane.fileList.selected():
             window.command_Select(None)
@@ -1027,10 +1059,10 @@ def configure(window: MainWindow):
         dest_name = "_obsolete"
         pane.mkdir(dest_name)
 
-        child_lister = pane.fileList.getLister().getChild(dest_name)
+        child_lister = pane.lister.getChild(dest_name)
         window._copyMoveCommon(
             pane.entity,
-            pane.fileList.getLister(),
+            pane.lister,
             child_lister,
             items,
             "m",
@@ -1226,7 +1258,7 @@ def configure(window: MainWindow):
                 result = "." + result
             SELECTOR.byExtension(result)
 
-    KEYBINDER.bind("S-X", select_byext)
+    KEYBINDER.bind("X", select_byext)
 
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
