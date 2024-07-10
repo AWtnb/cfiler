@@ -1258,7 +1258,7 @@ def configure(window: MainWindow):
                 result = "." + result
             SELECTOR.byExtension(result)
 
-    KEYBINDER.bind("X", select_byext)
+    KEYBINDER.bind("S-X", select_byext)
 
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
