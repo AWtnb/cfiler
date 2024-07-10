@@ -45,6 +45,8 @@ from cfiler_filelist import FileList, item_Base, lister_Default, item_Empty
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow
 
+from cfiler_msgbox import popMessageBox, MessageBox
+
 from cfiler_misc import candidate_Filename
 
 
@@ -491,20 +493,29 @@ def configure(window: MainWindow):
         items = inactive_pane.selectedItems
 
         if len(items) < 1:
-            return
+            if 1 < inactive_pane.count or inactive_pane.isBlank:
+                return
+            inactive_pane.select(0)
+            inactive_pane.repaint()
+            items = [inactive_pane.byIndex(0)]
 
         if delete_origin:
             mode = "m"
+            action = "MOVE"
         else:
             mode = "c"
-        window._copyMoveCommon(
-            inactive_pane.entity,
-            inactive_pane.lister,
-            active_pane.lister,
-            items,
-            mode,
-            inactive_pane.fileList.getFilter(),
-        )
+            action = "COPY"
+
+        result = popMessageBox(window, MessageBox.TYPE_YESNO, "{} from inactive pane".format(action), "OK?")
+        if result == MessageBox.RESULT_YES:
+            window._copyMoveCommon(
+                inactive_pane.entity,
+                inactive_pane.lister,
+                active_pane.lister,
+                items,
+                mode,
+                inactive_pane.fileList.getFilter(),
+            )
 
     KEYBINDER.bind("S-C", lambda: fetch_items(False))
     KEYBINDER.bind("S-X", lambda: fetch_items(True))
