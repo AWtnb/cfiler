@@ -287,7 +287,7 @@ def configure(window: MainWindow):
 
         def appendHistory(self, path: str) -> History:
             p = Path(path)
-            lister = self._pane.file_list.getLister()
+            lister = self.lister
             visible = isinstance(lister, lister_Default)
             return self._pane.history.append(str(p.parent), p.name, visible, False)
 
