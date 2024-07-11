@@ -125,6 +125,7 @@ def configure(window: MainWindow):
             "C-L": window.command_Execute,
             "N": window.command_Rename,
             "A-C-H": window.command_JumpHistory,
+            "Back": window.command_JumpHistory,
             "C-D": window.command_Delete,
             "P": window.command_FocusOther,
             "C-L": window.command_FocusOther,
@@ -543,15 +544,6 @@ def configure(window: MainWindow):
         window.command_Copy(None)
 
     KEYBINDER.bind("C-C", quick_copy)
-
-    def history_back():
-        pane = CPane(window)
-        hist = pane.history
-        if 1 < len(hist.items):
-            p = hist.items[1][0]
-            pane.openPath(p)
-
-    KEYBINDER.bind("Back", history_back)
 
     def swap_pane() -> None:
         pane = CPane(window, True)
