@@ -1158,31 +1158,32 @@ def configure(window: MainWindow):
             print("no files to compare in inactive pane.")
             return
 
-        print("==================")
+        print("------------------")
         print(" compare md5 hash ")
-        print("==================")
+        print("------------------")
 
         table = {}
         window.setProgressValue(None)
 
-        def _storeInactivePaneHash(job_item: ckit.JobItem) -> None:
+        def _stoppable(job_item: ckit.JobItem) -> bool:
+            if job_item.isCanceled():
+                return True
+            if job_item.waitPaused():
+                window.setProgressValue(None)
+            return False
 
+        def _storeInactivePaneHash(job_item: ckit.JobItem) -> None:
+            print("scanning...\n")
             for item in inactive_pane.items:
-                if job_item.isCanceled():
+                if _stoppable(job_item):
                     break
-                if job_item.waitPaused():
-                    window.setProgressValue(None)
                 if item.isdir():
                     for _, _, files in item.walk():
-                        if job_item.isCanceled():
+                        if _stoppable(job_item):
                             break
-                        if job_item.waitPaused():
-                            window.setProgressValue(None)
                         for file in files:
-                            if job_item.isCanceled():
+                            if _stoppable(job_item):
                                 break
-                            if job_item.waitPaused():
-                                window.setProgressValue(None)
                             name = str(
                                 Path(file.getFullpath()).relative_to(
                                     inactive_pane.currentPath
@@ -1199,35 +1200,32 @@ def configure(window: MainWindow):
 
         def _clearSelection(job_item: ckit.JobItem) -> None:
             window.clearProgress()
-            if job_item.isCanceled():
+            if _stoppable(job_item):
                 return
-            if job_item.waitPaused():
-                window.setProgressValue(None)
             Selector(window, True).clearAll()
             Selector(window, False).clearAll()
 
         def _compareHash(job_item: ckit.JobItem) -> None:
             window.setProgressValue(None)
             for item in active_pane.files:
-                if job_item.isCanceled():
+                if _stoppable(job_item):
                     break
-                if job_item.waitPaused():
-                    window.setProgressValue(None)
                 name = item.getName()
                 digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
                 if digest in table:
                     active_pane.select(active_pane.byName(name))
+                    print(name)
                     for n in table[digest]:
-                        print("{}\n    === {}".format(name, n))
+                        print("  === {}".format(n))
 
         def _finish(job_item: ckit.JobItem) -> None:
             window.clearProgress()
             if job_item.isCanceled():
                 print("Canceled.\n")
                 return
-            print("==================")
+            print("------------------")
             print("     FINISHED     ")
-            print("==================")
+            print("------------------")
 
         job_prepare = ckit.JobItem(_storeInactivePaneHash, _clearSelection)
         job_compare = ckit.JobItem(_compareHash, _finish)
