@@ -117,7 +117,7 @@ def configure(window: MainWindow):
 
     apply_cfiler_command(
         {
-            "Q": window.command_CancelTask,
+            "C-S-Q": window.command_CancelTask,
             "C-Q": window.command_Quit,
             "A-F4": window.command_Quit,
             "C-Comma": window.command_ConfigMenu,
@@ -250,8 +250,10 @@ def configure(window: MainWindow):
             self._window = window
             if active:
                 self._pane = self._window.activePane()
+                self._items = self._window.activeItems()
             else:
                 self._pane = self._window.inactivePane()
+                self._items = self._window.inactiveItems()
 
         @property
         def entity(self):
@@ -265,7 +267,11 @@ def configure(window: MainWindow):
             self.fileList.applyItems()
 
         @property
-        def dirs(self) -> item_Base:
+        def items(self) -> list:
+            return self._items
+
+        @property
+        def dirs(self) -> list:
             items = []
             for i in range(self.count):
                 item = self.byIndex(i)
@@ -274,7 +280,7 @@ def configure(window: MainWindow):
             return items
 
         @property
-        def files(self) -> item_Base:
+        def files(self) -> list:
             items = []
             for i in range(self.count):
                 item = self.byIndex(i)
@@ -1129,6 +1135,18 @@ def configure(window: MainWindow):
 
     KEYBINDER.bind("C-E", edit_config)
 
+    def traverse():
+        pane = CPane(window)
+        for item in pane.items:
+            if item.isdir():
+                for _, _, fs in item.walk():
+                    for _f in fs:
+                        print(_f)
+            else:
+                print(item.getFullpath())
+
+    KEYBINDER.bind("8", traverse)
+
     def compare_file_hash():
         active_pane = CPane(window, True)
         if len(active_pane.files) < 1:
@@ -1148,16 +1166,36 @@ def configure(window: MainWindow):
         window.setProgressValue(None)
 
         def _storeInactivePaneHash(job_item: ckit.JobItem) -> None:
-            for item in inactive_pane.files:
+
+            for item in inactive_pane.items:
                 if job_item.isCanceled():
                     break
                 if job_item.waitPaused():
                     window.setProgressValue(None)
-                name = str(
-                    Path(item.getFullpath()).relative_to(inactive_pane.currentPath)
-                )
-                digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
-                table[digest] = table.get(digest, []) + [name]
+                if item.isdir():
+                    for _, _, files in item.walk():
+                        if job_item.isCanceled():
+                            break
+                        if job_item.waitPaused():
+                            window.setProgressValue(None)
+                        for file in files:
+                            if job_item.isCanceled():
+                                break
+                            if job_item.waitPaused():
+                                window.setProgressValue(None)
+                            name = str(
+                                Path(file.getFullpath()).relative_to(
+                                    inactive_pane.currentPath
+                                )
+                            )
+                            digest = hashlib.md5(
+                                file.open().read(64 * 1024)
+                            ).hexdigest()
+                            table[digest] = table.get(digest, []) + [name]
+                else:
+                    name = item.getName()
+                    digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
+                    table[digest] = table.get(digest, []) + [name]
 
         def _clearSelection(job_item: ckit.JobItem) -> None:
             window.clearProgress()
@@ -1180,7 +1218,7 @@ def configure(window: MainWindow):
                 if digest in table:
                     active_pane.select(active_pane.byName(name))
                     for n in table[digest]:
-                        print("'{}' === '{}'".format(name, n))
+                        print("{}\n    === {}".format(name, n))
 
         def _finish(job_item: ckit.JobItem) -> None:
             window.clearProgress()
