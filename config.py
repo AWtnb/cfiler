@@ -670,7 +670,7 @@ def configure(window: MainWindow):
         result, mod = window.commandLine(
             title="JumpInputSmart",
             auto_complete=True,
-            autofix_list=["\\/", "."],
+            autofix_list=["/", "\\"],
             candidate_handler=candidate_Filename(pane.fileList.getLocation()),
             return_modkey=True,
         )
