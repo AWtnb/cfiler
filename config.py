@@ -78,7 +78,7 @@ USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
 
 
-def configure(window: MainWindow):
+def configure(window: MainWindow) -> None:
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -1324,11 +1324,11 @@ def configure(window: MainWindow):
     )
 
 
-def configure_TextViewer(window: ckit.TextWindow):
+def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["J"] = window.command_ScrollDown
     window.keymap["K"] = window.command_ScrollUp
 
-    def open_original(_):
+    def open_original(_) -> None:
         path = window.item.getFullpath()
         window.command_Close(None)
         pyauto.shellExecute(None, path, "", "")
@@ -1336,10 +1336,31 @@ def configure_TextViewer(window: ckit.TextWindow):
     window.keymap["O"] = open_original
 
 
-def configure_ListWindow(window: ckit.TextWindow):
+def configure_ListWindow(window: ckit.TextWindow) -> None:
     window.keymap["J"] = window.command_CursorDown
     window.keymap["K"] = window.command_CursorUp
     window.keymap["C-J"] = window.command_CursorDownMark
     window.keymap["C-K"] = window.command_CursorUpMark
     for mod in ["", "S-"]:
         window.keymap[mod + "Space"] = window.command_Enter
+
+
+def configure_ImageViewer(window: ckit.TextWindow) -> None:
+    window.keymap["F11"] = window.command_ToggleMaximize
+    window.keymap["K"] = window.command_CursorUp
+    window.keymap["J"] = window.command_CursorDown
+    window.keymap["S-Semicolon"] = window.command_ZoomIn
+    window.keymap["Z"] = window.command_ZoomIn
+    window.keymap["Minus"] = window.command_ZoomOut
+    window.keymap["S-Z"] = window.command_ZoomOut
+    window.keymap["S-Minus"] = window.command_ZoomPolicyOriginal
+    window.keymap["O"] = window.command_ZoomPolicyOriginal
+    window.keymap["Left"] = window.command_ScrollLeft
+    window.keymap["Right"] = window.command_ScrollRight
+    window.keymap["Up"] = window.command_ScrollUp
+    window.keymap["Down"] = window.command_ScrollDown
+    window.keymap["S-H"] = window.command_ScrollLeft
+    window.keymap["S-L"] = window.command_ScrollRight
+    window.keymap["S-K"] = window.command_ScrollUp
+    window.keymap["S-J"] = window.command_ScrollDown
+    window.keymap["F"] = window.command_ZoomPolicyFit
