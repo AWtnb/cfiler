@@ -533,7 +533,7 @@ def configure(window: MainWindow):
             )
 
     KEYBINDER.bind("S-C", lambda: fetch_items(False))
-    KEYBINDER.bind("S-X", lambda: fetch_items(True))
+    KEYBINDER.bind("S-M", lambda: fetch_items(True))
 
     def quick_move() -> None:
         pane = CPane(window)
@@ -542,7 +542,7 @@ def configure(window: MainWindow):
         window.command_Move(None)
         pane.focusOther()
 
-    KEYBINDER.bind("C-X", quick_move)
+    KEYBINDER.bind("M", quick_move)
 
     def quick_copy() -> None:
         pane = CPane(window)
@@ -551,7 +551,7 @@ def configure(window: MainWindow):
         window.command_Copy(None)
         pane.focusOther()
 
-    KEYBINDER.bind("C-C", quick_copy)
+    KEYBINDER.bind("C", quick_copy)
 
     def swap_pane() -> None:
         pane = CPane(window, True)
