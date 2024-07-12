@@ -106,7 +106,6 @@ def configure(window: MainWindow) -> None:
             "A-F4": window.command_Quit,
             "C-Comma": window.command_ConfigMenu,
             "C-S-Comma": window.command_ConfigMenu2,
-            "C-M": window.command_Execute,
             "N": window.command_Rename,
             "A-C-H": window.command_JumpHistory,
             "Back": window.command_JumpHistory,
@@ -675,10 +674,13 @@ def configure(window: MainWindow) -> None:
 
     def smart_enter():
         pane = CPane(window)
+        if pane.isBlank:
+            pane.focusOther()
+            return
         if pane.focusedItem.isdir():
             window.command_Enter(None)
         else:
-            window.command_FocusOther(None)
+            window.command_Execute(None)
 
     KEYBINDER.bind("L", smart_enter)
 
