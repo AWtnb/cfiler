@@ -78,22 +78,6 @@ USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
 
 
-def runExe(path: str, *args) -> None:
-    if type(path) is not str:
-        path = str(path)
-    if not Path(path).exists():
-        print("invalid path: '{}'".format(path))
-        return
-    params = []
-    for arg in args:
-        if len(arg.strip()):
-            if " " in arg:
-                params.append('"{}"'.format(arg))
-            else:
-                params.append(arg)
-    pyauto.shellExecute(None, path, " ".join(params), "")
-
-
 def configure(window: MainWindow):
 
     def reset_default_keys(keys: list) -> None:
@@ -520,7 +504,10 @@ def configure(window: MainWindow):
             action = "COPY"
 
         result = popMessageBox(
-            window, MessageBox.TYPE_YESNO, "取り寄せ".format(action), "{}?".format(action)
+            window,
+            MessageBox.TYPE_YESNO,
+            "取り寄せ".format(action),
+            "{}?".format(action),
         )
         if result == MessageBox.RESULT_YES:
             window._copyMoveCommon(
@@ -616,6 +603,21 @@ def configure(window: MainWindow):
     KEYBINDER.bind("Y", zyl().invoke(True))
     KEYBINDER.bind("S-Y", zyl().invoke(False))
 
+    def shell_exec(path: str, *args) -> None:
+        if type(path) is not str:
+            path = str(path)
+        if not Path(path).exists():
+            print("invalid path: '{}'".format(path))
+            return
+        params = []
+        for arg in args:
+            if len(arg.strip()):
+                if " " in arg:
+                    params.append('"{}"'.format(arg))
+                else:
+                    params.append(arg)
+        pyauto.shellExecute(None, path, " ".join(params), "")
+
     class zyc:
         def __init__(self, search_all: bool) -> None:
             self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyc.exe")
@@ -649,7 +651,7 @@ def configure(window: MainWindow):
                         pane = CPane(window)
                         pane.openPath(result)
                     else:
-                        runExe(result)
+                        shell_exec(result)
                         pane.appendHistory(result)
 
             return _func
@@ -689,7 +691,7 @@ def configure(window: MainWindow):
             else:
                 pane.openName(result)
         else:
-            runExe(open_path)
+            shell_exec(open_path)
             pane.appendHistory(str(open_path))
 
     KEYBINDER.bind("F", smart_jump_input)
@@ -984,7 +986,7 @@ def configure(window: MainWindow):
 
     def open_on_explorer():
         pane = CPane(window, True)
-        runExe(pane.currentPath)
+        shell_exec(pane.currentPath)
 
     KEYBINDER.bind("C-S-E", open_on_explorer)
 
@@ -1011,7 +1013,7 @@ def configure(window: MainWindow):
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
         if vscode_path.exists():
             pane = CPane(window)
-            runExe(str(vscode_path), pane.currentPath)
+            shell_exec(str(vscode_path), pane.currentPath)
 
     KEYBINDER.bind("V", on_vscode)
 
@@ -1021,7 +1023,7 @@ def configure(window: MainWindow):
         result = window.commandLine(
             title="NewName",
             text=focus_path.name,
-            selection=[0, len(focus_path.stem)],
+            selection=[len(focus_path.stem), len(focus_path.stem)],
         )
 
         if result:
@@ -1039,6 +1041,8 @@ def configure(window: MainWindow):
                     pane.focusOther()
                 else:
                     shutil.copy(str(focus_path), new_path)
+                    pane.refresh()
+                    pane.focusByName(result)
             except Exception as e:
                 print(e)
 
@@ -1117,7 +1121,7 @@ def configure(window: MainWindow):
 
     def open_doc():
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
-        runExe(help_path)
+        shell_exec(help_path)
 
     KEYBINDER.bind("A-H", open_doc)
 
@@ -1128,11 +1132,11 @@ def configure(window: MainWindow):
             vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
             if vscode_path.exists():
                 vp = str(vscode_path)
-                runExe(vp, dp)
+                shell_exec(vp, dp)
             else:
-                runExe(dp)
+                shell_exec(dp)
         else:
-            runExe(USER_PROFILE)
+            shell_exec(USER_PROFILE)
             print("cannot find repo dir. open user profile instead.")
 
     KEYBINDER.bind("C-E", edit_config)
@@ -1262,7 +1266,7 @@ def configure(window: MainWindow):
             return
 
         param = '"{}" "{}"'.format(left_path, right_path)
-        runExe(exe_path, param)
+        shell_exec(exe_path, param)
 
     def select_name_common():
         inactive = CPane(window, False)
@@ -1351,7 +1355,7 @@ def configure_TextViewer(window: ckit.TextWindow):
     def open_original(_):
         path = window.item.getFullpath()
         window.command_Close(None)
-        runExe(path)
+        pyauto.shellExecute(None, path, "", "")
 
     window.keymap["O"] = open_original
 
