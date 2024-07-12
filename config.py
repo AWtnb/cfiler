@@ -837,7 +837,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bindmulti(
         {
             "C-A": SELECTOR.allItems,
-            "C-U": SELECTOR.clearAll,
+            "U": SELECTOR.clearAll,
             "A-F": SELECTOR.allFiles,
             "A-S-F": SELECTOR.clearDirs,
             "A-D": SELECTOR.allDirs,
@@ -983,7 +983,7 @@ def configure(window: MainWindow) -> None:
         active_pane.focusOther()
         inactive_pane.focusByName(current_name)
 
-    KEYBINDER.bind("U", open_parent_to_other)
+    KEYBINDER.bind("S-U", open_parent_to_other)
 
     def on_vscode():
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
