@@ -696,28 +696,6 @@ def configure(window: MainWindow):
 
     KEYBINDER.bind("F", smart_jump_input)
 
-    def smart_copy_name():
-        pane = CPane(window)
-        names = []
-        for i in range(pane.count):
-            item = pane.byIndex(i)
-            if item.selected():
-                names.append(item.getName())
-
-        if len(names) < 1:
-            name = pane.focusedItem.getName()
-            ckit.setClipboardText(name)
-            print("\ncopied focused item name:\n{}".format(name))
-            return
-
-        lines = LINE_BREAK.join(names)
-        ckit.setClipboardText(lines)
-        print("\ncopied name of items below:")
-        for name in names:
-            print("- {}".format(Path(name).name))
-
-    KEYBINDER.bind("C-S-C", smart_copy_name)
-
     def smart_copy_path():
         pane = CPane(window)
         paths = []
