@@ -496,7 +496,7 @@ def configure(window: MainWindow):
                 self._window.focus = MainWindow.FOCUS_RIGHT
             self.repaint(PO.Left | PO.Right)
 
-    def fetch_items(delete_origin: bool = False):
+    def toriyose(delete_origin: bool = False):
         active_pane = CPane(window, True)
         inactive_pane = CPane(window, False)
 
@@ -520,7 +520,7 @@ def configure(window: MainWindow):
             action = "COPY"
 
         result = popMessageBox(
-            window, MessageBox.TYPE_YESNO, "{} from inactive pane".format(action), "OK?"
+            window, MessageBox.TYPE_YESNO, "取り寄せ".format(action), "{}?".format(action)
         )
         if result == MessageBox.RESULT_YES:
             window._copyMoveCommon(
@@ -532,8 +532,8 @@ def configure(window: MainWindow):
                 inactive_pane.fileList.getFilter(),
             )
 
-    KEYBINDER.bind("S-C", lambda: fetch_items(False))
-    KEYBINDER.bind("S-M", lambda: fetch_items(True))
+    KEYBINDER.bind("S-C", lambda: toriyose(False))
+    KEYBINDER.bind("S-M", lambda: toriyose(True))
 
     def quick_move() -> None:
         pane = CPane(window)
