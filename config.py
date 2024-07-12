@@ -106,7 +106,7 @@ def configure(window: MainWindow) -> None:
             "A-F4": window.command_Quit,
             "C-Comma": window.command_ConfigMenu,
             "C-S-Comma": window.command_ConfigMenu2,
-            "C-L": window.command_Execute,
+            "C-M": window.command_Execute,
             "N": window.command_Rename,
             "A-C-H": window.command_JumpHistory,
             "Back": window.command_JumpHistory,
@@ -480,48 +480,6 @@ def configure(window: MainWindow) -> None:
                 self._window.focus = MainWindow.FOCUS_RIGHT
             self.repaint(PO.Left | PO.Right)
 
-    def toriyose(delete_origin: bool = False):
-        active_pane = CPane(window, True)
-        inactive_pane = CPane(window, False)
-
-        if not hasattr(active_pane.lister, "getCopyDst"):
-            return
-
-        items = inactive_pane.selectedItems
-
-        if len(items) < 1:
-            if 1 < inactive_pane.count or inactive_pane.isBlank:
-                return
-            inactive_pane.select(0)
-            inactive_pane.repaint()
-            items = [inactive_pane.byIndex(0)]
-
-        if delete_origin:
-            mode = "m"
-            action = "MOVE"
-        else:
-            mode = "c"
-            action = "COPY"
-
-        result = popMessageBox(
-            window,
-            MessageBox.TYPE_YESNO,
-            "取り寄せ".format(action),
-            "{}?".format(action),
-        )
-        if result == MessageBox.RESULT_YES:
-            window._copyMoveCommon(
-                inactive_pane.entity,
-                inactive_pane.lister,
-                active_pane.lister,
-                items,
-                mode,
-                inactive_pane.fileList.getFilter(),
-            )
-
-    KEYBINDER.bind("S-C", lambda: toriyose(False))
-    KEYBINDER.bind("S-M", lambda: toriyose(True))
-
     def quick_move() -> None:
         pane = CPane(window)
         if not pane.fileList.selected():
@@ -717,13 +675,10 @@ def configure(window: MainWindow) -> None:
 
     def smart_enter():
         pane = CPane(window)
-        if pane.isBlank:
-            pane.focusOther()
-            return
         if pane.focusedItem.isdir():
             window.command_Enter(None)
         else:
-            window.command_Execute(None)
+            window.command_FocusOther(None)
 
     KEYBINDER.bind("L", smart_enter)
 
