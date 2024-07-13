@@ -484,6 +484,7 @@ def configure(window: MainWindow) -> None:
         if not pane.fileList.selected():
             window.command_Select(None)
         window.command_Move(None)
+        pane.focusOther()
 
     KEYBINDER.bind("M", quick_move)
 
@@ -492,6 +493,7 @@ def configure(window: MainWindow) -> None:
         if not pane.fileList.selected():
             window.command_Select(None)
         window.command_Copy(None)
+        pane.focusOther()
 
     KEYBINDER.bind("C", quick_copy)
 
