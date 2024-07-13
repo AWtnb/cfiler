@@ -516,8 +516,8 @@ def configure(window: MainWindow) -> None:
                 "-cur={}".format(pane.currentPath),
                 "-stdout=True",
             ]
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE)
-            result = proc.stdout.decode("utf-8").strip()
+            proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
+            result = proc.stdout.strip()
             if proc.returncode != 0:
                 print(result)
                 return
@@ -545,8 +545,8 @@ def configure(window: MainWindow) -> None:
                     "-exclude=_obsolete,node_modules",
                     "-stdout=True",
                 ]
-                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
-                result = proc.stdout.decode("utf-8").strip()
+                proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
+                result = proc.stdout.strip()
                 if proc.returncode != 0:
                     if result:
                         print(result)
@@ -597,8 +597,8 @@ def configure(window: MainWindow) -> None:
                     "-offset={}".format(offset),
                     "-cur={}".format(pane.currentPath),
                 ]
-                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
-                result = proc.stdout.decode("utf-8").strip()
+                proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
+                result = proc.stdout.strip()
                 if result:
                     if proc.returncode != 0:
                         if result:
@@ -620,7 +620,7 @@ def configure(window: MainWindow) -> None:
             "S-Z": zyc(False).invoke(1),
             "A-S-Z": zyc(True).invoke(1),
             "S-F": zyc(False).invoke(0),
-            "C-S-F": zyc(True).invoke(0),
+            "C-F": zyc(True).invoke(0),
         }
     )
 
