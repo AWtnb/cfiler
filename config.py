@@ -427,15 +427,6 @@ def configure(window: MainWindow) -> None:
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
 
-        def openName(self, name: str) -> bool:
-            path = Path(self.currentPath, name)
-            if not path.exists() or path.is_file():
-                print("invalid dir path: '{}'".format(path))
-                return False
-            lister = lister_Default(self._window, str(path))
-            self._window.jumpLister(self._pane, lister)
-            return True
-
         def openPath(self, path: str) -> bool:
             if not Path(path).exists() or Path(path).is_file():
                 print("invalid dir path: '{}'".format(path))
@@ -649,16 +640,16 @@ def configure(window: MainWindow) -> None:
         if not open_path.exists():
             print("invalid-path!")
             return
-        if -1 < pane.byName(result):
-            pane.focusByName(result)
         if open_path.is_dir():
             if mod == ckit.MODKEY_SHIFT:
                 CPane(window, False).openPath(str(open_path))
+                pane.focusOther()
             else:
-                pane.openName(result)
+                pane.openPath(str(open_path))
         else:
             shell_exec(open_path)
             pane.appendHistory(str(open_path))
+        pane.focusByName(result.split(os.sep)[0])
 
     KEYBINDER.bind("F", smart_jump_input)
 
