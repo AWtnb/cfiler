@@ -290,13 +290,13 @@ def configure(window: MainWindow) -> None:
             self.scrollToCursor()
 
         def byName(self, name: str) -> int:
-            i = self.fileList.indexOf(name)
-            if i < 0:
-                return 0
-            return i
+            return self.fileList.indexOf(name)
 
         def focusByName(self, name: str) -> None:
-            self.focus(self.byName(name))
+            i = self.byName(name)
+            if i < 0:
+                return
+            self.focus(i)
 
         def focusOther(self) -> None:
             self._window.command_FocusOther(None)
@@ -389,6 +389,13 @@ def configure(window: MainWindow) -> None:
             self.finishSelect()
 
         def select(self, i: int) -> None:
+            self.fileList.selectItem(i, True)
+            self.finishSelect()
+
+        def selectByName(self, name: str) -> None:
+            i = self.byName(name)
+            if i < 0:
+                return
             self.fileList.selectItem(i, True)
             self.finishSelect()
 
@@ -642,6 +649,8 @@ def configure(window: MainWindow) -> None:
         if not open_path.exists():
             print("invalid-path!")
             return
+        if -1 < pane.byName(result):
+            pane.focusByName(result)
         if open_path.is_dir():
             if mod == ckit.MODKEY_SHIFT:
                 CPane(window, False).openPath(str(open_path))
@@ -1154,7 +1163,7 @@ def configure(window: MainWindow) -> None:
                 name = item.getName()
                 digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
                 if digest in table:
-                    active_pane.select(active_pane.byName(name))
+                    active_pane.selectByName(name)
                     print(name)
                     for n in table[digest]:
                         print("  === {}".format(n))
