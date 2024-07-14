@@ -1014,7 +1014,7 @@ def configure(window: MainWindow) -> None:
     TEXT_FILE_MAKER = TextFileMaker(window)
 
     KEYBINDER.bind("T", TEXT_FILE_MAKER.invoke("txt"))
-    KEYBINDER.bind("C-T", TEXT_FILE_MAKER.invoke("md"))
+    KEYBINDER.bind("A-T", TEXT_FILE_MAKER.invoke("md"))
     KEYBINDER.bind("S-T", TEXT_FILE_MAKER.invoke(""))
 
     def to_obsolete_dir():
