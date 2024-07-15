@@ -45,8 +45,6 @@ from cfiler_filelist import FileList, item_Base, lister_Default, item_Empty
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow
 
-from cfiler_msgbox import popMessageBox, MessageBox
-
 from cfiler_misc import candidate_Filename
 
 
