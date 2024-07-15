@@ -524,39 +524,46 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("A-N", zymd)
 
     class zyl:
-        def __init__(self) -> None:
+        def __init__(self, search_all: bool = False) -> None:
             self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
             self._src_path = Path(USER_PROFILE, r"Personal\launch.yaml")
+            self._cmd = [
+                str(self._exe_path),
+                "-src={}".format(self._src_path),
+                "-all={}".format(search_all),
+                "-exclude=_obsolete,node_modules",
+                "-stdout=True",
+            ]
 
         def check(self) -> bool:
             return self._exe_path.exists() and self._src_path.exists()
 
-        def invoke(self, active_pane: bool = True) -> Callable:
+        def invoke(self, on_active_pane: bool = True) -> Callable:
             def _func() -> None:
                 if not self.check():
                     return
-                pane = CPane(window, active_pane)
-                cmd = [
-                    str(self._exe_path),
-                    "-src={}".format(self._src_path),
-                    "-all=False",
-                    "-exclude=_obsolete,node_modules",
-                    "-stdout=True",
-                ]
-                proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
+                proc = subprocess.run(self._cmd, capture_output=True, encoding="utf-8")
                 result = proc.stdout.strip()
-                if proc.returncode != 0:
-                    if result:
-                        print(result)
-                    return
-                pane.openPath(result)
-                if not active_pane:
-                    pane.focusOther()
+                if result:
+                    if proc.returncode != 0:
+                        if result:
+                            print(result)
+                        return
+                    target_pane = CPane(window, on_active_pane)
+                    if Path(result).is_file():
+                        target_pane.appendHistory(result)
+                        shell_exec(result)
+                    else:
+                        target_pane.openPath(result)
+                    if not on_active_pane:
+                        CPane(window).focusOther()
 
             return _func
 
-    KEYBINDER.bind("Y", zyl().invoke(True))
-    KEYBINDER.bind("S-Y", zyl().invoke(False))
+    KEYBINDER.bind("Y", zyl(False).invoke(True))
+    KEYBINDER.bind("A-Y", zyl(True).invoke(True))
+    KEYBINDER.bind("S-Y", zyl(False).invoke(False))
+    KEYBINDER.bind("A-S-Y", zyl(True).invoke(False))
 
     def shell_exec(path: str, *args) -> None:
         if type(path) is not str:
@@ -586,7 +593,7 @@ def configure(window: MainWindow) -> None:
         def check(self) -> bool:
             return self._exe_path.exists()
 
-        def invoke(self, offset: int) -> Callable:
+        def invoke(self, offset: int, on_active_pane: bool = True) -> Callable:
             def _func() -> None:
                 if not self.check():
                     return
@@ -602,12 +609,14 @@ def configure(window: MainWindow) -> None:
                         if result:
                             print(result)
                         return
-                    if Path(result).is_dir():
-                        pane = CPane(window)
-                        pane.openPath(result)
-                    else:
+                    target_pane = CPane(window, on_active_pane)
+                    if Path(result).is_file():
+                        target_pane.appendHistory(result)
                         shell_exec(result)
-                        pane.appendHistory(result)
+                    else:
+                        target_pane.openPath(result)
+                    if not on_active_pane:
+                        CPane(window).focusOther()
 
             return _func
 
