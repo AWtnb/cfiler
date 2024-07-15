@@ -554,10 +554,14 @@ def configure(window: MainWindow) -> None:
 
             return _func
 
-    KEYBINDER.bind("Y", zyl(False).invoke(True))
-    KEYBINDER.bind("A-Y", zyl(True).invoke(True))
-    KEYBINDER.bind("S-Y", zyl(False).invoke(False))
-    KEYBINDER.bind("A-S-Y", zyl(True).invoke(False))
+    KEYBINDER.bindmulti(
+        {
+            "Y": zyl(False).invoke(True),
+            "A-Y": zyl(True).invoke(True),
+            "S-Y": zyl(False).invoke(False),
+            "A-S-Y": zyl(True).invoke(False),
+        }
+    )
 
     def shell_exec(path: str, *args) -> None:
         if type(path) is not str:
