@@ -80,11 +80,7 @@ def configure(window: MainWindow) -> None:
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
-
-            def _do_nothing(_):
-                pass
-
-            window.keymap[key] = _do_nothing
+            window.keymap[key] = lambda _: None
 
     reset_default_keys(
         [
