@@ -500,6 +500,7 @@ def configure(window: MainWindow) -> None:
         other_path = other_pane.currentPath
         pane.openPath(other_path)
         other_pane.openPath(current_path)
+        LeftPane(window).activate()
 
     KEYBINDER.bind("A-S", swap_pane)
 
