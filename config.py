@@ -124,7 +124,6 @@ def configure(window: MainWindow) -> None:
             "C-K": window.command_CursorUpSelectedOrBookmark,
             "C-Down": window.command_CursorDownSelectedOrBookmark,
             "C-J": window.command_CursorDownSelectedOrBookmark,
-            "A-S-T": window.command_ExtractArchive,
         }
     )
 
@@ -445,7 +444,7 @@ def configure(window: MainWindow) -> None:
             self.refresh()
             self.focus(self._window.cursorFromName(self.fileList, name))
 
-        def mkdir(self, name: str) -> None:
+        def mkdir(self, name: str, focus: bool = True) -> None:
             if not hasattr(self.lister, "mkdir"):
                 print("cannot make directory here.")
                 return
@@ -455,7 +454,8 @@ def configure(window: MainWindow) -> None:
                 return
             self._window.subThreadCall(self.lister.mkdir, (name, None))
             self.refresh()
-            self.focus(self._window.cursorFromName(self.fileList, name))
+            if focus:
+                self.focus(self._window.cursorFromName(self.fileList, name))
 
     class LeftPane(CPane):
         def __init__(self, window: MainWindow) -> None:
@@ -663,6 +663,26 @@ def configure(window: MainWindow) -> None:
         pane.focusByName(result.split(os.sep)[0])
 
     KEYBINDER.bind("F", smart_jump_input)
+
+    def smart_extract():
+        active_pane = CPane(window)
+        if len(active_pane.selectedItems) < 1:
+            return
+
+        extractable = True
+        for p in active_pane.selectedItemPaths:
+            if not Path(p).suffix in [".zip", ".7z"]:
+                extractable = False
+
+        if extractable:
+            outdir = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
+            active_pane.mkdir(outdir, False)
+            inactive_pane = CPane(window, False)
+            inactive_pane.openPath(str(Path(active_pane.currentPath, outdir)))
+            window.command_ExtractArchive(None)
+            active_pane.focusOther()
+
+    KEYBINDER.bind("A-S-T", smart_extract)
 
     def smart_copy_path():
         pane = CPane(window)
