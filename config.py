@@ -1083,18 +1083,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-E", edit_config)
 
-    def traverse():
-        pane = CPane(window)
-        for item in pane.items:
-            if item.isdir():
-                for _, _, fs in item.walk():
-                    for _f in fs:
-                        print(_f)
-            else:
-                print(item.getFullpath())
-
-    KEYBINDER.bind("8", traverse)
-
     def compare_file_hash():
         active_pane = CPane(window, True)
         if len(active_pane.files) < 1:
