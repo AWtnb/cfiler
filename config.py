@@ -120,10 +120,11 @@ def configure(window: MainWindow) -> None:
             "A-C": window.command_ContextMenu,
             "A-S-C": window.command_ContextMenuDir,
             "C-N": window.command_DuplicateCfiler,
-            "C-Up": window.command.CursorUpSelectedOrBookmark,
-            "C-K": window.command.CursorUpSelectedOrBookmark,
-            "C-Down": window.command.CursorDownSelectedOrBookmark,
-            "C-J": window.command.CursorDownSelectedOrBookmark,
+            "C-Up": window.command_CursorUpSelectedOrBookmark,
+            "C-K": window.command_CursorUpSelectedOrBookmark,
+            "C-Down": window.command_CursorDownSelectedOrBookmark,
+            "C-J": window.command_CursorDownSelectedOrBookmark,
+            "A-S-T": window.command_ExtractArchive,
         }
     )
 
