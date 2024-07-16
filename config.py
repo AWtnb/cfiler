@@ -1342,3 +1342,11 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["S-K"] = window.command_ScrollUp
     window.keymap["S-J"] = window.command_ScrollDown
     window.keymap["F"] = window.command_ZoomPolicyFit
+
+    def open_original(_) -> None:
+        item = window.items[window.cursor]
+        path = item.getFullpath()
+        window.command_Close(None)
+        pyauto.shellExecute(None, path, "", "")
+
+    window.keymap["C-O"] = open_original
