@@ -684,6 +684,11 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-S-T", smart_extract)
 
+    def recylcebin():
+        pyauto.shellExecute(None, "shell:RecycleBinFolder", "", "")
+
+    KEYBINDER.bind("C-Z ", recylcebin)
+
     def smart_copy_path():
         pane = CPane(window)
         paths = []
