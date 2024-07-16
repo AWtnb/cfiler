@@ -475,6 +475,55 @@ def configure(window: MainWindow) -> None:
                 self._window.focus = MainWindow.FOCUS_RIGHT
             self.repaint(PO.Left | PO.Right)
 
+    def shell_exec(path: str, *args) -> None:
+        if type(path) is not str:
+            path = str(path)
+        if not Path(path).exists():
+            print("invalid path: '{}'".format(path))
+            return
+        params = []
+        for arg in args:
+            if len(arg.strip()):
+                if " " in arg:
+                    params.append('"{}"'.format(arg))
+                else:
+                    params.append(arg)
+        pyauto.shellExecute(None, path, " ".join(params), "")
+
+    def hook_enter() -> None:
+        pane = CPane(window)
+        p = pane.focusedItem.getFullpath()
+        ext = Path(p).suffix
+
+        if ext == ".pdf":
+            sumatra_path = Path(
+                USER_PROFILE, r"AppData\Local\SumatraPDF\SumatraPDF.exe"
+            )
+            if sumatra_path.exists():
+                shell_exec(str(sumatra_path), p)
+                return True
+            return False
+
+        office_path = r"C:\Program Files\Microsoft Office\root\Office16"
+
+        if ext in [".xlsx", ".xls"]:
+            excel_path = Path(office_path, "EXCEL.EXE")
+            if excel_path.exists():
+                shell_exec(str(excel_path), p)
+                return True
+            return False
+
+        if ext in [".docx", ".doc"]:
+            word_path = Path(office_path, "WINWORD.EXE")
+            if word_path.exists():
+                shell_exec(str(word_path), p)
+                return True
+            return False
+
+        return False
+
+    window.enter_hook = hook_enter
+
     def quick_move() -> None:
         pane = CPane(window)
         if not pane.fileList.selected():
@@ -567,21 +616,6 @@ def configure(window: MainWindow) -> None:
             "A-S-Y": zyl(True).invoke(False),
         }
     )
-
-    def shell_exec(path: str, *args) -> None:
-        if type(path) is not str:
-            path = str(path)
-        if not Path(path).exists():
-            print("invalid path: '{}'".format(path))
-            return
-        params = []
-        for arg in args:
-            if len(arg.strip()):
-                if " " in arg:
-                    params.append('"{}"'.format(arg))
-                else:
-                    params.append(arg)
-        pyauto.shellExecute(None, path, " ".join(params), "")
 
     class zyc:
         def __init__(self, search_all: bool) -> None:
