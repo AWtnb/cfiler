@@ -1086,27 +1086,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-E", edit_config)
 
-    def extract_by_tar():
-        pane = CPane(window)
-        items = pane.selectedItems
-        for item in items:
-            p = item.getFullpath()
-            if not Path(p).suffix in [".zip", ".7z"]:
-                continue
-            outname = Path(p).stem
-            if pane.hasName(outname):
-                print("ERROR: '{}' already exists.\n".format(outname))
-                return
-            pane.mkdir(outname)
-            cmd = ["tar.exe", "-x", "-v", "-C", outname, "-f", p]
-            proc = subprocess.run(cmd, capture_output=True)
-            if proc.returncode == 2:
-                print(proc.stderr)
-            else:
-                print("Finished! Extracted to '{}'.\n".format(outname))
-
-    KEYBINDER.bind("A-S-T", extract_by_tar)
-
     def compare_file_hash():
         active_pane = CPane(window, True)
         if len(active_pane.files) < 1:
