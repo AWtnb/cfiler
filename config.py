@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import unicodedata
 
 from pathlib import Path
 from typing import Callable
@@ -125,6 +126,7 @@ def configure(window: MainWindow) -> None:
             "C-K": window.command_CursorUpSelectedOrBookmark,
             "C-Down": window.command_CursorDownSelectedOrBookmark,
             "C-J": window.command_CursorDownSelectedOrBookmark,
+            "A-M": window.command_MoveInput,
         }
     )
 
@@ -1050,9 +1052,7 @@ def configure(window: MainWindow) -> None:
 
     def duplicate_file():
         pane = CPane(window)
-        if not pane.hasSelection:
-            return
-        src_path = Path(pane.selectedItemPaths[0])
+        src_path = Path(pane.focusedItemPath)
         result = window.commandLine(
             title="NewName",
             text=src_path.name,
@@ -1175,6 +1175,20 @@ def configure(window: MainWindow) -> None:
             print("no files to compare in inactive pane.")
             return
 
+        def bytelen(s: str) -> int:
+            n = 0
+            for c in s:
+                if unicodedata.east_asian_width(c) in "FWA":
+                    n += 2
+                else:
+                    n += 1
+            return n
+
+        buffer_width = 0
+        for file in active_pane.files:
+            bn = bytelen(file.getName())
+            buffer_width = max(buffer_width, bn)
+
         print("------------------")
         print(" compare md5 hash ")
         print("------------------")
@@ -1231,9 +1245,13 @@ def configure(window: MainWindow) -> None:
                 digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
                 if digest in table:
                     active_pane.selectByName(name)
-                    print(name)
-                    for n in table[digest]:
-                        print("  === {}".format(n))
+                    for i, n in enumerate(table[digest]):
+                        if i == 0:
+                            filler = "=" * (buffer_width - bytelen(name) + 2)
+                            print(name, filler, n)
+                        else:
+                            filler = "=" * buffer_width
+                            print("〃", filler, n)
 
         def _finish(job_item: ckit.JobItem) -> None:
             window.clearProgress()
