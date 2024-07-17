@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import inspect
 import os
+import re
 import shutil
 import subprocess
 
@@ -375,7 +376,7 @@ def configure(window: MainWindow) -> None:
             return str(Path(self.currentPath, item.getName()))
 
         @property
-        def focusItemPath(self) -> str:
+        def focusedItemPath(self) -> str:
             return self.pathByIndex(self.cursor)
 
         def finishSelect(self) -> None:
@@ -993,7 +994,7 @@ def configure(window: MainWindow) -> None:
     def open_to_other():
         active_pane = CPane(window, True)
         inactive_pane = CPane(window, False)
-        inactive_pane.openPath(active_pane.focusItemPath)
+        inactive_pane.openPath(active_pane.focusedItemPath)
         active_pane.focusOther()
 
     KEYBINDER.bind("S-L", open_to_other)
@@ -1008,6 +1009,19 @@ def configure(window: MainWindow) -> None:
         inactive_pane.focusByName(current_name)
 
     KEYBINDER.bind("S-U", open_parent_to_other)
+
+    def on_pdf_xchange_editor():
+        xchange_path = r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
+        if Path(xchange_path).exists():
+            pane = CPane(window)
+            paths = pane.selectedItemPaths
+            if len(paths) < 1:
+                paths.append(pane.focusedItemPath)
+            for path in paths:
+                if Path(path).suffix == ".pdf":
+                    shell_exec(xchange_path, path)
+
+    KEYBINDER.bind("C-P", on_pdf_xchange_editor)
 
     def on_vscode():
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
