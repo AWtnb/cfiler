@@ -1025,6 +1025,40 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-P", on_pdf_xchange_editor)
 
+    class PseudoVoicing:
+        def __init__(self, s) -> None:
+            self._formatted = s
+            self._voicables = "かきくけこさしすせそたちつてとはひふへほカキクケコサシスセソタチツテトハヒフヘホ"
+
+        def _replace(self, s: str, offset: int) -> str:
+            c = s[0]
+            if c not in self._voicables:
+                return s
+            if offset == 1:
+                if c == "う":
+                    return "\u3094"
+                if c == "ウ":
+                    return "\u30f4"
+            return chr(ord(c) + offset)
+
+        def fix_voicing(self) -> None:
+            self._formatted = re.sub(
+                r".[\u309b\u3099]",
+                lambda mo: self._replace(mo.group(0), 1),
+                self._formatted,
+            )
+
+        def fix_half_voicing(self) -> None:
+            self._formatted = re.sub(
+                r".[\u309a\u309c]",
+                lambda mo: self._replace(mo.group(0), 2),
+                self._formatted,
+            )
+
+        @property
+        def string(self) -> str:
+            return self._formatted
+
     def on_vscode():
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
         if vscode_path.exists():
