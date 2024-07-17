@@ -162,7 +162,7 @@ def configure(window: MainWindow) -> None:
             for name, path in jump_table.items():
                 p = Path(path)
                 try:
-                    if p.exists() and p.is_dir():
+                    if p.exists():
                         self._window.jump_list += [(name, str(p))]
                 except Exception as e:
                     print(e)
@@ -533,7 +533,6 @@ def configure(window: MainWindow) -> None:
         if not pane.fileList.selected():
             window.command_Select(None)
         window.command_Move(None)
-        pane.focusOther()
 
     KEYBINDER.bind("M", quick_move)
 
@@ -542,7 +541,6 @@ def configure(window: MainWindow) -> None:
         if not pane.fileList.selected():
             window.command_Select(None)
         window.command_Copy(None)
-        pane.focusOther()
 
     KEYBINDER.bind("C", quick_copy)
 
@@ -1019,36 +1017,45 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("V", on_vscode)
 
-    def duplicate_with_name():
+    def unstoppable_copy(src_path: str, new_path: str) -> None:
         pane = CPane(window)
-        focus_path = Path(pane.focusItemPath)
+
+        def _copy(_) -> None:
+            s = Path(src_path)
+            if s.is_dir():
+                shutil.copytree(src_path, new_path)
+            else:
+                shutil.copy(src_path, new_path)
+
+        def _finished(_) -> None:
+            pane.refresh()
+            pane.focusByName(Path(new_path).name)
+
+        job = ckit.JobItem(_copy, _finished)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    def duplicate_file():
+        pane = CPane(window)
+        if not pane.hasSelection:
+            return
+        src_path = Path(pane.selectedItemPaths[0])
         result = window.commandLine(
             title="NewName",
-            text=focus_path.name,
-            selection=[len(focus_path.stem), len(focus_path.stem)],
+            text=src_path.name,
+            selection=[len(src_path.stem), len(src_path.stem)],
         )
 
         if result:
             result = result.strip()
             if len(result) < 1:
                 return
-            new_path = focus_path.with_name(result)
+            new_path = src_path.with_name(result)
             if new_path.exists():
                 print("same item exists!")
                 return
-            try:
-                if focus_path.is_dir():
-                    shutil.copytree(str(focus_path), new_path)
-                    CPane(window, False).openPath(new_path)
-                    pane.focusOther()
-                else:
-                    shutil.copy(str(focus_path), new_path)
-                    pane.refresh()
-                    pane.focusByName(result)
-            except Exception as e:
-                print(e)
+            unstoppable_copy(str(src_path), new_path)
 
-    KEYBINDER.bind("S-D", duplicate_with_name)
+    KEYBINDER.bind("S-D", duplicate_file)
 
     class TextFileMaker:
         def __init__(self, window: MainWindow) -> None:
@@ -1096,7 +1103,7 @@ def configure(window: MainWindow) -> None:
             return
 
         dest_name = "_obsolete"
-        pane.mkdir(dest_name)
+        pane.mkdir(dest_name, False)
 
         child_lister = pane.lister.getChild(dest_name)
         window._copyMoveCommon(
