@@ -424,13 +424,17 @@ def configure(window: MainWindow) -> None:
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
 
-        def openPath(self, path: str) -> bool:
-            if not Path(path).exists() or Path(path).is_file():
-                print("invalid dir path: '{}'".format(path))
-                return False
+        def openPath(self, path: str):
+            target = Path(path)
+            if not target.exists():
+                print("invalid path: '{}'".format(path))
+                return
+            focus_name = None
+            if target.is_file():
+                path = str(target.parent)
+                focus_name = target.name
             lister = lister_Default(self._window, path)
-            self._window.jumpLister(self._pane, lister)
-            return True
+            self._window.jumpLister(self._pane, lister, focus_name)
 
         def touch(self, name: str) -> None:
             if not hasattr(self.lister, "touch"):
@@ -598,11 +602,7 @@ def configure(window: MainWindow) -> None:
                             print(result)
                         return
                     target_pane = CPane(window, on_active_pane)
-                    if Path(result).is_file():
-                        target_pane.appendHistory(result)
-                        shell_exec(result)
-                    else:
-                        target_pane.openPath(result)
+                    target_pane.openPath(result)
                     if not on_active_pane:
                         CPane(window).focusOther()
 
@@ -647,11 +647,7 @@ def configure(window: MainWindow) -> None:
                             print(result)
                         return
                     target_pane = CPane(window, on_active_pane)
-                    if Path(result).is_file():
-                        target_pane.appendHistory(result)
-                        shell_exec(result)
-                    else:
-                        target_pane.openPath(result)
+                    target_pane.openPath(result)
                     if not on_active_pane:
                         CPane(window).focusOther()
 
