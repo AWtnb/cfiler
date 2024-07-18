@@ -482,12 +482,12 @@ def configure(window: MainWindow) -> None:
                 self._window.focus = MainWindow.FOCUS_RIGHT
             self.repaint(PO.Left | PO.Right)
 
-    def shell_exec(path: str, *args) -> None:
+    def shell_exec(path: str, *args) -> bool:
         if type(path) is not str:
             path = str(path)
         if not Path(path).exists():
             print("invalid path: '{}'".format(path))
-            return
+            return False
         params = []
         for arg in args:
             if len(arg.strip()):
@@ -496,6 +496,7 @@ def configure(window: MainWindow) -> None:
                 else:
                     params.append(arg)
         pyauto.shellExecute(None, path, " ".join(params), "")
+        return True
 
     def hook_enter() -> None:
         pane = CPane(window)
@@ -507,25 +508,21 @@ def configure(window: MainWindow) -> None:
                 USER_PROFILE, r"AppData\Local\SumatraPDF\SumatraPDF.exe"
             )
             if sumatra_path.exists():
-                shell_exec(str(sumatra_path), p)
-                return True
-            return False
-
-        office_path = r"C:\Program Files\Microsoft Office\root\Office16"
+                return shell_exec(str(sumatra_path), p)
 
         if ext in [".xlsx", ".xls"]:
-            excel_path = Path(office_path, "EXCEL.EXE")
+            excel_path = Path(
+                r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Excel.lnk"
+            )
             if excel_path.exists():
-                shell_exec(str(excel_path), p)
-                return True
-            return False
+                return shell_exec(str(excel_path), p)
 
         if ext in [".docx", ".doc"]:
-            word_path = Path(office_path, "WINWORD.EXE")
+            word_path = Path(
+                r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Word.lnk"
+            )
             if word_path.exists():
-                shell_exec(str(word_path), p)
-                return True
-            return False
+                return shell_exec(str(word_path), p)
 
         return False
 
