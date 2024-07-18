@@ -1219,10 +1219,11 @@ def configure(window: MainWindow) -> None:
         for file in active_pane.files:
             bn = bytelen(file.getName())
             buffer_width = max(buffer_width, bn)
+        buffer_width += 2
 
-        print("------------------")
+        print("\n------------------")
         print(" compare md5 hash ")
-        print("------------------")
+        print("------------------\n")
 
         table = {}
         window.setProgressValue(None)
@@ -1277,21 +1278,22 @@ def configure(window: MainWindow) -> None:
                 if digest in table:
                     active_pane.selectByName(name)
                     for i, n in enumerate(table[digest]):
+                        w = bytelen(name)
                         if i == 0:
-                            filler = "=" * (buffer_width - bytelen(name) + 2)
+                            filler = "=" * (buffer_width - w)
                             print(name, filler, n)
                         else:
-                            filler = "=" * buffer_width
-                            print("〃", filler, n)
+                            filler = " " * w + "=" * (buffer_width - w)
+                            print("", filler, n)
 
         def _finish(job_item: ckit.JobItem) -> None:
             window.clearProgress()
             if job_item.isCanceled():
                 print("Canceled.\n")
                 return
-            print("------------------")
+            print("\n------------------")
             print("     FINISHED     ")
-            print("------------------")
+            print("------------------\n")
 
         job_prepare = ckit.JobItem(_storeInactivePaneHash, _clearSelection)
         job_compare = ckit.JobItem(_compareHash, _finish)
