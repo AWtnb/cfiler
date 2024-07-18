@@ -680,16 +680,11 @@ def configure(window: MainWindow) -> None:
         if not open_path.exists():
             print("invalid-path!")
             return
-        if open_path.is_dir():
-            if mod == ckit.MODKEY_SHIFT:
-                CPane(window, False).openPath(str(open_path))
-                pane.focusOther()
-            else:
-                pane.openPath(str(open_path))
+        if mod == ckit.MODKEY_SHIFT:
+            CPane(window, False).openPath(str(open_path))
+            pane.focusOther()
         else:
-            shell_exec(open_path)
-            pane.appendHistory(str(open_path))
-        pane.focusByName(result.split(os.sep)[0])
+            pane.openPath(str(open_path))
 
     KEYBINDER.bind("F", smart_jump_input)
 
