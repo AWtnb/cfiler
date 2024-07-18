@@ -127,6 +127,7 @@ def configure(window: MainWindow) -> None:
             "C-Down": window.command_CursorDownSelectedOrBookmark,
             "C-J": window.command_CursorDownSelectedOrBookmark,
             "A-M": window.command_MoveInput,
+            "C-C": window.command_SetClipboard_Fullpath,
         }
     )
 
@@ -713,26 +714,13 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-Z ", recylcebin)
 
-    def smart_copy_path():
+    def copy_current_path():
         pane = CPane(window)
-        paths = []
-        for i in range(pane.count):
-            item = pane.byIndex(i)
-            if item.selected():
-                paths.append(pane.pathByIndex(i))
+        p = pane.currentPath
+        ckit.setClipboardText(p)
+        window.setStatusMessage("copied current path: '{}'".format(p), 3000)
 
-        if len(paths) < 1:
-            ckit.setClipboardText(pane.currentPath)
-            print("\ncopied current directory path:\n{}".format(pane.currentPath))
-            return
-
-        lines = LINE_BREAK.join(paths)
-        ckit.setClipboardText(lines)
-        print("\ncopied fullpath of items below:")
-        for path in paths:
-            print("- {}".format(Path(path).name))
-
-    KEYBINDER.bind("C-A-P", smart_copy_path)
+    KEYBINDER.bind("C-A-P", copy_current_path)
 
     def smart_enter():
         pane = CPane(window)
