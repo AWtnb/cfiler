@@ -609,10 +609,10 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bindmulti(
         {
-            "Y": zyl(False).invoke(True),
-            "A-Y": zyl(True).invoke(True),
-            "S-Y": zyl(False).invoke(False),
-            "A-S-Y": zyl(True).invoke(False),
+            "Z": zyl(False).invoke(True),
+            "A-Z": zyl(True).invoke(True),
+            "S-Z": zyl(False).invoke(False),
+            "A-S-Z": zyl(True).invoke(False),
         }
     )
 
@@ -654,10 +654,10 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bindmulti(
         {
-            "Z": zyc(False).invoke(-1),
-            "A-Z": zyc(True).invoke(-1),
-            "S-Z": zyc(False).invoke(1),
-            "A-S-Z": zyc(True).invoke(1),
+            "Y": zyc(False).invoke(-1),
+            "A-Y": zyc(True).invoke(-1),
+            "S-Y": zyc(False).invoke(1),
+            "A-S-Y": zyc(True).invoke(1),
             "S-F": zyc(False).invoke(0),
             "C-F": zyc(True).invoke(0),
         }
