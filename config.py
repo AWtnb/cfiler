@@ -1005,40 +1005,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-P", on_pdf_xchange_editor)
 
-    class PseudoVoicing:
-        def __init__(self, s) -> None:
-            self._formatted = s
-            self._voicables = "かきくけこさしすせそたちつてとはひふへほカキクケコサシスセソタチツテトハヒフヘホ"
-
-        def _replace(self, s: str, offset: int) -> str:
-            c = s[0]
-            if c not in self._voicables:
-                return s
-            if offset == 1:
-                if c == "う":
-                    return "\u3094"
-                if c == "ウ":
-                    return "\u30f4"
-            return chr(ord(c) + offset)
-
-        def fix_voicing(self) -> None:
-            self._formatted = re.sub(
-                r".[\u309b\u3099]",
-                lambda mo: self._replace(mo.group(0), 1),
-                self._formatted,
-            )
-
-        def fix_half_voicing(self) -> None:
-            self._formatted = re.sub(
-                r".[\u309a\u309c]",
-                lambda mo: self._replace(mo.group(0), 2),
-                self._formatted,
-            )
-
-        @property
-        def string(self) -> str:
-            return self._formatted
-
     def on_vscode():
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
         if vscode_path.exists():
@@ -1375,6 +1341,57 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-X", select_byext)
 
+    class PseudoVoicing:
+        def __init__(self, s) -> None:
+            self._formatted = s
+            self._voicables = "かきくけこさしすせそたちつてとはひふへほカキクケコサシスセソタチツテトハヒフヘホ"
+
+        def _replace(self, s: str, offset: int) -> str:
+            c = s[0]
+            if c not in self._voicables:
+                return s
+            if offset == 1:
+                if c == "う":
+                    return "\u3094"
+                if c == "ウ":
+                    return "\u30f4"
+            return chr(ord(c) + offset)
+
+        def fix_voicing(self) -> None:
+            self._formatted = re.sub(
+                r".[\u309b\u3099]",
+                lambda mo: self._replace(mo.group(0), 1),
+                self._formatted,
+            )
+
+        def fix_half_voicing(self) -> None:
+            self._formatted = re.sub(
+                r".[\u309a\u309c]",
+                lambda mo: self._replace(mo.group(0), 2),
+                self._formatted,
+            )
+
+        @property
+        def formatted(self) -> str:
+            return self._formatted
+
+    def rename_pseudo_voicing() -> None:
+        pane = CPane(window)
+        items = pane.selectedItems
+        for item in items:
+            name = item.getName()
+            pv = PseudoVoicing(name)
+            pv.fix_voicing()
+            pv.fix_half_voicing()
+            newname = pv.formatted
+            if name != newname:
+                try:
+                    item.rename(newname)
+                    print("RENAMED: '{}' ==> '{}'".format(name, newname))
+                    item._selected = False
+                except Exception as e:
+                    print(e)
+
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
             window.launcher.command_list += [(name, Keybinder.wrap(func))]
@@ -1382,6 +1399,7 @@ def configure(window: MainWindow) -> None:
     update_command_list(
         {
             "Diffinity": diffinity,
+            "RenamePseudoVoicing": rename_pseudo_voicing,
             "CompareFileHash": compare_file_hash,
             "SelectNameUnique": select_name_unique,
             "SelectNameCommon": select_name_common,
