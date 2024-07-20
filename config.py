@@ -563,7 +563,8 @@ def configure(window: MainWindow) -> None:
 
         def read_src(self) -> str:
             p = Path(self._current_path)
-            for _ in range(len(self._current_path.split(os.sep))):
+            depth = len(p.parents) + 1
+            for _ in range(depth):
                 f = Path(p, self._src_name)
                 if f.exists():
                     return f.read_text("utf-8")
