@@ -590,7 +590,8 @@ def configure(window: MainWindow) -> None:
         def get_index(self) -> str:
             pane = CPane(window)
             reg = re.compile(r"^\d+")
-            for name in pane.names:
+            for d in pane.dirs:
+                name = d.getName()
                 if m := reg.match(name):
                     s = m.group(0)
                     fmt = "{:0" + str(len(s)) + "}"
