@@ -588,15 +588,20 @@ def configure(window: MainWindow) -> None:
             return ""
 
         def get_index(self) -> str:
+            idxs = []
             pane = CPane(window)
             reg = re.compile(r"^\d+")
             for d in pane.dirs:
                 name = d.getName()
                 if m := reg.match(name):
                     s = m.group(0)
-                    fmt = "{:0" + str(len(s)) + "}"
-                    return fmt.format(int(s) + 1)
-            return "0"
+                    idxs.append(int(s))
+            if len(idxs) < 1:
+                return "0"
+            idxs.sort()
+            maximum = idxs[-1]
+            fmt = "{:0" + str(len(str(maximum))) + "}"
+            return fmt.format(maximum + 1)
 
         def get_name(self) -> str:
             line = self.fzf()
