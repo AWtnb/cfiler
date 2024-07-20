@@ -556,23 +556,65 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-S", swap_pane)
 
-    def zymd():
-        exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zymd.exe")
-        if exe_path.exists():
-            pane = CPane(window)
-            cmd = [
-                str(exe_path),
-                "-cur={}".format(pane.currentPath),
-                "-stdout=True",
-            ]
-            proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
-            result = proc.stdout.strip()
-            if proc.returncode != 0:
-                print(result)
-                return
-            pane.mkdir(result)
+    class DirRule:
+        def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
+            self._current_path = current_path
+            self._src_name = src_name
 
-    KEYBINDER.bind("A-N", zymd)
+        def read_src(self) -> str:
+            p = Path(self._current_path)
+            for _ in range(len(self._current_path.split(os.sep))):
+                f = Path(p, self._src_name)
+                if f.exists():
+                    return f.read_text("utf-8")
+                p = p.parent
+            print("src file '{}' not found...".format(self._src_name))
+            return ""
+
+        def fzf(self) -> str:
+            src = self.read_src().strip()
+            if len(src) < 1:
+                return ""
+            try:
+                proc = subprocess.run(
+                    "fzf.exe", input=src, capture_output=True, encoding="utf-8"
+                )
+                result = proc.stdout.strip()
+                if proc.returncode == 0:
+                    return result
+            except Exception as e:
+                print(e)
+            return ""
+
+        def get_index(self) -> str:
+            pane = CPane(window)
+            reg = re.compile(r"^\d+")
+            for name in pane.names:
+                if m := reg.match(name):
+                    s = m.group(0)
+                    fmt = "{:0" + str(len(s)) + "}"
+                    return fmt.format(int(s) + 1)
+            return "0"
+
+        def get_name(self) -> str:
+            line = self.fzf()
+            if -1 < (i := line.find("|")):
+                line = line[:i].strip()
+            if len(line) < 1:
+                return ""
+            if line.startswith("#"):
+                idx = self.get_index()
+                return idx + line[1:]
+            return line
+
+    def ruled_mkdir():
+        pane = CPane(window)
+        dr = DirRule(pane.currentPath)
+        name = dr.get_name()
+        if 0 < len(name):
+            pane.mkdir(name)
+
+    KEYBINDER.bind("A-N", ruled_mkdir)
 
     class zyl:
         def __init__(self, search_all: bool = False) -> None:
@@ -1414,6 +1456,7 @@ def configure(window: MainWindow) -> None:
 def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["J"] = window.command_ScrollDown
     window.keymap["K"] = window.command_ScrollUp
+    window.keymap["C-Comma"] = window.command_ConfigMenu
 
     def open_original(_) -> None:
         path = window.item.getFullpath()
