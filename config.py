@@ -696,7 +696,7 @@ def configure(window: MainWindow) -> None:
 
         extractable = True
         for p in active_pane.selectedItemPaths:
-            if not Path(p).suffix in [".zip", ".7z"]:
+            if Path(p).suffix != ".zip":
                 extractable = False
 
         if extractable:
