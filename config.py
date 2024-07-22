@@ -1489,22 +1489,26 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
 
 def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["F11"] = window.command_ToggleMaximize
-    window.keymap["K"] = window.command_CursorUp
     window.keymap["J"] = window.command_CursorDown
+    window.keymap["K"] = window.command_CursorUp
     window.keymap["S-Semicolon"] = window.command_ZoomIn
     window.keymap["Z"] = window.command_ZoomIn
     window.keymap["Minus"] = window.command_ZoomOut
     window.keymap["S-Z"] = window.command_ZoomOut
     window.keymap["S-Minus"] = window.command_ZoomPolicyOriginal
     window.keymap["O"] = window.command_ZoomPolicyOriginal
-    window.keymap["Left"] = window.command_ScrollLeft
-    window.keymap["Right"] = window.command_ScrollRight
-    window.keymap["Up"] = window.command_ScrollUp
-    window.keymap["Down"] = window.command_ScrollDown
+    window.keymap["Left"] = window.command_CursorUp
+    window.keymap["Right"] = window.command_CursorDown
+    window.keymap["Down"] = window.command_CursorDown
+    window.keymap["Up"] = window.command_CursorUp
+    window.keymap["S-Left"] = window.command_ScrollLeft
+    window.keymap["S-Right"] = window.command_ScrollRight
+    window.keymap["S-Down"] = window.command_ScrollDown
+    window.keymap["S-Up"] = window.command_ScrollUp
     window.keymap["S-H"] = window.command_ScrollLeft
     window.keymap["S-L"] = window.command_ScrollRight
-    window.keymap["S-K"] = window.command_ScrollUp
     window.keymap["S-J"] = window.command_ScrollDown
+    window.keymap["S-K"] = window.command_ScrollUp
     window.keymap["F"] = window.command_ZoomPolicyFit
 
     def open_original(_) -> None:
