@@ -88,6 +88,7 @@ def configure(window: MainWindow) -> None:
         [
             "Period",
             "S-Period",
+            "BackSlash",
         ]
     )
 
@@ -528,6 +529,11 @@ def configure(window: MainWindow) -> None:
         return False
 
     window.enter_hook = hook_enter
+
+    def toggle_hidden() -> None:
+        window.showHiddenFile(not window.isHiddenFileVisible())
+
+    KEYBINDER.bind("C-S-H", toggle_hidden)
 
     def quick_move() -> None:
         pane = CPane(window)
