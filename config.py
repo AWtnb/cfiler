@@ -1015,11 +1015,9 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("A-E", focus_bottom_of_dir)
 
     def duplicate_pane():
-        pane = CPane(window, True)
-        other = CPane(window, False)
-        other.openPath(pane.currentPath)
+        window.command_ChdirInactivePaneToOther(None)
+        pane = CPane(window)
         pane.focusOther()
-        other.focus(pane.cursor)
 
     KEYBINDER.bind("W", duplicate_pane)
 
