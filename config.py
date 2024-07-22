@@ -1484,6 +1484,22 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
 
     window.keymap["O"] = open_original
 
+    def copy_content(_) -> None:
+        enc = window.encoding.encoding
+        if window.encoding.bom:
+            enc = enc + "-sig"
+        path = window.item.getFullpath()
+        content = Path(path).read_text(enc)
+        ckit.setClipboardText(content)
+        window.command_Close(None)
+        print(
+            "decode '{}' and copied content decoded in {}.\n".format(
+                window.item.getName(), enc
+            )
+        )
+
+    window.keymap["C-C"] = copy_content
+
 
 def configure_ListWindow(window: ckit.TextWindow) -> None:
     window.keymap["J"] = window.command_CursorDown
