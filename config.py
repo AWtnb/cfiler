@@ -526,6 +526,13 @@ def configure(window: MainWindow) -> None:
             if word_path.exists():
                 return shell_exec(str(word_path), p)
 
+        if ext in [".pptx", ".ppt"]:
+            word_path = Path(
+                r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PowerPoint.lnk"
+            )
+            if word_path.exists():
+                return shell_exec(str(word_path), p)
+
         return False
 
     window.enter_hook = hook_enter
