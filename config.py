@@ -652,7 +652,7 @@ def configure(window: MainWindow) -> None:
         def check(self) -> bool:
             return self._exe_path.exists() and self._src_path.exists()
 
-        def invoke(self, on_active_pane: bool = True) -> Callable:
+        def invoke(self) -> Callable:
             def _func() -> None:
                 if not self.check():
                     return
@@ -663,19 +663,15 @@ def configure(window: MainWindow) -> None:
                         if result:
                             print(result)
                         return
-                    target_pane = CPane(window, on_active_pane)
-                    target_pane.openPath(result)
-                    if not on_active_pane:
-                        CPane(window).focusOther()
+                    pane = CPane(window)
+                    pane.openPath(result)
 
             return _func
 
     KEYBINDER.bindmulti(
         {
-            "Z": zyl(False).invoke(True),
-            "A-Z": zyl(True).invoke(True),
-            "S-Z": zyl(False).invoke(False),
-            "A-S-Z": zyl(True).invoke(False),
+            "Z": zyl(False).invoke(),
+            "A-Z": zyl(True).invoke(),
         }
     )
 
@@ -692,7 +688,7 @@ def configure(window: MainWindow) -> None:
         def check(self) -> bool:
             return self._exe_path.exists()
 
-        def invoke(self, offset: int, on_active_pane: bool = True) -> Callable:
+        def invoke(self, offset: int) -> Callable:
             def _func() -> None:
                 if not self.check():
                     return
@@ -708,10 +704,8 @@ def configure(window: MainWindow) -> None:
                         if result:
                             print(result)
                         return
-                    target_pane = CPane(window, on_active_pane)
-                    target_pane.openPath(result)
-                    if not on_active_pane:
-                        CPane(window).focusOther()
+                    pane = CPane(window)
+                    pane.openPath(result)
 
             return _func
 
