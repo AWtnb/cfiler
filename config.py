@@ -780,6 +780,30 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-A-P", copy_current_path)
 
+    def copy_name():
+        names = []
+        pane = CPane(window)
+        for item in pane.selectedItems:
+            names.append(item.getName())
+        if len(names) < 1:
+            names.append(pane.focusedItem.getName())
+        ckit.setClipboardText(LINE_BREAK.join(names))
+        window.setStatusMessage("copied name (with extension)", 3000)
+
+    KEYBINDER.bind("C-S-C", copy_name)
+
+    def copy_basename():
+        basenames = []
+        pane = CPane(window)
+        for path in pane.selectedItemPaths:
+            basenames.append(Path(path).stem)
+        if len(basenames) < 1:
+            basenames.append(Path(pane.focusedItemPath).stem)
+        ckit.setClipboardText(LINE_BREAK.join(basenames))
+        window.setStatusMessage("copied name (without extension)", 3000)
+
+    KEYBINDER.bind("C-S-B", copy_basename)
+
     def smart_enter():
         pane = CPane(window)
         if pane.isBlank:
