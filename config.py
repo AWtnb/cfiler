@@ -7,8 +7,9 @@ import shutil
 import subprocess
 import unicodedata
 
+from collections import namedtuple
 from pathlib import Path
-from typing import Callable
+from typing import List, Callable
 
 import ckit
 import pyauto
@@ -1199,18 +1200,19 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-E", edit_config)
 
-    def compare_file_hash():
-        active_pane = CPane(window, True)
-        if len(active_pane.files) < 1:
-            print("no files to compare in active pane.")
-            return
+    ClonedItem = namedtuple("ClonedItem", ["origin", "clones"])
 
-        inactive_pane = CPane(window, False)
-        if len(inactive_pane.files) < 1:
-            print("no files to compare in inactive pane.")
-            return
+    class ClonedItems:
+        _items: List[ClonedItem]
 
-        def bytelen(s: str) -> int:
+        def __init__(self) -> None:
+            self._items = []
+
+        def register(self, item: ClonedItem) -> None:
+            self._items.append(item)
+
+        @staticmethod
+        def count_bytes(s: str) -> int:
             n = 0
             for c in s:
                 if unicodedata.east_asian_width(c) in "FWA":
@@ -1219,90 +1221,98 @@ def configure(window: MainWindow) -> None:
                     n += 1
             return n
 
-        buffer_width = 0
-        for file in active_pane.files:
-            bn = bytelen(file.getName())
-            buffer_width = max(buffer_width, bn)
-        buffer_width += 2
+        @classmethod
+        def get_max_width(cls, names: list) -> int:
+            width = 0
+            for name in names:
+                bn = cls.count_bytes(name)
+                width = max(width, bn)
+            return width + 2
 
-        print("\n------------------")
-        print(" compare md5 hash ")
-        print("------------------\n")
+        def show(self) -> None:
+            names = [item.origin for item in self._items]
+            buffer_width = self.get_max_width(names)
+            for item in self._items:
+                name = item.origin
+                for i, n in enumerate(item.clones):
+                    w = self.count_bytes(name)
+                    if i == 0:
+                        filler = "=" * (buffer_width - w)
+                        print(name, filler, n)
+                    else:
+                        filler = " " * w + "=" * (buffer_width - w)
+                        print("", filler, n)
 
-        table = {}
-        window.setProgressValue(None)
+    class PaneDiff:
+        _active_pane: CPane
+        _inactive_pane: CPane
 
-        def _stoppable(job_item: ckit.JobItem) -> bool:
-            if job_item.isCanceled():
-                return True
-            if job_item.waitPaused():
-                window.setProgressValue(None)
-            return False
+        def __init__(self) -> None:
+            self._active_pane = CPane(window, True)
+            self._inactive_pane = CPane(window, False)
 
-        def _storeInactivePaneHash(job_item: ckit.JobItem) -> None:
-            print("scanning...\n")
-            for item in inactive_pane.items:
-                if _stoppable(job_item):
-                    break
+        @staticmethod
+        def to_hash(path: str) -> str:
+            return hashlib.md5(open(path, "rb").read(64 * 1024)).hexdigest()
+
+        def traverse_inactive_pane(self) -> list:
+            paths = []
+            for item in self._inactive_pane.items:
                 if item.isdir():
                     for _, _, files in item.walk():
-                        if _stoppable(job_item):
-                            break
                         for file in files:
-                            if _stoppable(job_item):
-                                break
-                            name = str(
-                                Path(file.getFullpath()).relative_to(
-                                    inactive_pane.currentPath
-                                )
-                            )
-                            digest = hashlib.md5(
-                                file.open().read(64 * 1024)
-                            ).hexdigest()
-                            table[digest] = table.get(digest, []) + [name]
+                            paths.append(file.getFullpath())
                 else:
-                    name = item.getName()
-                    digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
-                    table[digest] = table.get(digest, []) + [name]
+                    paths.append(item.getFullpath())
+            return paths
 
-        def _clearSelection(job_item: ckit.JobItem) -> None:
-            window.clearProgress()
-            if _stoppable(job_item):
-                return
-            Selector(window, True).clearAll()
-            Selector(window, False).clearAll()
+        def compare(self) -> None:
+            def _scan(job_item: ckit.JobItem) -> None:
+                Selector(window, True).clearAll()
+                Selector(window, False).clearAll()
 
-        def _compareHash(job_item: ckit.JobItem) -> None:
-            window.setProgressValue(None)
-            for item in active_pane.files:
-                if _stoppable(job_item):
-                    break
-                name = item.getName()
-                digest = hashlib.md5(item.open().read(64 * 1024)).hexdigest()
-                if digest in table:
-                    active_pane.selectByName(name)
-                    for i, n in enumerate(table[digest]):
-                        w = bytelen(name)
-                        if i == 0:
-                            filler = "=" * (buffer_width - w)
-                            print(name, filler, n)
-                        else:
-                            filler = " " * w + "=" * (buffer_width - w)
-                            print("", filler, n)
+                print("\n------------------")
+                print(" compare md5 hash ")
+                print("------------------\n")
 
-        def _finish(job_item: ckit.JobItem) -> None:
-            window.clearProgress()
-            if job_item.isCanceled():
-                print("Canceled.\n")
-                return
-            print("\n------------------")
-            print("     FINISHED     ")
-            print("------------------\n")
+                window.setProgressValue(None)
 
-        job_prepare = ckit.JobItem(_storeInactivePaneHash, _clearSelection)
-        job_compare = ckit.JobItem(_compareHash, _finish)
-        window.taskEnqueue(job_prepare, create_new_queue=False)
-        window.taskEnqueue(job_compare, create_new_queue=False)
+                table = {}
+                for path in self.traverse_inactive_pane():
+                    if job_item.isCanceled():
+                        return
+                    rel = Path(path).relative_to(self._inactive_pane.currentPath)
+                    digest = self.to_hash(path)
+                    table[digest] = table.get(digest, []) + [str(rel)]
+
+                cloned_items = ClonedItems()
+                for file in self._active_pane.files:
+                    if job_item.isCanceled():
+                        return
+                    digest = self.to_hash(file.getFullpath())
+                    if digest in table:
+                        name = file.getName()
+                        self._active_pane.selectByName(name)
+                        c = ClonedItem(name, table[digest])
+                        cloned_items.register(c)
+
+                cloned_items.show()
+
+            def _finish(job_item: ckit.JobItem) -> None:
+                window.clearProgress()
+                if job_item.isCanceled():
+                    print("Canceled.\n")
+                else:
+                    print("\n------------------")
+                    print("     FINISHED     ")
+                    print("------------------\n")
+
+            job = ckit.JobItem(_scan, _finish)
+            window.taskEnqueue(job, create_new_queue=False)
+
+    def compare_file_hash():
+        pd = PaneDiff()
+        pd.compare()
 
     def diffinity():
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
