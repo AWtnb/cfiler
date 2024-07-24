@@ -1424,25 +1424,41 @@ def configure(window: MainWindow) -> None:
     def select_byext():
         pane = CPane(window)
         exts = pane.extensions
+        if len(exts) < 1:
+            return
 
-        def _listup_extensions(update_info) -> tuple:
-            found = []
-            cursor_offset = 0
-            for e in exts:
-                if e.startswith(update_info.text):
-                    found.append(e)
-            return found, cursor_offset
-
-        result, mod = window.commandLine(
-            "Extension",
-            auto_complete=True,
-            candidate_handler=_listup_extensions,
+        exts.sort()
+        pos = window.centerOfFocusedPaneInPixel()
+        list_window = ListWindow(
+            x=pos[0],
+            y=pos[1],
+            min_width=40,
+            min_height=1,
+            max_width=window.width() - 5,
+            max_height=window.height() - 3,
+            parent_window=window,
+            ini=window.ini,
+            title="Select Extension",
+            items=exts,
+            initial_select=0,
+            onekey_search=True,
+            onekey_decide=False,
             return_modkey=True,
+            keydown_hook=None,
+            statusbar_handler=None,
         )
-        if result:
-            if not result.startswith("."):
-                result = "." + result
-            SELECTOR.byExtension(result, mod == ckit.MODKEY_SHIFT)
+        window.enable(False)
+        list_window.messageLoop()
+        result, mod = list_window.getResult()
+        window.enable(True)
+        window.activate()
+        list_window.destroy()
+
+        if result < 0:
+            return
+
+        ext = "." + exts[result]
+        SELECTOR.byExtension(ext, mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("S-X", select_byext)
 
