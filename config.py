@@ -397,27 +397,27 @@ def configure(window: MainWindow) -> None:
         def focusedItemPath(self) -> str:
             return self.pathByIndex(self.cursor)
 
-        def finishSelect(self) -> None:
-            self.repaint(PO.FocusedItems | PO.FocusedHeader)
+        def updateSelection(self) -> None:
+            self.repaint(PO.FocusedItems | PO.FocusedHeader | PO.Left | PO.Right)
 
         def toggleSelect(self, i: int) -> None:
             self.fileList.selectItem(i, None)
-            self.finishSelect()
+            self.updateSelection()
 
         def select(self, i: int) -> None:
             self.fileList.selectItem(i, True)
-            self.finishSelect()
+            self.updateSelection()
+
+        def unSelect(self, i: int) -> None:
+            self.fileList.selectItem(i, False)
+            self.updateSelection()
 
         def selectByName(self, name: str) -> None:
             i = self.byName(name)
             if i < 0:
                 return
-            self.fileList.selectItem(i, True)
-            self.finishSelect()
-
-        def unSelect(self, i: int) -> None:
-            self.fileList.selectItem(i, False)
-            self.finishSelect()
+            self.select(i)
+            self.updateSelection()
 
         @property
         def selectionTop(self) -> int:
@@ -1335,6 +1335,9 @@ def configure(window: MainWindow) -> None:
                         self._active_pane.selectByName(name)
                         c = ClonedItem(name, table[digest])
                         cloned_items.register(c)
+
+                        for n in table[digest]:
+                            self._inactive_pane.selectByName(n)
 
                 cloned_items.show()
 
