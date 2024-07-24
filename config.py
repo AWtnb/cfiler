@@ -794,8 +794,9 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-A-P", copy_current_path)
 
     def copy_name():
-        names = []
         pane = CPane(window)
+        if pane.isBlank:
+            return
         items = pane.selectedOrFocusedItems
         names = [item.getName() for item in items]
         ckit.setClipboardText(LINE_BREAK.join(names))
@@ -804,9 +805,11 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-S-C", copy_name)
 
     def copy_basename():
-        basenames = []
         pane = CPane(window)
+        if pane.isBlank:
+            return
         items = pane.selectedOrFocusedItems
+        basenames = []
         for item in items:
             p = Path(item.getFullpath())
             basenames.append(p.stem)
@@ -1256,17 +1259,19 @@ def configure(window: MainWindow) -> None:
                     n += 1
             return n
 
-        @classmethod
-        def get_max_width(cls, names: list) -> int:
+        @property
+        def names(self) -> List[str]:
+            return [item.origin for item in self._items]
+
+        def get_max_width(self) -> int:
             width = 0
-            for name in names:
-                bn = cls.count_bytes(name)
+            for name in self.names:
+                bn = self.count_bytes(name)
                 width = max(width, bn)
             return width + 2
 
         def show(self) -> None:
-            names = [item.origin for item in self._items]
-            buffer_width = self.get_max_width(names)
+            buffer_width = self.get_max_width()
             for item in self._items:
                 name = item.origin
                 for i, n in enumerate(item.clones):
