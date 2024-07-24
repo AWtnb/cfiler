@@ -952,6 +952,12 @@ def configure(window: MainWindow) -> None:
         }
     )
 
+    def unselect_panes() -> None:
+        Selector(window, True).clearAll()
+        Selector(window, False).clearAll()
+
+    KEYBINDER.bind("C-U", unselect_panes)
+
     class SelectionBlock:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
@@ -1388,15 +1394,20 @@ def configure(window: MainWindow) -> None:
         shell_exec(exe_path, param)
 
     def select_name_common():
-        inactive = CPane(window, False)
-        other_names = inactive.names
         pane = CPane(window)
-        for i in range(pane.count):
-            item = pane.byIndex(i)
-            if item.getName() in other_names:
-                pane.select(i)
-            else:
-                pane.unSelect(i)
+        inactive = CPane(window, False)
+
+        if pane.hasSelection:
+            names = [item.getName() for item in pane.selectedItems]
+            search_pane = inactive
+        else:
+            names = inactive.names
+            search_pane = pane
+
+        for i in range(search_pane.count):
+            item = search_pane.byIndex(i)
+            if item.getName() in names:
+                search_pane.select(i)
 
     def select_name_unique():
         inactive = CPane(window, False)
