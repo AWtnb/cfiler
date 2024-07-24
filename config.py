@@ -1399,8 +1399,7 @@ def configure(window: MainWindow) -> None:
             print("selected item on right pane is not comparable.")
             return
 
-        param = '"{}" "{}"'.format(left_path, right_path)
-        shell_exec(exe_path, param)
+        shell_exec(exe_path, str(left_path), str(right_path))
 
     def select_name_common():
         pane = CPane(window)
