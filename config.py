@@ -87,6 +87,8 @@ def configure(window: MainWindow) -> None:
 
     reset_default_keys(
         [
+            "Colon",
+            "S-Colon",
             "Period",
             "S-Period",
             "BackSlash",
@@ -360,6 +362,17 @@ def configure(window: MainWindow) -> None:
                 item = self.byIndex(i)
                 if item.selected():
                     items.append(item)
+            return items
+
+        @property
+        def selectedOrFocusedItems(self) -> list:
+            items = []
+            for i in range(self.count):
+                item = self.byIndex(i)
+                if item.selected():
+                    items.append(item)
+            if len(items) < 1:
+                items.append(self.focusedItem)
             return items
 
         @property
@@ -783,10 +796,8 @@ def configure(window: MainWindow) -> None:
     def copy_name():
         names = []
         pane = CPane(window)
-        for item in pane.selectedItems:
-            names.append(item.getName())
-        if len(names) < 1:
-            names.append(pane.focusedItem.getName())
+        items = pane.selectedOrFocusedItems
+        names = [item.getName() for item in items]
         ckit.setClipboardText(LINE_BREAK.join(names))
         window.setStatusMessage("copied name (with extension)", 3000)
 
@@ -795,10 +806,10 @@ def configure(window: MainWindow) -> None:
     def copy_basename():
         basenames = []
         pane = CPane(window)
-        for path in pane.selectedItemPaths:
-            basenames.append(Path(path).stem)
-        if len(basenames) < 1:
-            basenames.append(Path(pane.focusedItemPath).stem)
+        items = pane.selectedOrFocusedItems
+        for item in items:
+            p = Path(item.getFullpath())
+            basenames.append(p.stem)
         ckit.setClipboardText(LINE_BREAK.join(basenames))
         window.setStatusMessage("copied name (without extension)", 3000)
 
