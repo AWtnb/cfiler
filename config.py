@@ -1013,7 +1013,7 @@ def configure(window: MainWindow) -> None:
                 else:
                     dest = self.topOfNext()
             if dest < 0:
-                dest = pane.count - 1
+                return
             pane.focus(dest)
             pane.scrollToCursor()
 
@@ -1034,7 +1034,7 @@ def configure(window: MainWindow) -> None:
                 else:
                     dest = self.bottomOfPrevious()
             if dest < 0:
-                dest = 0
+                return
             pane.focus(dest)
             pane.scrollToCursor()
 
