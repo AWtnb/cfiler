@@ -377,13 +377,11 @@ def configure(window: MainWindow) -> None:
 
         @property
         def selectedItemPaths(self) -> list:
-            paths = []
-            for i in range(self.count):
-                item = self.byIndex(i)
-                if item.selected():
-                    path = self.pathByIndex(i)
-                    paths.append(path)
-            return paths
+            return [item.getFullpath() for item in self.selectedItems]
+
+        @property
+        def selectedItemNames(self) -> list:
+            return [item.getName() for item in self.selectedItems]
 
         @property
         def focusedItem(self) -> item_Base:
@@ -391,7 +389,7 @@ def configure(window: MainWindow) -> None:
 
         def pathByIndex(self, i: int) -> str:
             item = self.byIndex(i)
-            return str(Path(self.currentPath, item.getName()))
+            return item.getFullpath()
 
         @property
         def focusedItemPath(self) -> str:
@@ -418,6 +416,10 @@ def configure(window: MainWindow) -> None:
                 return
             self.select(i)
             self.displaySelection()
+
+        def selectByNames(self, names: list) -> None:
+            for name in names:
+                self.selectByName(name)
 
         @property
         def selectionTop(self) -> int:
@@ -574,11 +576,18 @@ def configure(window: MainWindow) -> None:
 
     def swap_pane() -> None:
         pane = CPane(window, True)
+        pane_selects = pane.selectedItemNames
         current_path = pane.currentPath
         other_pane = CPane(window, False)
+        other_pane_selects = other_pane.selectedItemNames
         other_path = other_pane.currentPath
+
         pane.openPath(other_path)
+        pane.selectByName(other_pane_selects)
+
         other_pane.openPath(current_path)
+        other_pane.selectByName(pane_selects)
+
         LeftPane(window).activate()
 
     KEYBINDER.bind("A-S", swap_pane)
@@ -1398,7 +1407,7 @@ def configure(window: MainWindow) -> None:
         inactive = CPane(window, False)
 
         if pane.hasSelection:
-            names = [item.getName() for item in pane.selectedItems]
+            names = pane.selectedItemNames
             search_pane = inactive
         else:
             names = inactive.names
