@@ -397,27 +397,27 @@ def configure(window: MainWindow) -> None:
         def focusedItemPath(self) -> str:
             return self.pathByIndex(self.cursor)
 
-        def updateSelection(self) -> None:
-            self.repaint(PO.Left | PO.Right)
+        def displaySelection(self) -> None:
+            self.repaint(PO.Upper)
 
         def toggleSelect(self, i: int) -> None:
             self.fileList.selectItem(i, None)
-            self.updateSelection()
+            self.displaySelection()
 
         def select(self, i: int) -> None:
             self.fileList.selectItem(i, True)
-            self.updateSelection()
+            self.displaySelection()
 
         def unSelect(self, i: int) -> None:
             self.fileList.selectItem(i, False)
-            self.updateSelection()
+            self.displaySelection()
 
         def selectByName(self, name: str) -> None:
             i = self.byName(name)
             if i < 0:
                 return
             self.select(i)
-            self.updateSelection()
+            self.displaySelection()
 
         @property
         def selectionTop(self) -> int:
