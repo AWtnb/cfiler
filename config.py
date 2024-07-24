@@ -1411,7 +1411,7 @@ def configure(window: MainWindow) -> None:
         if result:
             SELECTOR.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    def select_stem_endsswith():
+    def select_stem_endswith():
         result, mod = window.commandLine("EndsWith", return_modkey=True)
         if result:
             SELECTOR.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
@@ -1509,7 +1509,7 @@ def configure(window: MainWindow) -> None:
             "SelectNameUnique": select_name_unique,
             "SelectNameCommon": select_name_common,
             "SelectStemStartsWith": select_stem_startswith,
-            "SelectStemEndsWith": select_stem_endsswith,
+            "SelectStemEndsWith": select_stem_endswith,
             "SelectStemContains": select_stem_contains,
             "SelectByExtension": select_byext,
         }
