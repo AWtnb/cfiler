@@ -398,7 +398,7 @@ def configure(window: MainWindow) -> None:
             return self.pathByIndex(self.cursor)
 
         def updateSelection(self) -> None:
-            self.repaint(PO.FocusedItems | PO.FocusedHeader | PO.Left | PO.Right)
+            self.repaint(PO.Left | PO.Right)
 
         def toggleSelect(self, i: int) -> None:
             self.fileList.selectItem(i, None)
