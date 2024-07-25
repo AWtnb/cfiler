@@ -43,7 +43,13 @@ from cfiler_mainwindow import (
 )
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
-from cfiler_filelist import FileList, item_Base, lister_Default, item_Empty
+from cfiler_filelist import (
+    FileList,
+    item_Base,
+    lister_Default,
+    item_Empty,
+    filter_Default,
+)
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow
@@ -1547,12 +1553,29 @@ def configure(window: MainWindow) -> None:
                 except Exception as e:
                     print(e)
 
+    class custom_filter:
+        def __init__(self, patterns: List[str]) -> None:
+            self.patterns = patterns
+
+        def __call__(self, item) -> bool:
+            return item.getName() in self.patterns
+
+        def __str__(self) -> str:
+            return "[FILTERING]"
+
     def hide_unselected() -> None:
-        pass
+        pane = CPane(window)
+        if pane.hasSelection:
+            names = pane.selectedItemNames
+            window.subThreadCall(pane.fileList.setFilter, (custom_filter(names),))
+            pane.refresh()
+            pane.repaint(PO.Focused)
 
     def clear_filter() -> None:
-        pass
-
+        pane = CPane(window)
+        window.subThreadCall(pane.fileList.setFilter, (filter_Default("*"),))
+        pane.refresh()
+        pane.repaint(PO.Focused)
 
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
