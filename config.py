@@ -1170,10 +1170,22 @@ def configure(window: MainWindow) -> None:
                 if not hasattr(pane.fileList.getLister(), "touch"):
                     return
 
+                basenames = [Path(file.getFullpath()).stem for file in pane.files]
+
+                def _listup_files(update_info) -> tuple:
+                    found = []
+                    cursor_offset = 0
+                    for bn in basenames:
+                        if bn.startswith(update_info.text):
+                            found.append(bn)
+                    return found, cursor_offset
+
                 prompt = "NewFileName"
                 if 0 < len(extension):
                     prompt = prompt + " (.{})".format(extension)
-                result = window.commandLine(prompt)
+                result = window.commandLine(
+                    prompt, auto_complete=True, candidate_handler=_listup_files
+                )
                 if not result:
                     return
                 filename = result.strip()
