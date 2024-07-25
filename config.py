@@ -1587,7 +1587,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         ckit.setClipboardText(content)
         window.command_Close(None)
         print(
-            "decode '{}' and copied content decoded in {}.\n".format(
+            "copied content of '{}' in {} encoding.\n".format(
                 window.item.getName(), enc
             )
         )
