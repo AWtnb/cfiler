@@ -1547,12 +1547,21 @@ def configure(window: MainWindow) -> None:
                 except Exception as e:
                     print(e)
 
+    def hide_unselected() -> None:
+        pass
+
+    def clear_filter() -> None:
+        pass
+
+
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
             window.launcher.command_list += [(name, Keybinder.wrap(func))]
 
     update_command_list(
         {
+            "HideUnselectedItems": hide_unselected,
+            "ClearFilter": clear_filter,
             "Diffinity": diffinity,
             "RenamePseudoVoicing": rename_pseudo_voicing,
             "CompareFileHash": compare_file_hash,
@@ -1613,7 +1622,7 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["Minus"] = window.command_ZoomOut
     window.keymap["S-Z"] = window.command_ZoomOut
     window.keymap["S-Minus"] = window.command_ZoomPolicyOriginal
-    window.keymap["O"] = window.command_ZoomPolicyOriginal
+    window.keymap["A-O"] = window.command_ZoomPolicyOriginal
     window.keymap["Left"] = window.command_CursorUp
     window.keymap["Right"] = window.command_CursorDown
     window.keymap["Down"] = window.command_CursorDown
@@ -1634,4 +1643,4 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         window.command_Close(None)
         pyauto.shellExecute(None, path, "", "")
 
-    window.keymap["C-O"] = open_original
+    window.keymap["O"] = open_original
