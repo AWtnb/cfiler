@@ -739,6 +739,10 @@ def configure(window: MainWindow) -> None:
                             print(result)
                         return
                     pane = CPane(window)
+                    p = Path(result)
+                    if str(p.parent) == pane.currentPath:
+                        pane.focusByName(p.name)
+                        return
                     pane.openPath(result)
 
             return _func
