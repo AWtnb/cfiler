@@ -181,8 +181,7 @@ def configure(window: MainWindow) -> None:
                 except Exception as e:
                     print(e)
 
-        def jump(self) -> None:
-
+        def select(self, prompt: str) -> tuple:
             wnd = self._window
             pos = wnd.centerOfFocusedPaneInPixel()
             list_window = ListWindow(
@@ -194,7 +193,7 @@ def configure(window: MainWindow) -> None:
                 max_height=wnd.height() - 3,
                 parent_window=wnd,
                 ini=wnd.ini,
-                title="Jump (other pane with Shift)",
+                title=prompt,
                 items=wnd.jump_list,
                 initial_select=0,
                 onekey_search=False,
@@ -209,13 +208,18 @@ def configure(window: MainWindow) -> None:
             wnd.enable(True)
             wnd.activate()
             list_window.destroy()
+            return result, mod
+
+        def jump(self) -> None:
+
+            result, mod = self.select("Jump (other pane with Shift)")
 
             if result < 0:
                 return
 
-            dest = wnd.jump_list[result][1]
-            active = CPane(wnd, True)
-            other = CPane(wnd, False)
+            dest = self._window.jump_list[result][1]
+            active = CPane(self._window, True)
+            other = CPane(self._window, False)
             if mod == ckit.MODKEY_SHIFT:
                 other.openPath(dest)
                 active.focusOther()
@@ -1493,7 +1497,7 @@ def configure(window: MainWindow) -> None:
             title="Select Extension",
             items=exts,
             initial_select=0,
-            onekey_search=True,
+            onekey_search=False,
             onekey_decide=False,
             return_modkey=True,
             keydown_hook=None,
@@ -1581,6 +1585,7 @@ def configure(window: MainWindow) -> None:
             names = pane.selectedItemNames
             window.subThreadCall(pane.fileList.setFilter, (custom_filter(names),))
             pane.refresh()
+            pane.focus(0)
             pane.repaint(PO.Focused)
 
     def clear_filter() -> None:
