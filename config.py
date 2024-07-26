@@ -211,20 +211,16 @@ def configure(window: MainWindow) -> None:
             return result, mod
 
         def jump(self) -> None:
-
             result, mod = self.select("Jump (other pane with Shift)")
-
-            if result < 0:
-                return
-
-            dest = self._window.jump_list[result][1]
-            active = CPane(self._window, True)
-            other = CPane(self._window, False)
-            if mod == ckit.MODKEY_SHIFT:
-                other.openPath(dest)
-                active.focusOther()
-            else:
-                active.openPath(dest)
+            if -1 < result:
+                dest = self._window.jump_list[result][1]
+                active = CPane(self._window, True)
+                other = CPane(self._window, False)
+                if mod == ckit.MODKEY_SHIFT:
+                    other.openPath(dest)
+                    active.focusOther()
+                else:
+                    active.openPath(dest)
 
     JUMP_LIST = JumpList(window)
 
