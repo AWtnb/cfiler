@@ -667,13 +667,12 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("A-N", ruled_mkdir)
 
     class zyl:
-        def __init__(self, search_all: bool = False) -> None:
+        def __init__(self) -> None:
             self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
             self._src_path = Path(USER_PROFILE, r"Personal\launch.yaml")
             self._cmd = [
                 str(self._exe_path),
                 "-src={}".format(self._src_path),
-                "-all={}".format(search_all),
                 "-exclude=_obsolete,node_modules",
                 "-stdout=True",
             ]
@@ -681,11 +680,13 @@ def configure(window: MainWindow) -> None:
         def check(self) -> bool:
             return self._exe_path.exists() and self._src_path.exists()
 
-        def invoke(self) -> Callable:
+        def invoke(self, search_all: bool = False) -> Callable:
+            cmd = self._cmd + ["-all={}".format(search_all)]
+
             def _func() -> None:
                 if not self.check():
                     return
-                proc = subprocess.run(self._cmd, capture_output=True, encoding="utf-8")
+                proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
                 result = proc.stdout.strip()
                 if result:
                     if proc.returncode != 0:
@@ -697,32 +698,36 @@ def configure(window: MainWindow) -> None:
 
             return _func
 
-    KEYBINDER.bindmulti(
-        {
-            "Z": zyl(False).invoke(),
-            "A-Z": zyl(True).invoke(),
-        }
-    )
+        def apply(self, key: str) -> None:
+            mapping = {
+                "": False,
+                "A-": True,
+            }
+            for mod, search_all in mapping.items():
+                KEYBINDER.bind(mod + key, self.invoke(search_all))
+
+    zyl().apply("Z")
 
     class zyc:
-        def __init__(self, search_all: bool) -> None:
+        def __init__(self) -> None:
             self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyc.exe")
             self._cmd = [
                 str(self._exe_path),
                 "-exclude=_obsolete,node_modules",
                 "-stdout=True",
-                "-all={}".format(search_all),
             ]
 
         def check(self) -> bool:
             return self._exe_path.exists()
 
-        def invoke(self, offset: int) -> Callable:
+        def invoke(self, search_all: bool, offset: int) -> Callable:
+
             def _func() -> None:
                 if not self.check():
                     return
                 pane = CPane(window)
                 cmd = self._cmd + [
+                    "-all={}".format(search_all),
                     "-offset={}".format(offset),
                     "-cur={}".format(pane.currentPath),
                 ]
@@ -738,14 +743,17 @@ def configure(window: MainWindow) -> None:
 
             return _func
 
+        def apply(self, key: str) -> None:
+            for alt, search_all in {"": False, "A-": True}.items():
+                for shift, offset in {"": -1, "S-": 1}.items():
+                    KEYBINDER.bind(alt + shift + key, self.invoke(search_all, offset))
+
+    zyc().apply("Y")
+
     KEYBINDER.bindmulti(
         {
-            "Y": zyc(False).invoke(-1),
-            "A-Y": zyc(True).invoke(-1),
-            "S-Y": zyc(False).invoke(1),
-            "A-S-Y": zyc(True).invoke(1),
-            "S-F": zyc(False).invoke(0),
-            "C-F": zyc(True).invoke(0),
+            "S-F": zyc().invoke(False, 0),
+            "C-F": zyc().invoke(True, 0),
         }
     )
 
