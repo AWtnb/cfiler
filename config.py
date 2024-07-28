@@ -1188,7 +1188,10 @@ def configure(window: MainWindow) -> None:
                 if not hasattr(pane.fileList.getLister(), "touch"):
                     return
 
-                basenames = [Path(file.getFullpath()).stem for file in pane.files]
+                basenames = []
+                if not pane.isBlank:
+                    for file in pane.files:
+                        basenames.append(Path(file.getName()).stem)
 
                 def _listup_files(update_info) -> tuple:
                     found = []
@@ -1338,7 +1341,9 @@ def configure(window: MainWindow) -> None:
 
         @staticmethod
         def to_hash(path: str) -> str:
-            return hashlib.md5(open(path, "rb").read(64 * 1024)).hexdigest()
+            with open(path, "rb") as f:
+                digest = hashlib.md5(f.read(64 * 1024)).hexdigest()
+            return digest
 
         def traverse_inactive_pane(self) -> list:
             paths = []
