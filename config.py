@@ -589,10 +589,10 @@ def configure(window: MainWindow) -> None:
         other_path = other_pane.currentPath
 
         pane.openPath(other_path)
-        pane.selectByName(other_pane_selects)
+        pane.selectByNames(other_pane_selects)
 
         other_pane.openPath(current_path)
-        other_pane.selectByName(pane_selects)
+        other_pane.selectByNames(pane_selects)
 
         LeftPane(window).activate()
 
