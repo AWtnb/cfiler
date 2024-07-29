@@ -113,7 +113,8 @@ def configure(window: MainWindow) -> None:
             "C-Comma": window.command_ConfigMenu,
             "C-S-Comma": window.command_ConfigMenu2,
             "N": window.command_Rename,
-            "A-C-H": window.command_JumpHistory,
+            "C-H": window.command_JumpHistory,
+            "C-Z": window.command_JumpHistory,
             "Back": window.command_JumpHistory,
             "C-D": window.command_Delete,
             "P": window.command_FocusOther,
@@ -810,7 +811,7 @@ def configure(window: MainWindow) -> None:
     def recylcebin():
         pyauto.shellExecute(None, "shell:RecycleBinFolder", "", "")
 
-    KEYBINDER.bind("C-Z ", recylcebin)
+    KEYBINDER.bind("Delete", recylcebin)
 
     def copy_current_path():
         pane = CPane(window)
