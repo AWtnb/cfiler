@@ -137,7 +137,6 @@ def configure(window: MainWindow) -> None:
             "C-K": window.command_CursorUpSelectedOrBookmark,
             "C-Down": window.command_CursorDownSelectedOrBookmark,
             "C-J": window.command_CursorDownSelectedOrBookmark,
-            "A-M": window.command_MoveInput,
             "C-C": window.command_SetClipboard_Fullpath,
         }
     )
@@ -489,6 +488,24 @@ def configure(window: MainWindow) -> None:
             if focus:
                 self.focus(self._window.cursorFromName(self.fileList, name))
 
+        def copyInternal(
+            self, dest_name: str, items: list, remove_origin: bool = False
+        ) -> None:
+            if remove_origin:
+                mode = "m"
+            else:
+                mode = "c"
+            child_lister = self.lister.getChild(dest_name)
+            window._copyMoveCommon(
+                self.entity,
+                self.lister,
+                child_lister,
+                items,
+                mode,
+                self.fileList.getFilter(),
+            )
+            child_lister.destroy()
+
     class LeftPane(CPane):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_LEFT))
@@ -777,9 +794,6 @@ def configure(window: MainWindow) -> None:
         if len(result) < 1:
             return
         open_path = Path(pane.currentPath, result)
-        if not open_path.exists():
-            print("invalid-path!")
-            return
         if mod == ckit.MODKEY_SHIFT:
             CPane(window, False).openPath(str(open_path))
             pane.focusOther()
@@ -1179,6 +1193,51 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-D", duplicate_file)
 
+    def smart_move_to_dir() -> None:
+        pane = CPane(window)
+
+        items = []
+        for item in pane.selectedItems:
+            if hasattr(item, "delete"):
+                items.append(item)
+
+        if len(items) < 1:
+            return
+
+        dest_dirs = []
+        names = [item.getName() for item in items]
+        for d in pane.dirs:
+            dn = d.getName()
+            if not dn in names:
+                dest_dirs.append(dn)
+
+        def _listup_dests(update_info) -> tuple:
+            found = []
+            cursor_offset = 0
+            for dd in dest_dirs:
+                if dd.startswith(update_info.text):
+                    found.append(dd)
+            return found, cursor_offset
+
+        prompt = "MoveTo"
+        result, mod = window.commandLine(
+            prompt,
+            auto_complete=True,
+            candidate_handler=_listup_dests,
+            return_modkey=True,
+        )
+        if not result:
+            return
+
+        dir_path = Path(pane.currentPath, result)
+        if not dir_path.exists():
+            pane.mkdir(result)
+        pane.copyInternal(result, items, True)
+        if mod == ckit.MODKEY_SHIFT:
+            pane.openPath(str(dir_path))
+
+    KEYBINDER.bind("A-M", smart_move_to_dir)
+
     class TextFileMaker:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
@@ -1241,17 +1300,7 @@ def configure(window: MainWindow) -> None:
 
         dest_name = "_obsolete"
         pane.mkdir(dest_name, False)
-
-        child_lister = pane.lister.getChild(dest_name)
-        window._copyMoveCommon(
-            pane.entity,
-            pane.lister,
-            child_lister,
-            items,
-            "m",
-            pane.fileList.getFilter(),
-        )
-        child_lister.destroy()
+        pane.copyInternal(dest_name, items, True)
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
 
