@@ -254,7 +254,7 @@ def configure(window: MainWindow) -> None:
             self._window.paint(option)
 
         def refresh(self) -> None:
-            self._window.subThreadCall(self.fileList.refresh, ())
+            self._window.subThreadCall(self.fileList.refresh, (False, True))
             self.fileList.applyItems()
 
         @property
@@ -814,19 +814,13 @@ def configure(window: MainWindow) -> None:
 
         if extractable:
 
-            def _tempdir(job_item: ckit.JobItem) -> None:
-                out_dir = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
-                active_pane.lister.mkdir(out_dir, None)
-                job_item.extract_path = str(Path(active_pane.currentPath, out_dir))
+            out_dir = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
+            active_pane.mkdir(out_dir, False)
+            extract_path = str(Path(active_pane.currentPath, out_dir))
 
-            def _extract(job_item: ckit.JobItem) -> None:
-                inactive_pane = CPane(window, False)
-                inactive_pane.openPath(job_item.extract_path)
-                window.command_ExtractArchive(None)
-                active_pane.focusOther()
-
-            job = ckit.JobItem(_tempdir, _extract)
-            window.taskEnqueue(job, create_new_queue=False)
+            inactive_pane = CPane(window, False)
+            inactive_pane.openPath(extract_path)
+            window.command_ExtractArchive(None)
 
     KEYBINDER.bind("A-S-T", smart_extract)
 
