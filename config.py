@@ -1676,7 +1676,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         window.command_Close(None)
         pyauto.shellExecute(None, path, "", "")
 
-    window.keymap["O"] = open_original
+    window.keymap["C-O"] = open_original
 
     def copy_content(_) -> None:
         enc = window.encoding.encoding
@@ -1713,7 +1713,7 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["Minus"] = window.command_ZoomOut
     window.keymap["S-Z"] = window.command_ZoomOut
     window.keymap["S-Minus"] = window.command_ZoomPolicyOriginal
-    window.keymap["A-O"] = window.command_ZoomPolicyOriginal
+    window.keymap["O"] = window.command_ZoomPolicyOriginal
     window.keymap["Left"] = window.command_CursorUp
     window.keymap["Right"] = window.command_CursorDown
     window.keymap["Down"] = window.command_CursorDown
@@ -1734,4 +1734,4 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         window.command_Close(None)
         pyauto.shellExecute(None, path, "", "")
 
-    window.keymap["O"] = open_original
+    window.keymap["C-O"] = open_original
