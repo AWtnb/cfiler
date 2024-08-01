@@ -218,7 +218,6 @@ def configure(window: MainWindow) -> None:
                 other = CPane(self._window, False)
                 if mod == ckit.MODKEY_SHIFT:
                     other.openPath(dest)
-                    active.focusOther()
                 else:
                     active.openPath(dest)
 
