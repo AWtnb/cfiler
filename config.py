@@ -9,7 +9,7 @@ import unicodedata
 
 from collections import namedtuple
 from pathlib import Path
-from typing import List, Callable
+from typing import List, Callable, Union
 
 import ckit
 import pyauto
@@ -293,6 +293,10 @@ def configure(window: MainWindow) -> None:
             return self._pane.cursor
 
         def focus(self, i: int) -> None:
+            if self.isBlank:
+                return
+            if i < 0 or self.count <= i:
+                return
             self._pane.cursor = i
             self.scrollToCursor()
 
@@ -407,13 +411,15 @@ def configure(window: MainWindow) -> None:
             self.fileList.selectItem(i, None)
             self.displaySelection()
 
-        def select(self, i: int) -> None:
-            self.fileList.selectItem(i, True)
+        def setSelectionState(self, i: int, state: Union[bool, None]) -> None:
+            self.fileList.selectItem(i, state)
             self.displaySelection()
 
+        def select(self, i: int) -> None:
+            self.setSelectionState(i, True)
+
         def unSelect(self, i: int) -> None:
-            self.fileList.selectItem(i, False)
-            self.displaySelection()
+            self.setSelectionState(i, False)
 
         def selectByName(self, name: str) -> None:
             i = self.byName(name)
@@ -926,45 +932,42 @@ def configure(window: MainWindow) -> None:
                 if not pane.byIndex(i).isdir():
                     pane.unSelect(i)
 
-        def byFunction(self, func: Callable, unselect: bool = False) -> None:
+        def byFunction(self, func: Callable, negative: bool = False) -> None:
             pane = self.pane
-            if not unselect:
-                self.clearAll()
-            idx = []
-            for i in range(pane.count):
-                path = pane.pathByIndex(i)
-                if func(path):
-                    if unselect:
-                        pane.unSelect(i)
-                    else:
-                        pane.select(i)
-                        idx.append(i)
-            if not unselect and 0 < len(idx):
-                pane.focus(idx[0])
+            if pane.hasSelection:
+                items = pane.selectedItems
+            else:
+                items = pane.items
+            for item in items:
+                path = item.getFullpath()
+                if (negative and not func(path)) or (not negative and func(path)):
+                    i = pane.byName(item.getName())
+                    pane.toggleSelect(i)
+            pane.focus(pane.selectionTop)
 
-        def byExtension(self, s: str, unselect: bool = False) -> None:
+        def byExtension(self, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
                 return Path(path).suffix == s
 
-            self.byFunction(_checkPath, unselect)
+            self.byFunction(_checkPath, negative)
 
-        def stemContains(self, s: str, unselect: bool = False) -> None:
+        def stemContains(self, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
                 return s in Path(path).stem
 
-            self.byFunction(_checkPath, unselect)
+            self.byFunction(_checkPath, negative)
 
-        def stemStartsWith(self, s: str, unselect: bool = False) -> None:
+        def stemStartsWith(self, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
                 return Path(path).stem.startswith(s)
 
-            self.byFunction(_checkPath, unselect)
+            self.byFunction(_checkPath, negative)
 
-        def stemEndsWith(self, s: str, unselect: bool = False) -> None:
+        def stemEndsWith(self, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
                 return Path(path).stem.endswith(s)
 
-            self.byFunction(_checkPath, unselect)
+            self.byFunction(_checkPath, negative)
 
         def toTop(self) -> None:
             pane = self.pane
@@ -1504,15 +1507,16 @@ def configure(window: MainWindow) -> None:
                 search_pane.select(i)
 
     def select_name_unique():
-        inactive = CPane(window, False)
-        other_names = inactive.names
         pane = CPane(window)
+        names = pane.names
+        other = CPane(window, False)
+        other_names = other.names
         for i in range(pane.count):
             item = pane.byIndex(i)
-            if item.getName() in other_names:
-                pane.unSelect(i)
-            else:
-                pane.select(i)
+            pane.setSelectionState(i, item.getName() not in other_names)
+        for i in range(other.count):
+            item = other.byIndex(i)
+            other.setSelectionState(i, item.getName() not in names)
 
     def select_stem_startswith():
         result, mod = window.commandLine("StartsWith", return_modkey=True)
