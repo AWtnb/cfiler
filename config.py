@@ -93,6 +93,7 @@ def configure(window: MainWindow) -> None:
 
     reset_default_keys(
         [
+            "Q",
             "Colon",
             "S-Colon",
             "Period",
@@ -1649,6 +1650,8 @@ def configure(window: MainWindow) -> None:
         window.subThreadCall(pane.fileList.setFilter, (filter_Default("*"),))
         pane.refresh()
         pane.repaint(PO.Focused)
+
+    KEYBINDER.bind("Q", clear_filter)
 
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
