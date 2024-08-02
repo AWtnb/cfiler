@@ -1311,6 +1311,7 @@ def configure(window: MainWindow) -> None:
 
     def reload_config():
         window.configure()
+        window.reloadTheme()
         window.command_MoveSeparatorCenter(None)
         LeftPane(window).activate()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
