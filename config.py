@@ -139,6 +139,8 @@ def configure(window: MainWindow) -> None:
             "C-Down": window.command_CursorDownSelectedOrBookmark,
             "C-J": window.command_CursorDownSelectedOrBookmark,
             "C-C": window.command_SetClipboard_Fullpath,
+            "S-SemiColon": window.command_MoveSeparatorLeft,
+            "SemiColon": window.command_MoveSeparatorRight,
         }
     )
 
