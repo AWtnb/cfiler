@@ -553,6 +553,9 @@ def configure(window: MainWindow) -> None:
         p = pane.focusedItem.getFullpath()
         ext = Path(p).suffix
 
+        if ext == ".zip":
+            return True
+
         if ext == ".pdf":
             sumatra_path = Path(
                 USER_PROFILE, r"AppData\Local\SumatraPDF\SumatraPDF.exe"
@@ -878,6 +881,8 @@ def configure(window: MainWindow) -> None:
         if pane.focusedItem.isdir():
             window.command_Enter(None)
         else:
+            if Path(pane.focusedItemPath).suffix == ".zip":
+                return
             window.command_Execute(None)
 
     KEYBINDER.bind("L", smart_enter)
