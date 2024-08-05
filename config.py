@@ -1169,30 +1169,14 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("V", on_vscode)
 
-    def unstoppable_copy(src_path: str, new_path: str) -> None:
-        pane = CPane(window)
-
-        def _copy(_) -> None:
-            s = Path(src_path)
-            if s.is_dir():
-                shutil.copytree(src_path, new_path)
-            else:
-                shutil.copy(src_path, new_path)
-
-        def _finished(_) -> None:
-            pane.refresh()
-            pane.focusByName(Path(new_path).name)
-
-        job = ckit.JobItem(_copy, _finished)
-        window.taskEnqueue(job, create_new_queue=False)
-
     def duplicate_file():
         pane = CPane(window)
         src_path = Path(pane.focusedItemPath)
+        offset = len(src_path.stem)
         result = window.commandLine(
             title="NewName",
             text=src_path.name,
-            selection=[len(src_path.stem), len(src_path.stem)],
+            selection=[offset, offset],
         )
 
         if result:
@@ -1203,7 +1187,16 @@ def configure(window: MainWindow) -> None:
             if new_path.exists():
                 print("same item exists!")
                 return
-            unstoppable_copy(str(src_path), new_path)
+
+            def _copy_as(new_path: str) -> None:
+                if Path(src_path).is_dir():
+                    shutil.copytree(src_path, new_path)
+                else:
+                    shutil.copy(src_path, new_path)
+
+            window.subThreadCall(_copy_as, (new_path,))
+            pane.refresh()
+            pane.focusByName(Path(new_path).name)
 
     KEYBINDER.bind("S-D", duplicate_file)
 
