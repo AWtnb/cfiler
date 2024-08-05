@@ -1683,9 +1683,30 @@ def configure(window: MainWindow) -> None:
 
 
 def configure_TextViewer(window: ckit.TextWindow) -> None:
+    window.keymap["E"] = lambda _: None
     window.keymap["J"] = window.command_ScrollDown
     window.keymap["K"] = window.command_ScrollUp
+    window.keymap["C-J"] = window.command_PageDown
+    window.keymap["C-K"] = window.command_PageUp
+    window.keymap["L"] = window.command_PageDown
+    window.keymap["H"] = window.command_PageUp
+    window.keymap["Right"] = window.command_PageDown
+    window.keymap["Left"] = window.command_PageUp
     window.keymap["C-Comma"] = window.command_ConfigMenu
+
+    def to_top(_) -> None:
+        window.scroll_info.pos = 0
+        window.paint()
+
+    window.keymap["A"] = to_top
+    window.keymap["Home"] = to_top
+
+    def to_end(_) -> None:
+        window.scroll_info.pos = window._numLines() - 1
+        window.paint()
+
+    window.keymap["E"] = to_end
+    window.keymap["End"] = to_end
 
     def open_original(_) -> None:
         path = window.item.getFullpath()
