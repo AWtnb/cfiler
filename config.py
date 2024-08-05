@@ -142,6 +142,7 @@ def configure(window: MainWindow) -> None:
             "C-C": window.command_SetClipboard_Fullpath,
             "S-SemiColon": window.command_MoveSeparatorLeft,
             "SemiColon": window.command_MoveSeparatorRight,
+            "A-S": window.command_SetSorter,
         }
     )
 
@@ -626,7 +627,7 @@ def configure(window: MainWindow) -> None:
 
         LeftPane(window).activate()
 
-    KEYBINDER.bind("A-S", swap_pane)
+    KEYBINDER.bind("S", swap_pane)
 
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
