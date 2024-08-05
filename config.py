@@ -118,6 +118,7 @@ def configure(window: MainWindow) -> None:
             "C-Z": window.command_JumpHistory,
             "Back": window.command_JumpHistory,
             "C-D": window.command_Delete,
+            "C-A-D": window.command_SelectDrive,
             "P": window.command_FocusOther,
             "C-L": window.command_FocusOther,
             "O": window.command_ChdirActivePaneToOther,
@@ -1120,6 +1121,7 @@ def configure(window: MainWindow) -> None:
         pane.focusOther()
 
     KEYBINDER.bind("W", duplicate_pane)
+    KEYBINDER.bind("D", duplicate_pane)
 
     def open_on_explorer():
         pane = CPane(window, True)
