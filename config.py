@@ -1212,17 +1212,17 @@ def configure(window: MainWindow) -> None:
         if len(items) < 1:
             return
 
-        dest_dirs = []
+        possible_dests = []
         names = [item.getName() for item in items]
         for d in pane.dirs:
             dn = d.getName()
             if not dn in names:
-                dest_dirs.append(dn)
+                possible_dests.append(dn)
 
-        def _listup_dests(update_info) -> tuple:
+        def _listup_dests(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
             found = []
             cursor_offset = 0
-            for dd in dest_dirs:
+            for dd in possible_dests:
                 if dd.startswith(update_info.text):
                     found.append(dd)
             return found, cursor_offset
@@ -1261,7 +1261,7 @@ def configure(window: MainWindow) -> None:
                     for file in pane.files:
                         basenames.append(Path(file.getName()).stem)
 
-                def _listup_files(update_info) -> tuple:
+                def _listup_files(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
                     found = []
                     cursor_offset = 0
                     for bn in basenames:
