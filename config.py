@@ -753,7 +753,8 @@ def configure(window: MainWindow) -> None:
 
         def invoke(self, search_all: bool, offset: int) -> Callable:
 
-            def _func() -> None:
+            def _find(job_item: ckit.JobItem) -> None:
+                job_item.result = None
                 if not self.check():
                     return
                 pane = CPane(window)
@@ -769,14 +770,23 @@ def configure(window: MainWindow) -> None:
                         if result:
                             print(result)
                         return
-                    pane = CPane(window)
+                    job_item.result = result
+
+            def _open(job_item: ckit.JobItem) -> None:
+                pane = CPane(window)
+                result = job_item.result
+                if result:
                     p = Path(result)
                     if str(p.parent) == pane.currentPath:
                         pane.focusByName(p.name)
                         return
                     pane.openPath(result)
 
-            return _func
+            def _wrapper() -> None:
+                job = ckit.JobItem(_find, _open)
+                window.taskEnqueue(job, create_new_queue=False)
+
+            return _wrapper
 
         def apply(self, key: str) -> None:
             for alt, search_all in {"": False, "A-": True}.items():
@@ -1261,7 +1271,9 @@ def configure(window: MainWindow) -> None:
                     for file in pane.files:
                         basenames.append(Path(file.getName()).stem)
 
-                def _listup_files(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
+                def _listup_files(
+                    update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+                ) -> tuple:
                     found = []
                     cursor_offset = 0
                     for bn in basenames:
