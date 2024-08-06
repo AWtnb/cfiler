@@ -723,7 +723,8 @@ def configure(window: MainWindow) -> None:
         def invoke(self, search_all: bool = False) -> Callable:
             cmd = self._cmd + ["-all={}".format(search_all)]
 
-            def _func() -> None:
+            def _find(job_item: ckit.JobItem) -> None:
+                job_item.result = None
                 if not self.check():
                     return
                 proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
@@ -733,10 +734,17 @@ def configure(window: MainWindow) -> None:
                         if result:
                             print(result)
                         return
-                    pane = CPane(window)
-                    pane.openPath(result)
+                    job_item.result = result
 
-            return _func
+            def _open(job_item: ckit.JobItem) -> None:
+                pane = CPane(window)
+                pane.openPath(job_item.result)
+
+            def _wrapper() -> None:
+                job = ckit.JobItem(_find, _open)
+                window.taskEnqueue(job, create_new_queue=False)
+
+            return _wrapper
 
         def apply(self, key: str) -> None:
             mapping = {
