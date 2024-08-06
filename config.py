@@ -642,12 +642,12 @@ def configure(window: MainWindow) -> None:
                 if f.exists():
                     return f.read_text("utf-8")
                 p = p.parent
-            print("src file '{}' not found...".format(self._src_name))
             return ""
 
         def fzf(self) -> str:
             src = self.read_src().strip()
             if len(src) < 1:
+                print("src file '{}' not found...".format(self._src_name))
                 return ""
             try:
                 proc = subprocess.run(
@@ -690,10 +690,19 @@ def configure(window: MainWindow) -> None:
 
     def ruled_mkdir():
         pane = CPane(window)
-        dr = DirRule(pane.currentPath)
-        name = dr.get_name()
-        if 0 < len(name):
-            pane.mkdir(name)
+
+        def _get_name(job_item: ckit.JobItem) -> None:
+            job_item.name = ""
+            dr = DirRule(pane.currentPath)
+            job_item.name = dr.get_name()
+
+        def _mkdir(job_item: ckit.JobItem) -> None:
+            name = job_item.name
+            if 0 < len(name):
+                pane.mkdir(name)
+
+        job = ckit.JobItem(_get_name, _mkdir)
+        window.taskEnqueue(job, create_new_queue=False)
 
     KEYBINDER.bind("A-N", ruled_mkdir)
 
