@@ -231,10 +231,13 @@ def configure(window: MainWindow) -> None:
     JUMP_LIST.update(
         {
             "Desktop": str(Path(USER_PROFILE, "Desktop")),
-            "Scan": r"X:\scan",
+            "Dropbox": str(
+                Path(USER_PROFILE, "Dropbox")
+            ),
             "Dropbox Share": str(
                 Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
             ),
+            "Scan": r"X:\scan",
         }
     )
 
