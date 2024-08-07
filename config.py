@@ -130,6 +130,7 @@ def configure(window: MainWindow) -> None:
             "J": window.command_CursorDown,
             "K": window.command_CursorUp,
             "C-S-P": window.command_CommandLine,
+            "C-S-Space": window.command_CommandLine,
             "C-S-N": window.command_Mkdir,
             "H": window.command_GotoParentDir,
             "A-C": window.command_ContextMenu,
@@ -1696,6 +1697,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "ExtractZipSmart": smart_extract,
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
             "Diffinity": diffinity,
