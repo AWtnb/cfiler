@@ -540,9 +540,6 @@ def configure(window: MainWindow) -> None:
     def shell_exec(path: str, *args) -> bool:
         if type(path) is not str:
             path = str(path)
-        if not Path(path).exists():
-            print("invalid path: '{}'".format(path))
-            return False
         params = []
         for arg in args:
             if len(arg.strip()):
@@ -550,8 +547,12 @@ def configure(window: MainWindow) -> None:
                     params.append('"{}"'.format(arg))
                 else:
                     params.append(arg)
-        pyauto.shellExecute(None, path, " ".join(params), "")
-        return True
+        try:
+            pyauto.shellExecute(None, path, " ".join(params), "")
+            return True
+        except:
+            print("invalid path: '{}'".format(path))
+            return False
 
     def hook_enter() -> None:
         pane = CPane(window)
@@ -868,7 +869,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("A-S-T", smart_extract)
 
     def recylcebin():
-        pyauto.shellExecute(None, "shell:RecycleBinFolder", "", "")
+        shell_exec("shell:RecycleBinFolder")
 
     KEYBINDER.bind("Delete", recylcebin)
 
