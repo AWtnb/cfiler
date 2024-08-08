@@ -742,8 +742,9 @@ def configure(window: MainWindow) -> None:
                     job_item.result = result
 
             def _open(job_item: ckit.JobItem) -> None:
-                pane = CPane(window)
-                pane.openPath(job_item.result)
+                if job_item.result:
+                    pane = CPane(window)
+                    pane.openPath(job_item.result)
 
             def _wrapper() -> None:
                 job = ckit.JobItem(_find, _open)
@@ -795,9 +796,9 @@ def configure(window: MainWindow) -> None:
                     job_item.result = result
 
             def _open(job_item: ckit.JobItem) -> None:
-                pane = CPane(window)
                 result = job_item.result
                 if result:
+                    pane = CPane(window)
                     p = Path(result)
                     if str(p.parent) == pane.currentPath:
                         pane.focusByName(p.name)
