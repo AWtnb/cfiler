@@ -1693,12 +1693,17 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("Q", clear_filter)
 
+    def reset_hotkey() -> None:
+        window.ini.set("HOTKEY", "activate_vk", "0")
+        window.ini.set("HOTKEY", "activate_mod", "0")
+
     def update_command_list(command_table: dict) -> None:
         for name, func in command_table.items():
             window.launcher.command_list += [(name, Keybinder.wrap(func))]
 
     update_command_list(
         {
+            "ResetHotkey": reset_hotkey,
             "ExtractZipSmart": smart_extract,
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
