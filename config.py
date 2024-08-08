@@ -849,24 +849,27 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F", smart_jump_input)
 
     def smart_extract():
+        archive_exts = []
+        for archiver in window.archiver_list:
+            for ext in archiver[0].split():
+                archive_exts.append(ext[1:])
+
         active_pane = CPane(window)
+
+        for item in active_pane.selectedItems:
+            if Path(item.getFullpath()).suffix not in archive_exts:
+                active_pane.unSelect(active_pane.byName(item.getName()))
+
         if len(active_pane.selectedItems) < 1:
             return
 
-        extractable = True
-        for p in active_pane.selectedItemPaths:
-            if Path(p).suffix != ".zip":
-                extractable = False
+        out_dir = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
+        active_pane.mkdir(out_dir, False)
+        extract_path = str(Path(active_pane.currentPath, out_dir))
 
-        if extractable:
-
-            out_dir = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
-            active_pane.mkdir(out_dir, False)
-            extract_path = str(Path(active_pane.currentPath, out_dir))
-
-            inactive_pane = CPane(window, False)
-            inactive_pane.openPath(extract_path)
-            window.command_ExtractArchive(None)
+        inactive_pane = CPane(window, False)
+        inactive_pane.openPath(extract_path)
+        window.command_ExtractArchive(None)
 
     KEYBINDER.bind("A-S-T", smart_extract)
 
