@@ -121,6 +121,7 @@ def configure(window: MainWindow) -> None:
             "C-A-D": window.command_SelectDrive,
             "P": window.command_FocusOther,
             "C-L": window.command_FocusOther,
+            "C-Right": window.command_FocusOther,
             "O": window.command_ChdirActivePaneToOther,
             "S-O": window.command_ChdirInactivePaneToOther,
             "A": window.command_CursorTop,
@@ -133,6 +134,7 @@ def configure(window: MainWindow) -> None:
             "C-S-Space": window.command_CommandLine,
             "C-S-N": window.command_Mkdir,
             "H": window.command_GotoParentDir,
+            "Left": window.command_GotoParentDir,
             "A-C": window.command_ContextMenu,
             "A-S-C": window.command_ContextMenuDir,
             "C-N": window.command_DuplicateCfiler,
@@ -232,9 +234,7 @@ def configure(window: MainWindow) -> None:
     JUMP_LIST.update(
         {
             "Desktop": str(Path(USER_PROFILE, "Desktop")),
-            "Dropbox": str(
-                Path(USER_PROFILE, "Dropbox")
-            ),
+            "Dropbox": str(Path(USER_PROFILE, "Dropbox")),
             "Dropbox Share": str(
                 Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
             ),
@@ -921,6 +921,7 @@ def configure(window: MainWindow) -> None:
             window.command_Execute(None)
 
     KEYBINDER.bind("L", smart_enter)
+    KEYBINDER.bind("Right", smart_enter)
 
     class Selector:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
