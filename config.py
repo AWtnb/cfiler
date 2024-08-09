@@ -204,7 +204,7 @@ def configure(window: MainWindow) -> None:
                 title=prompt,
                 items=wnd.jump_list,
                 initial_select=0,
-                onekey_search=False,
+                onekey_search=True,
                 onekey_decide=False,
                 return_modkey=True,
                 keydown_hook=None,
