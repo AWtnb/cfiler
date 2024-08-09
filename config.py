@@ -157,12 +157,12 @@ def configure(window: MainWindow) -> None:
         def wrap(func: Callable) -> Callable:
             if inspect.signature(func).parameters.items():
 
-                def _callback_with_arg(arg):
+                def _callback_with_arg(arg) -> None:
                     func(arg)
 
                 return _callback_with_arg
 
-            def _callback(_):
+            def _callback(_) -> None:
                 func()
 
             return _callback
@@ -465,7 +465,7 @@ def configure(window: MainWindow) -> None:
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
 
-        def openPath(self, path: str):
+        def openPath(self, path: str) -> None:
             target = Path(path)
             if not target.exists():
                 print("invalid path: '{}'".format(path))
@@ -700,7 +700,7 @@ def configure(window: MainWindow) -> None:
                 return idx + line[1:]
             return line
 
-    def ruled_mkdir():
+    def ruled_mkdir() -> None:
         pane = CPane(window)
 
         def _get_name(job_item: ckit.JobItem) -> None:
@@ -828,7 +828,7 @@ def configure(window: MainWindow) -> None:
         }
     )
 
-    def smart_jump_input():
+    def smart_jump_input() -> None:
         pane = CPane(window)
         result, mod = window.commandLine(
             title="JumpInputSmart",
@@ -851,7 +851,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("F", smart_jump_input)
 
-    def smart_extract():
+    def smart_extract() -> None:
         archive_exts = archive_extensions()
 
         active_pane = CPane(window)
@@ -873,12 +873,12 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-S-T", smart_extract)
 
-    def recylcebin():
+    def recylcebin() -> None:
         shell_exec("shell:RecycleBinFolder")
 
     KEYBINDER.bind("Delete", recylcebin)
 
-    def copy_current_path():
+    def copy_current_path() -> None:
         pane = CPane(window)
         p = pane.currentPath
         ckit.setClipboardText(p)
@@ -886,7 +886,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-A-P", copy_current_path)
 
-    def copy_name():
+    def copy_name() -> None:
         pane = CPane(window)
         if pane.isBlank:
             return
@@ -897,7 +897,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-S-C", copy_name)
 
-    def copy_basename():
+    def copy_basename() -> None:
         pane = CPane(window)
         if pane.isBlank:
             return
@@ -911,7 +911,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-S-B", copy_basename)
 
-    def smart_enter():
+    def smart_enter() -> None:
         pane = CPane(window)
         if pane.isBlank:
             pane.focusOther()
@@ -1153,7 +1153,14 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-E", focus_bottom_of_dir)
 
-    def duplicate_pane():
+    def to_desktop() -> None:
+        desktop_path = str(Path(USER_PROFILE, "Desktop"))
+        CPane(window, True).openPath(desktop_path)
+        window.command_ChdirInactivePaneToOther(None)
+
+    KEYBINDER.bind("0", to_desktop)
+
+    def duplicate_pane() -> None:
         window.command_ChdirInactivePaneToOther(None)
         pane = CPane(window)
         pane.focusOther()
@@ -1161,13 +1168,13 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("W", duplicate_pane)
     KEYBINDER.bind("D", duplicate_pane)
 
-    def open_on_explorer():
+    def open_on_explorer() -> None:
         pane = CPane(window, True)
         shell_exec(pane.currentPath)
 
     KEYBINDER.bind("C-S-E", open_on_explorer)
 
-    def open_to_other():
+    def open_to_other() -> None:
         active_pane = CPane(window, True)
         inactive_pane = CPane(window, False)
         inactive_pane.openPath(active_pane.focusedItemPath)
@@ -1175,7 +1182,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-L", open_to_other)
 
-    def open_parent_to_other():
+    def open_parent_to_other() -> None:
         active_pane = CPane(window, True)
         parent = str(Path(active_pane.currentPath).parent)
         current_name = str(Path(active_pane.currentPath).name)
@@ -1186,7 +1193,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-U", open_parent_to_other)
 
-    def on_pdf_xchange_editor():
+    def on_pdf_xchange_editor() -> None:
         xchange_path = r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
         if Path(xchange_path).exists():
             pane = CPane(window)
@@ -1199,7 +1206,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-P", on_pdf_xchange_editor)
 
-    def on_vscode():
+    def on_vscode() -> None:
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
         if vscode_path.exists():
             pane = CPane(window)
@@ -1207,7 +1214,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("V", on_vscode)
 
-    def duplicate_file():
+    def duplicate_file() -> None:
         pane = CPane(window)
         src_path = Path(pane.focusedItemPath)
         offset = len(src_path.stem)
@@ -1334,7 +1341,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("A-T", TEXT_FILE_MAKER.invoke("md"))
     KEYBINDER.bind("S-T", TEXT_FILE_MAKER.invoke(""))
 
-    def to_obsolete_dir():
+    def to_obsolete_dir() -> None:
         pane = CPane(window)
 
         items = []
@@ -1351,7 +1358,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
 
-    def reload_config():
+    def reload_config() -> None:
         window.configure()
         window.reloadTheme()
         window.command_MoveSeparatorCenter(None)
@@ -1362,13 +1369,13 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-R", reload_config)
     KEYBINDER.bind("F5", reload_config)
 
-    def open_doc():
+    def open_doc() -> None:
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
         shell_exec(help_path)
 
     KEYBINDER.bind("A-H", open_doc)
 
-    def edit_config():
+    def edit_config() -> None:
         dir_path = Path(USER_PROFILE, r"Sync\develop\repo\cfiler")
         if dir_path.exists():
             dp = str(dir_path)
@@ -1501,11 +1508,11 @@ def configure(window: MainWindow) -> None:
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
 
-    def compare_file_hash():
+    def compare_file_hash() -> None:
         pd = PaneDiff()
         pd.compare()
 
-    def diffinity():
+    def diffinity() -> None:
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
         if not exe_path.exists():
             print("cannnot find diffinity.exe...")
@@ -1534,7 +1541,7 @@ def configure(window: MainWindow) -> None:
 
         shell_exec(exe_path, str(left_path), str(right_path))
 
-    def select_name_common():
+    def select_name_common() -> None:
         pane = CPane(window)
         inactive = CPane(window, False)
 
@@ -1550,7 +1557,7 @@ def configure(window: MainWindow) -> None:
             if item.getName() in names:
                 search_pane.select(i)
 
-    def select_name_unique():
+    def select_name_unique() -> None:
         pane = CPane(window)
         names = pane.names
         other = CPane(window, False)
@@ -1562,22 +1569,22 @@ def configure(window: MainWindow) -> None:
             item = other.byIndex(i)
             other.setSelectionState(i, item.getName() not in names)
 
-    def select_stem_startswith():
+    def select_stem_startswith() -> None:
         result, mod = window.commandLine("StartsWith", return_modkey=True)
         if result:
             SELECTOR.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    def select_stem_endswith():
+    def select_stem_endswith() -> None:
         result, mod = window.commandLine("EndsWith", return_modkey=True)
         if result:
             SELECTOR.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    def select_stem_contains():
+    def select_stem_contains() -> None:
         result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
             SELECTOR.stemContains(result, mod == ckit.MODKEY_SHIFT)
 
-    def select_byext():
+    def select_byext() -> None:
         pane = CPane(window)
         exts = pane.extensions
         if len(exts) < 1:
