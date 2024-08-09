@@ -555,12 +555,19 @@ def configure(window: MainWindow) -> None:
             print("invalid path: '{}'".format(path))
             return False
 
+    def archive_extensions() -> list:
+        exts = []
+        for archiver in window.archiver_list:
+            for ext in archiver[0].split():
+                exts.append(ext[1:])
+        return exts
+
     def hook_enter() -> None:
         pane = CPane(window)
         p = pane.focusedItem.getFullpath()
         ext = Path(p).suffix
 
-        if ext == ".zip":
+        if ext in archive_extensions():
             return True
 
         if ext == ".pdf":
@@ -845,10 +852,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F", smart_jump_input)
 
     def smart_extract():
-        archive_exts = []
-        for archiver in window.archiver_list:
-            for ext in archiver[0].split():
-                archive_exts.append(ext[1:])
+        archive_exts = archive_extensions()
 
         active_pane = CPane(window)
 
