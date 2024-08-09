@@ -1155,8 +1155,11 @@ def configure(window: MainWindow) -> None:
 
     def to_desktop() -> None:
         desktop_path = str(Path(USER_PROFILE, "Desktop"))
-        CPane(window, True).openPath(desktop_path)
+        pane = CPane(window, True)
+        if pane.currentPath != desktop_path:
+            pane.openPath(desktop_path)
         window.command_ChdirInactivePaneToOther(None)
+        LeftPane(window).activate()
 
     KEYBINDER.bind("0", to_desktop)
 
