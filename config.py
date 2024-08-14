@@ -1153,16 +1153,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-E", focus_bottom_of_dir)
 
-    def to_desktop() -> None:
-        desktop_path = str(Path(USER_PROFILE, "Desktop"))
-        pane = CPane(window, True)
-        if pane.currentPath != desktop_path:
-            pane.openPath(desktop_path)
-        window.command_ChdirInactivePaneToOther(None)
-        LeftPane(window).activate()
-
-    KEYBINDER.bind("0", to_desktop)
-
     def duplicate_pane() -> None:
         window.command_ChdirInactivePaneToOther(None)
         pane = CPane(window)
@@ -1371,6 +1361,16 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-R", reload_config)
     KEYBINDER.bind("F5", reload_config)
+
+    def starting_position() -> None:
+        desktop_path = str(Path(USER_PROFILE, "Desktop"))
+        pane = CPane(window, True)
+        if pane.currentPath != desktop_path:
+            pane.openPath(desktop_path)
+        window.command_ChdirInactivePaneToOther(None)
+        reload_config()
+
+    KEYBINDER.bind("0", starting_position)
 
     def open_doc() -> None:
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
