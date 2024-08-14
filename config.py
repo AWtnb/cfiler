@@ -128,8 +128,6 @@ def configure(window: MainWindow) -> None:
             "E": window.command_CursorBottom,
             "Home": window.command_CursorTop,
             "End": window.command_CursorBottom,
-            "J": window.command_CursorDown,
-            "K": window.command_CursorUp,
             "C-S-P": window.command_CommandLine,
             "C-S-Space": window.command_CommandLine,
             "C-S-N": window.command_Mkdir,
@@ -537,6 +535,28 @@ def configure(window: MainWindow) -> None:
             if self._window.focus == MainWindow.FOCUS_LEFT:
                 self._window.focus = MainWindow.FOCUS_RIGHT
             self.repaint(PO.Left | PO.Right)
+
+    def smart_cursorUp(_) -> None:
+        pane = CPane(window)
+        if pane.isBlank or pane.count == 1:
+            return
+        pane.entity.cursor -= 1
+        if pane.cursor < 0:
+            pane.entity.cursor = pane.count - 1
+        pane.scrollToCursor()
+
+    KEYBINDER.bind("K", smart_cursorUp)
+
+    def smart_cursorDown(_) -> None:
+        pane = CPane(window)
+        if pane.isBlank or pane.count == 1:
+            return
+        pane.entity.cursor += 1
+        if pane.count - 1 < pane.cursor:
+            pane.entity.cursor = 0
+        pane.scrollToCursor()
+
+    KEYBINDER.bind("J", smart_cursorDown)
 
     def shell_exec(path: str, *args) -> bool:
         if type(path) is not str:
@@ -1808,8 +1828,27 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
 
 
 def configure_ListWindow(window: ckit.TextWindow) -> None:
-    window.keymap["J"] = window.command_CursorDown
-    window.keymap["K"] = window.command_CursorUp
+
+    def smart_cursorUp(_) -> None:
+        window.select -= 1
+        if window.select < 0:
+            window.select = len(window.items) - 1
+        window.scroll_info.makeVisible(
+            window.select, window.itemsHeight(), window.scroll_margin
+        )
+        window.paint()
+
+    def smart_cursorDown(_) -> None:
+        window.select += 1
+        if len(window.items) - 1 < window.select:
+            window.select = 0
+        window.scroll_info.makeVisible(
+            window.select, window.itemsHeight(), window.scroll_margin
+        )
+        window.paint()
+
+    window.keymap["J"] = smart_cursorDown
+    window.keymap["K"] = smart_cursorUp
     window.keymap["C-J"] = window.command_CursorDownMark
     window.keymap["C-K"] = window.command_CursorUpMark
     for mod in ["", "S-"]:
