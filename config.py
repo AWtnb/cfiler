@@ -1412,7 +1412,8 @@ def configure(window: MainWindow) -> None:
         if pane.currentPath != desktop_path:
             pane.openPath(desktop_path)
         window.command_ChdirInactivePaneToOther(None)
-        reload_config()
+        window.command_MoveSeparatorCenter(None)
+        LeftPane(window).activate()
 
     KEYBINDER.bind("0", starting_position)
 
