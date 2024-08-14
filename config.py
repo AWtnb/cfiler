@@ -1813,7 +1813,8 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
     window.keymap["C-J"] = window.command_CursorDownMark
     window.keymap["C-K"] = window.command_CursorUpMark
     for mod in ["", "S-"]:
-        window.keymap[mod + "Space"] = window.command_Enter
+        for key in ["L", "Space"]:
+            window.keymap[mod + key] = window.command_Enter
 
 
 def configure_ImageViewer(window: ckit.TextWindow) -> None:
