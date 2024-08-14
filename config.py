@@ -555,20 +555,44 @@ def configure(window: MainWindow) -> None:
             print("invalid path: '{}'".format(path))
             return False
 
-    def archive_extensions() -> list:
-        exts = []
-        for archiver in window.archiver_list:
-            for ext in archiver[0].split():
-                exts.append(ext[1:])
-        return exts
+    class CFilerExtension:
+        def __init__(self, window: MainWindow) -> None:
+            self._window = window
+
+        @property
+        def archiver(self) -> List[str]:
+            exts = []
+            for archiver in self._window.archiver_list:
+                for ext in archiver[0].split():
+                    exts.append(ext[1:])
+            return exts
+
+        @property
+        def image(self) -> List[str]:
+            exts = []
+            for im in self._window.image_file_ext_list:
+                exts.append(im)
+            return exts
+
+        @property
+        def music(self) -> List[str]:
+            exts = []
+            for im in self._window.music_file_ext_list:
+                exts.append(im)
+            return exts
 
     def hook_enter() -> None:
+        cext = CFilerExtension(window)
+
         pane = CPane(window)
         p = pane.focusedItem.getFullpath()
         ext = Path(p).suffix
 
-        if ext in archive_extensions():
+        if ext in cext.archiver:
             return True
+
+        if ext in cext.music or ext == ".m4a":
+            return shell_exec(p)
 
         if ext == ".pdf":
             sumatra_path = Path(
