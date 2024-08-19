@@ -896,12 +896,11 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F", smart_jump_input)
 
     def smart_extract() -> None:
-        archive_exts = archive_extensions()
-
+        cext = CFilerExtension(window)
         active_pane = CPane(window)
 
         for item in active_pane.selectedItems:
-            if Path(item.getFullpath()).suffix not in archive_exts:
+            if Path(item.getFullpath()).suffix not in cext.archiver:
                 active_pane.unSelect(active_pane.byName(item.getName()))
 
         if len(active_pane.selectedItems) < 1:
