@@ -140,7 +140,6 @@ def configure(window: MainWindow) -> None:
             "C-K": window.command_CursorUpSelectedOrBookmark,
             "C-Down": window.command_CursorDownSelectedOrBookmark,
             "C-J": window.command_CursorDownSelectedOrBookmark,
-            "C-C": window.command_SetClipboard_Fullpath,
             "OpenBracket": window.command_MoveSeparatorLeft,
             "CloseBracket": window.command_MoveSeparatorRight,
             "Yen": window.command_MoveSeparatorCenter,
@@ -379,17 +378,6 @@ def configure(window: MainWindow) -> None:
                 item = self.byIndex(i)
                 if item.selected():
                     items.append(item)
-            return items
-
-        @property
-        def selectedOrFocusedItems(self) -> list:
-            items = []
-            for i in range(self.count):
-                item = self.byIndex(i)
-                if item.selected():
-                    items.append(item)
-            if len(items) < 1:
-                items.append(self.focusedItem)
             return items
 
         @property
@@ -930,30 +918,49 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-A-P", copy_current_path)
 
-    def copy_name() -> None:
-        pane = CPane(window)
-        if pane.isBlank:
-            return
-        items = pane.selectedOrFocusedItems
-        names = [item.getName() for item in items]
-        ckit.setClipboardText(LINE_BREAK.join(names))
-        window.setStatusMessage("copied name (with extension)", 3000)
+    class Clipper:
+        def __init__(self) -> None:
+            pass
 
-    KEYBINDER.bind("C-S-C", copy_name)
+        @staticmethod
+        def targets() -> List[str]:
+            pane = CPane(window)
+            if pane.isBlank:
+                return []
+            paths = pane.selectedItemPaths
+            if len(paths) < 1:
+                paths.append(pane.focusedItemPath)
+            return paths
 
-    def copy_basename() -> None:
-        pane = CPane(window)
-        if pane.isBlank:
-            return
-        items = pane.selectedOrFocusedItems
-        basenames = []
-        for item in items:
-            p = Path(item.getFullpath())
-            basenames.append(p.stem)
-        ckit.setClipboardText(LINE_BREAK.join(basenames))
-        window.setStatusMessage("copied name (without extension)", 3000)
+        @staticmethod
+        def toClipboard(ss: List[str]) -> None:
+            if 0 < len(ss):
+                ckit.setClipboardText(LINE_BREAK.join(ss))
+                print("\nCopied:")
+                for s in ss:
+                    print("- '{}'".format(s))
+                print()
 
-    KEYBINDER.bind("C-S-B", copy_basename)
+        @classmethod
+        def paths(cls) -> None:
+            paths = cls.targets()
+            cls.toClipboard(paths)
+
+        @classmethod
+        def names(cls) -> None:
+            paths = cls.targets()
+            names = [Path(path).name for path in paths]
+            cls.toClipboard(names)
+
+        @classmethod
+        def basenames(cls) -> None:
+            paths = cls.targets()
+            basenames = [Path(path).stem for path in paths]
+            cls.toClipboard(basenames)
+
+    KEYBINDER.bind("C-C", Clipper().paths)
+    KEYBINDER.bind("C-S-C", Clipper().names)
+    KEYBINDER.bind("C-S-B", Clipper().basenames)
 
     def smart_enter() -> None:
         pane = CPane(window)
