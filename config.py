@@ -141,8 +141,9 @@ def configure(window: MainWindow) -> None:
             "C-Down": window.command_CursorDownSelectedOrBookmark,
             "C-J": window.command_CursorDownSelectedOrBookmark,
             "C-C": window.command_SetClipboard_Fullpath,
-            "8": window.command_MoveSeparatorLeft,
-            "9": window.command_MoveSeparatorRight,
+            "OpenBracket": window.command_MoveSeparatorLeft,
+            "CloseBracket": window.command_MoveSeparatorRight,
+            "Yen": window.command_MoveSeparatorCenter,
             "A-S": window.command_SetSorter,
         }
     )
