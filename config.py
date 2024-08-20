@@ -590,17 +590,17 @@ def configure(window: MainWindow) -> None:
                 exts.append(im)
             return exts
 
-    def hook_enter() -> None:
-        cext = CFilerExtension(window)
+    CFILER_EXTENSION = CFilerExtension(window)
 
+    def hook_enter() -> None:
         pane = CPane(window)
         p = pane.focusedItem.getFullpath()
         ext = Path(p).suffix
 
-        if ext in cext.archiver:
+        if ext in CFILER_EXTENSION.archiver:
             return True
 
-        if ext in cext.music or ext == ".m4a":
+        if ext in CFILER_EXTENSION.music or ext == ".m4a":
             return shell_exec(p)
 
         if ext == ".pdf":
@@ -885,11 +885,10 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F", smart_jump_input)
 
     def smart_extract() -> None:
-        cext = CFilerExtension(window)
         active_pane = CPane(window)
 
         for item in active_pane.selectedItems:
-            if Path(item.getFullpath()).suffix not in cext.archiver:
+            if Path(item.getFullpath()).suffix not in CFILER_EXTENSION.archiver:
                 active_pane.unSelect(active_pane.byName(item.getName()))
 
         if len(active_pane.selectedItems) < 1:
@@ -970,7 +969,7 @@ def configure(window: MainWindow) -> None:
         if pane.focusedItem.isdir():
             window.command_Enter(None)
         else:
-            if Path(pane.focusedItemPath).suffix == ".zip":
+            if Path(pane.focusedItemPath).suffix in CFILER_EXTENSION.archiver:
                 return
             window.command_Execute(None)
 
