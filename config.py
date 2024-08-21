@@ -1784,56 +1784,6 @@ def configure(window: MainWindow) -> None:
     )
 
 
-def configure_TextViewer(window: ckit.TextWindow) -> None:
-    window.keymap["E"] = lambda _: None
-    window.keymap["J"] = window.command_ScrollDown
-    window.keymap["K"] = window.command_ScrollUp
-    window.keymap["C-J"] = window.command_PageDown
-    window.keymap["C-K"] = window.command_PageUp
-    window.keymap["L"] = window.command_PageDown
-    window.keymap["H"] = window.command_PageUp
-    window.keymap["Right"] = window.command_PageDown
-    window.keymap["Left"] = window.command_PageUp
-    window.keymap["C-Comma"] = window.command_ConfigMenu
-
-    def to_top(_) -> None:
-        window.scroll_info.pos = 0
-        window.paint()
-
-    window.keymap["A"] = to_top
-    window.keymap["Home"] = to_top
-
-    def to_end(_) -> None:
-        window.scroll_info.pos = window._numLines() - 1
-        window.paint()
-
-    window.keymap["E"] = to_end
-    window.keymap["End"] = to_end
-
-    def open_original(_) -> None:
-        path = window.item.getFullpath()
-        window.command_Close(None)
-        pyauto.shellExecute(None, path, "", "")
-
-    window.keymap["C-O"] = open_original
-
-    def copy_content(_) -> None:
-        enc = window.encoding.encoding
-        if window.encoding.bom:
-            enc = enc + "-sig"
-        path = window.item.getFullpath()
-        content = Path(path).read_text(enc)
-        ckit.setClipboardText(content)
-        window.command_Close(None)
-        print(
-            "copied content of '{}' in {} encoding.\n".format(
-                window.item.getName(), enc
-            )
-        )
-
-    window.keymap["C-C"] = copy_content
-
-
 def configure_ListWindow(window: ckit.TextWindow) -> None:
 
     def smart_cursorUp(_) -> None:
@@ -1863,6 +1813,57 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
             window.keymap[mod + key] = window.command_Enter
 
 
+def configure_TextViewer(window: ckit.TextWindow) -> None:
+    window.keymap["E"] = lambda _: None
+    window.keymap["Q"] = window.command_Close
+    window.keymap["J"] = window.command_ScrollDown
+    window.keymap["K"] = window.command_ScrollUp
+    window.keymap["C-J"] = window.command_PageDown
+    window.keymap["C-K"] = window.command_PageUp
+    window.keymap["L"] = window.command_PageDown
+    window.keymap["H"] = window.command_PageUp
+    window.keymap["Right"] = window.command_PageDown
+    window.keymap["Left"] = window.command_PageUp
+    window.keymap["C-Comma"] = window.command_ConfigMenu
+
+    def to_top(_) -> None:
+        window.scroll_info.pos = 0
+        window.paint()
+
+    window.keymap["A"] = to_top
+    window.keymap["Home"] = to_top
+
+    def to_end(_) -> None:
+        window.scroll_info.pos = window._numLines() - 1
+        window.paint()
+
+    window.keymap["E"] = to_end
+    window.keymap["End"] = to_end
+
+    def open_original(_) -> None:
+        path = window.item.getFullpath()
+        window.command_Close(None)
+        pyauto.shellExecute(None, path, "", "")
+
+    window.keymap["Enter"] = open_original
+
+    def copy_content(_) -> None:
+        enc = window.encoding.encoding
+        if window.encoding.bom:
+            enc = enc + "-sig"
+        path = window.item.getFullpath()
+        content = Path(path).read_text(enc)
+        ckit.setClipboardText(content)
+        window.command_Close(None)
+        print(
+            "copied content of '{}' in {} encoding.\n".format(
+                window.item.getName(), enc
+            )
+        )
+
+    window.keymap["C-C"] = copy_content
+
+
 def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["F11"] = window.command_ToggleMaximize
     window.keymap["J"] = window.command_CursorDown
@@ -1886,6 +1887,7 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["S-J"] = window.command_ScrollDown
     window.keymap["S-K"] = window.command_ScrollUp
     window.keymap["F"] = window.command_ZoomPolicyFit
+    window.keymap["Q"] = window.command_Close
 
     def open_original(_) -> None:
         item = window.items[window.cursor]
@@ -1893,4 +1895,4 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         window.command_Close(None)
         pyauto.shellExecute(None, path, "", "")
 
-    window.keymap["C-O"] = open_original
+    window.keymap["Enter"] = open_original
