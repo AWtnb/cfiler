@@ -1013,56 +1013,51 @@ def configure(window: MainWindow) -> None:
             for i in range(pane.count):
                 pane.select(i)
 
-        def allFiles(self) -> None:
+        def toTop(self) -> None:
             pane = self.pane
-            self.clearAll()
-            idx = []
             for i in range(pane.count):
-                if not pane.byIndex(i).isdir():
+                if i <= pane.cursor:
                     pane.select(i)
-                    idx.append(i)
-            if 0 < len(idx):
-                pane.focus(idx[0])
 
-        def allDirs(self) -> None:
+        def toEnd(self) -> None:
             pane = self.pane
-            self.clearAll()
-            idx = []
             for i in range(pane.count):
-                if pane.byIndex(i).isdir():
+                if pane.cursor <= i:
                     pane.select(i)
-                    idx.append(i)
-            if 0 < len(idx):
-                pane.focus(idx[-1])
+
+        @property
+        def targets(self) -> list:
+            pane = self.pane
+            if pane.hasSelection:
+                return pane.selectedItems
+            return pane.items
+
+        def files(self) -> None:
+            pane = self.pane
+            for item in self.targets:
+                name = item.getName()
+                if not item.isdir():
+                    pane.toggleSelect(pane.byName(name))
+
+        def dirs(self) -> None:
+            pane = self.pane
+            for item in self.targets:
+                name = item.getName()
+                if item.isdir():
+                    pane.toggleSelect(pane.byName(name))
 
         def clearAll(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 pane.unSelect(i)
 
-        def clearFiles(self) -> None:
-            pane = self.pane
-            for i in range(pane.count):
-                if pane.byIndex(i).isdir():
-                    pane.unSelect(i)
-
-        def clearDirs(self) -> None:
-            pane = self.pane
-            for i in range(pane.count):
-                if not pane.byIndex(i).isdir():
-                    pane.unSelect(i)
-
         def byFunction(self, func: Callable, negative: bool = False) -> None:
             pane = self.pane
-            if pane.hasSelection:
-                items = pane.selectedItems
-            else:
-                items = pane.items
-            for item in items:
+            for item in self.targets:
                 path = item.getFullpath()
                 if (negative and not func(path)) or (not negative and func(path)):
-                    i = pane.byName(item.getName())
-                    pane.toggleSelect(i)
+                    name = item.getName()
+                    pane.toggleSelect(pane.byName(name))
             pane.focus(pane.selectionTop)
 
         def byExtension(self, s: str, negative: bool = False) -> None:
@@ -1089,27 +1084,15 @@ def configure(window: MainWindow) -> None:
 
             self.byFunction(_checkPath, negative)
 
-        def toTop(self) -> None:
-            pane = self.pane
-            for i in range(pane.count):
-                if i <= pane.cursor:
-                    pane.select(i)
-
-        def toEnd(self) -> None:
-            pane = self.pane
-            for i in range(pane.count):
-                if pane.cursor <= i:
-                    pane.select(i)
-
     SELECTOR = Selector(window)
 
     KEYBINDER.bindmulti(
         {
             "C-A": SELECTOR.allItems,
             "U": SELECTOR.clearAll,
-            "A-F": SELECTOR.allFiles,
+            "A-F": SELECTOR.files,
             "A-S-F": SELECTOR.clearDirs,
-            "A-D": SELECTOR.allDirs,
+            "A-D": SELECTOR.dirs,
             "A-S-D": SELECTOR.clearFiles,
             "S-Home": SELECTOR.toTop,
             "S-A": SELECTOR.toTop,
