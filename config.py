@@ -421,16 +421,16 @@ def configure(window: MainWindow) -> None:
                 return ""
             return self.pathByIndex(self.cursor)
 
-        def displaySelection(self) -> None:
+        def applySelectionHighlight(self) -> None:
             self.repaint(PO.Upper)
 
-        def toggleSelect(self, i: int) -> None:
+        def toggleSelection(self, i: int) -> None:
             self.fileList.selectItem(i, None)
-            self.displaySelection()
+            self.applySelectionHighlight()
 
-        def setSelectionState(self, i: int, state: Union[bool, None]) -> None:
+        def setSelectionState(self, i: int, state: bool) -> None:
             self.fileList.selectItem(i, state)
-            self.displaySelection()
+            self.applySelectionHighlight()
 
         def select(self, i: int) -> None:
             self.setSelectionState(i, True)
@@ -443,7 +443,7 @@ def configure(window: MainWindow) -> None:
             if i < 0:
                 return
             self.select(i)
-            self.displaySelection()
+            self.applySelectionHighlight()
 
         def selectByNames(self, names: list) -> None:
             for name in names:
@@ -1030,14 +1030,14 @@ def configure(window: MainWindow) -> None:
             for item in self.targets:
                 name = item.getName()
                 if not item.isdir():
-                    pane.toggleSelect(pane.byName(name))
+                    pane.toggleSelection(pane.byName(name))
 
         def dirs(self) -> None:
             pane = self.pane
             for item in self.targets:
                 name = item.getName()
                 if item.isdir():
-                    pane.toggleSelect(pane.byName(name))
+                    pane.toggleSelection(pane.byName(name))
 
         def toTop(self) -> None:
             pane = self.pane
@@ -1045,7 +1045,7 @@ def configure(window: MainWindow) -> None:
                 name = item.getName()
                 idx = pane.byName(name)
                 if idx <= pane.cursor:
-                    pane.toggleSelect(idx)
+                    pane.toggleSelection(idx)
 
         def toEnd(self) -> None:
             pane = self.pane
@@ -1053,7 +1053,7 @@ def configure(window: MainWindow) -> None:
                 name = item.getName()
                 idx = pane.byName(name)
                 if pane.cursor <= idx:
-                    pane.toggleSelect(idx)
+                    pane.toggleSelection(idx)
 
         def clearAll(self) -> None:
             pane = self.pane
@@ -1066,7 +1066,7 @@ def configure(window: MainWindow) -> None:
                 path = item.getFullpath()
                 if (negative and not func(path)) or (not negative and func(path)):
                     name = item.getName()
-                    pane.toggleSelect(pane.byName(name))
+                    pane.toggleSelection(pane.byName(name))
             pane.focus(pane.selectionTop)
 
         def byExtension(self, s: str, negative: bool = False) -> None:
@@ -1665,8 +1665,13 @@ def configure(window: MainWindow) -> None:
             SELECTOR.stemContains(result, mod == ckit.MODKEY_SHIFT)
 
     def select_byext() -> None:
-        pane = CPane(window)
-        exts = pane.extensions
+
+        exts = []
+        for item in SELECTOR.targets:
+            ext = Path(item.getFullpath()).suffix
+            if ext and ext not in exts:
+                exts.append(ext)
+
         if len(exts) < 1:
             return
 
@@ -1700,8 +1705,7 @@ def configure(window: MainWindow) -> None:
         if result < 0:
             return
 
-        ext = "." + exts[result]
-        SELECTOR.byExtension(ext, mod == ckit.MODKEY_SHIFT)
+        SELECTOR.byExtension(exts[result], mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("S-X", select_byext)
 
