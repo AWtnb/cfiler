@@ -1013,18 +1013,6 @@ def configure(window: MainWindow) -> None:
             for i in range(pane.count):
                 pane.select(i)
 
-        def toTop(self) -> None:
-            pane = self.pane
-            for i in range(pane.count):
-                if i <= pane.cursor:
-                    pane.select(i)
-
-        def toEnd(self) -> None:
-            pane = self.pane
-            for i in range(pane.count):
-                if pane.cursor <= i:
-                    pane.select(i)
-
         @property
         def targets(self) -> list:
             pane = self.pane
@@ -1045,6 +1033,22 @@ def configure(window: MainWindow) -> None:
                 name = item.getName()
                 if item.isdir():
                     pane.toggleSelect(pane.byName(name))
+
+        def toTop(self) -> None:
+            pane = self.pane
+            for item in self.targets:
+                name = item.getName()
+                idx = pane.byName(name)
+                if idx <= pane.cursor:
+                    pane.toggleSelect(idx)
+
+        def toEnd(self) -> None:
+            pane = self.pane
+            for item in self.targets:
+                name = item.getName()
+                idx = pane.byName(name)
+                if pane.cursor <= idx:
+                    pane.toggleSelect(idx)
 
         def clearAll(self) -> None:
             pane = self.pane
@@ -1091,9 +1095,7 @@ def configure(window: MainWindow) -> None:
             "C-A": SELECTOR.allItems,
             "U": SELECTOR.clearAll,
             "A-F": SELECTOR.files,
-            "A-S-F": SELECTOR.clearDirs,
             "A-D": SELECTOR.dirs,
-            "A-S-D": SELECTOR.clearFiles,
             "S-Home": SELECTOR.toTop,
             "S-A": SELECTOR.toTop,
             "S-End": SELECTOR.toEnd,
