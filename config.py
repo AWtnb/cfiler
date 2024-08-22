@@ -265,11 +265,15 @@ def configure(window: MainWindow) -> None:
 
         @property
         def items(self) -> list:
+            if self.isBlank:
+                return []
             return self._items
 
         @property
         def dirs(self) -> list:
             items = []
+            if self.isBlank:
+                return items
             for i in range(self.count):
                 item = self.byIndex(i)
                 if item.isdir():
@@ -279,6 +283,8 @@ def configure(window: MainWindow) -> None:
         @property
         def files(self) -> list:
             items = []
+            if self.isBlank:
+                return items
             for i in range(self.count):
                 item = self.byIndex(i)
                 if not item.isdir():
@@ -356,6 +362,8 @@ def configure(window: MainWindow) -> None:
         @property
         def names(self) -> list:
             names = []
+            if self.isBlank:
+                return names
             for i in range(self.count):
                 item = self.byIndex(i)
                 names.append(item.getName())
@@ -364,6 +372,8 @@ def configure(window: MainWindow) -> None:
         @property
         def extensions(self) -> list:
             exts = []
+            if self.isBlank:
+                return exts
             for i in range(self.count):
                 path = Path(self.pathByIndex(i))
                 ext = path.suffix.replace(".", "")
@@ -374,6 +384,8 @@ def configure(window: MainWindow) -> None:
         @property
         def selectedItems(self) -> list:
             items = []
+            if self.isBlank:
+                return items
             for i in range(self.count):
                 item = self.byIndex(i)
                 if item.selected():
@@ -389,7 +401,9 @@ def configure(window: MainWindow) -> None:
             return [item.getName() for item in self.selectedItems]
 
         @property
-        def focusedItem(self) -> item_Base:
+        def focusedItem(self) -> Union[item_Base, None]:
+            if self.isBlank:
+                return None
             return self.byIndex(self.cursor)
 
         def pathByIndex(self, i: int) -> str:
@@ -398,6 +412,8 @@ def configure(window: MainWindow) -> None:
 
         @property
         def focusedItemPath(self) -> str:
+            if self.isBlank:
+                return ""
             return self.pathByIndex(self.cursor)
 
         def displaySelection(self) -> None:
@@ -489,7 +505,7 @@ def configure(window: MainWindow) -> None:
             if focus:
                 self.focus(self._window.cursorFromName(self.fileList, name))
 
-        def copyInternal(
+        def copyToChild(
             self, dest_name: str, items: list, remove_origin: bool = False
         ) -> None:
             if remove_origin:
@@ -594,9 +610,14 @@ def configure(window: MainWindow) -> None:
 
     CFILER_EXTENSION = CFilerExtension(window)
 
-    def hook_enter() -> None:
+    def hook_enter() -> bool:
+        # returning `True` skips default action.
+
         pane = CPane(window)
-        p = pane.focusedItem.getFullpath()
+        if pane.isBlank:
+            return True
+
+        p = pane.focusedItemPath
         ext = Path(p).suffix
 
         if ext in CFILER_EXTENSION.archiver:
@@ -636,6 +657,21 @@ def configure(window: MainWindow) -> None:
         return False
 
     window.enter_hook = hook_enter
+
+    def smart_enter() -> None:
+        pane = CPane(window)
+        if pane.isBlank:
+            pane.focusOther()
+        else:
+            if pane.focusedItem.isdir():
+                window.command_Enter(None)
+            else:
+                if Path(pane.focusedItemPath).suffix in CFILER_EXTENSION.archiver:
+                    return
+                window.command_Execute(None)
+
+    KEYBINDER.bind("L", smart_enter)
+    KEYBINDER.bind("Right", smart_enter)
 
     def toggle_hidden() -> None:
         window.showHiddenFile(not window.isHiddenFileVisible())
@@ -962,21 +998,6 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-C", Clipper().paths)
     KEYBINDER.bind("C-S-C", Clipper().names)
     KEYBINDER.bind("C-S-B", Clipper().basenames)
-
-    def smart_enter() -> None:
-        pane = CPane(window)
-        if pane.isBlank:
-            pane.focusOther()
-            return
-        if pane.focusedItem.isdir():
-            window.command_Enter(None)
-        else:
-            if Path(pane.focusedItemPath).suffix in CFILER_EXTENSION.archiver:
-                return
-            window.command_Execute(None)
-
-    KEYBINDER.bind("L", smart_enter)
-    KEYBINDER.bind("Right", smart_enter)
 
     class Selector:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
@@ -1329,7 +1350,7 @@ def configure(window: MainWindow) -> None:
         dir_path = Path(pane.currentPath, result)
         if not dir_path.exists():
             pane.mkdir(result)
-        pane.copyInternal(result, items, True)
+        pane.copyToChild(result, items, True)
         if mod == ckit.MODKEY_SHIFT:
             pane.openPath(str(dir_path))
 
@@ -1399,7 +1420,7 @@ def configure(window: MainWindow) -> None:
 
         dest_name = "_obsolete"
         pane.mkdir(dest_name, False)
-        pane.copyInternal(dest_name, items, True)
+        pane.copyToChild(dest_name, items, True)
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
 
@@ -1519,7 +1540,20 @@ def configure(window: MainWindow) -> None:
 
         def compare(self) -> None:
             def _scan(job_item: ckit.JobItem) -> None:
-                Selector(window, True).clearAll()
+                items = []
+                from_selection = self._active_pane.hasSelection
+
+                if from_selection:
+                    for item in self._active_pane.selectedItems:
+                        if not item.isdir():
+                            items.append(item)
+                else:
+                    items = self._active_pane.files
+
+                job_item.comparable = 0 < len(items)
+                if not job_item.comparable:
+                    return
+
                 Selector(window, False).clearAll()
 
                 print("\n------------------")
@@ -1537,13 +1571,14 @@ def configure(window: MainWindow) -> None:
                     table[digest] = table.get(digest, []) + [str(rel)]
 
                 cloned_items = ClonedItems()
-                for file in self._active_pane.files:
+                for file in items:
                     if job_item.isCanceled():
                         return
                     digest = self.to_hash(file.getFullpath())
                     if digest in table:
                         name = file.getName()
-                        self._active_pane.selectByName(name)
+                        if not from_selection:
+                            self._active_pane.selectByName(name)
                         c = ClonedItem(name, table[digest])
                         cloned_items.register(c)
 
@@ -1554,6 +1589,9 @@ def configure(window: MainWindow) -> None:
 
             def _finish(job_item: ckit.JobItem) -> None:
                 window.clearProgress()
+                if not job_item.comparable:
+                    print("Nothing to compare.\n")
+                    return
                 if job_item.isCanceled():
                     print("Canceled.\n")
                 else:
