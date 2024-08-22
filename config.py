@@ -85,6 +85,11 @@ USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
 
 
+def print_log(s: str, padding: int = 1) -> None:
+    p = "\n" * padding
+    print(p + s + p)
+
+
 def configure(window: MainWindow) -> None:
 
     def reset_default_keys(keys: list) -> None:
@@ -185,7 +190,7 @@ def configure(window: MainWindow) -> None:
                     if p.exists():
                         self._window.jump_list += [(name, str(p))]
                 except Exception as e:
-                    print(e)
+                    print_log(e)
 
         def select(self, prompt: str) -> tuple:
             wnd = self._window
@@ -471,7 +476,7 @@ def configure(window: MainWindow) -> None:
         def openPath(self, path: str) -> None:
             target = Path(path)
             if not target.exists():
-                print("invalid path: '{}'".format(path))
+                print_log("invalid path: '{}'".format(path))
                 return
             focus_name = None
             if target.is_file():
@@ -482,11 +487,11 @@ def configure(window: MainWindow) -> None:
 
         def touch(self, name: str) -> None:
             if not hasattr(self.lister, "touch"):
-                print("cannot make file here.")
+                print_log("cannot make file here.")
                 return
             dp = Path(self.currentPath, name)
             if dp.exists() and dp.is_file():
-                print("file '{}' already exists.".format(name))
+                print_log("file '{}' already exists.".format(name))
                 return
             self._window.subThreadCall(self.lister.touch, (name,))
             self.refresh()
@@ -494,11 +499,11 @@ def configure(window: MainWindow) -> None:
 
         def mkdir(self, name: str, focus: bool = True) -> None:
             if not hasattr(self.lister, "mkdir"):
-                print("cannot make directory here.")
+                print_log("cannot make directory here.")
                 return
             dp = Path(self.currentPath, name)
             if dp.exists() and dp.is_dir():
-                print("directory '{}' already exists.".format(name))
+                print_log("directory '{}' already exists.".format(name))
                 return
             self._window.subThreadCall(self.lister.mkdir, (name, None))
             self.refresh()
@@ -579,7 +584,7 @@ def configure(window: MainWindow) -> None:
             pyauto.shellExecute(None, path, " ".join(params), "")
             return True
         except:
-            print("invalid path: '{}'".format(path))
+            print_log("invalid path: '{}'".format(path))
             return False
 
     class CFilerExtension:
@@ -730,7 +735,7 @@ def configure(window: MainWindow) -> None:
         def fzf(self) -> str:
             src = self.read_src().strip()
             if len(src) < 1:
-                print("src file '{}' not found...".format(self._src_name))
+                print_log("src file '{}' not found...".format(self._src_name))
                 return ""
             try:
                 proc = subprocess.run(
@@ -815,7 +820,7 @@ def configure(window: MainWindow) -> None:
                 if result:
                     if proc.returncode != 0:
                         if result:
-                            print(result)
+                            print_log(result)
                         return
                     job_item.result = result
 
@@ -869,7 +874,7 @@ def configure(window: MainWindow) -> None:
                 if result:
                     if proc.returncode != 0:
                         if result:
-                            print(result)
+                            print_log(result)
                         return
                     job_item.result = result
 
@@ -1281,7 +1286,7 @@ def configure(window: MainWindow) -> None:
                 return
             new_path = src_path.with_name(result)
             if new_path.exists():
-                print("same item exists!")
+                print_log("same item exists!")
                 return
 
             def _copy_as(new_path: str) -> None:
@@ -1380,7 +1385,7 @@ def configure(window: MainWindow) -> None:
                 if 0 < len(extension):
                     filename = filename + "." + extension
                 if Path(pane.currentPath, filename).exists():
-                    print("'{}' already exists.".format(filename))
+                    print_log("'{}' already exists.".format(filename))
                     return
                 pane.touch(filename)
 
@@ -1415,7 +1420,7 @@ def configure(window: MainWindow) -> None:
         window.command_MoveSeparatorCenter(None)
         LeftPane(window).activate()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-        print("{} reloaded config.py\n".format(ts))
+        print_log("{} reloaded config.py".format(ts))
 
     KEYBINDER.bind("C-R", reload_config)
     KEYBINDER.bind("F5", reload_config)
@@ -1449,7 +1454,7 @@ def configure(window: MainWindow) -> None:
                 shell_exec(dp)
         else:
             shell_exec(USER_PROFILE)
-            print("cannot find repo dir. open user profile instead.")
+            print_log("cannot find repo dir. open user profile instead.")
 
     KEYBINDER.bind("C-E", edit_config)
 
@@ -1541,9 +1546,7 @@ def configure(window: MainWindow) -> None:
 
                 Selector(window, False).clearAll()
 
-                print("\n------------------")
-                print(" compare md5 hash ")
-                print("------------------\n")
+                print_log("=== comparing md5 hash ===")
 
                 window.setProgressValue(None)
 
@@ -1575,14 +1578,12 @@ def configure(window: MainWindow) -> None:
             def _finish(job_item: ckit.JobItem) -> None:
                 window.clearProgress()
                 if not job_item.comparable:
-                    print("Nothing to compare.\n")
+                    print_log("Nothing to compare.")
                     return
                 if job_item.isCanceled():
-                    print("Canceled.\n")
+                    print_log("Canceled.")
                 else:
-                    print("\n------------------")
-                    print("     FINISHED     ")
-                    print("------------------\n")
+                    print_log("======== finished ========")
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
@@ -1594,28 +1595,28 @@ def configure(window: MainWindow) -> None:
     def diffinity() -> None:
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
         if not exe_path.exists():
-            print("cannnot find diffinity.exe...")
+            print_log("cannnot find diffinity.exe...")
             return
 
         left_pane = LeftPane(window)
         left_selcted = left_pane.selectedItemPaths
         if len(left_selcted) != 1:
-            print("select just 1 file on left pane.")
+            print_log("select just 1 file on left pane.")
             return
         left_path = Path(left_selcted[0])
         if not left_path.is_file():
-            print("selected item on left pane is not comparable.")
+            print_log("selected item on left pane is not comparable.")
             return
         left_pane = LeftPane(window)
 
         right_pane = RightPane(window)
         right_selcted = right_pane.selectedItemPaths
         if len(right_selcted) != 1:
-            print("select just 1 file on right pane.")
+            print_log("select just 1 file on right pane.")
             return
         right_path = Path(right_selcted[0])
         if not right_path.is_file():
-            print("selected item on right pane is not comparable.")
+            print_log("selected item on right pane is not comparable.")
             return
 
         shell_exec(exe_path, str(left_path), str(right_path))
@@ -1882,10 +1883,8 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         content = Path(path).read_text(enc)
         ckit.setClipboardText(content)
         window.command_Close(None)
-        print(
-            "copied content of '{}' in {} encoding.\n".format(
-                window.item.getName(), enc
-            )
+        print_log(
+            "copied content of '{}' in {} encoding.".format(window.item.getName(), enc)
         )
 
     window.keymap["C-C"] = copy_content
