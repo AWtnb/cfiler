@@ -535,6 +535,7 @@ def configure(window: MainWindow) -> None:
         pane.scrollToCursor()
 
     KEYBINDER.bind("K", smart_cursorUp)
+    KEYBINDER.bind("Up", smart_cursorUp)
 
     def smart_cursorDown(_) -> None:
         pane = CPane(window)
@@ -546,6 +547,7 @@ def configure(window: MainWindow) -> None:
         pane.scrollToCursor()
 
     KEYBINDER.bind("J", smart_cursorDown)
+    KEYBINDER.bind("Down", smart_cursorDown)
 
     def shell_exec(path: str, *args) -> bool:
         if type(path) is not str:
@@ -1805,11 +1807,13 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
         window.paint()
 
     window.keymap["J"] = smart_cursorDown
+    window.keymap["Down"] = smart_cursorDown
     window.keymap["K"] = smart_cursorUp
+    window.keymap["Up"] = smart_cursorUp
     window.keymap["C-J"] = window.command_CursorDownMark
     window.keymap["C-K"] = window.command_CursorUpMark
     for mod in ["", "S-"]:
-        for key in ["L", "Space"]:
+        for key in ["L", "Space", "Right"]:
             window.keymap[mod + key] = window.command_Enter
 
 
