@@ -1466,8 +1466,9 @@ def configure(window: MainWindow) -> None:
         def __init__(self) -> None:
             self._items = []
 
-        def register(self, item: ClonedItem) -> None:
-            self._items.append(item)
+        def register(self, origin: str, clones: list) -> None:
+            c = ClonedItem(origin, clones)
+            self._items.append(c)
 
         @staticmethod
         def count_bytes(s: str) -> int:
@@ -1567,8 +1568,7 @@ def configure(window: MainWindow) -> None:
                         name = file.getName()
                         if not from_selection:
                             self._active_pane.selectByName(name)
-                        c = ClonedItem(name, table[digest])
-                        cloned_items.register(c)
+                        cloned_items.register(name, table[digest])
 
                         for n in table[digest]:
                             self._inactive_pane.selectByName(n)
@@ -1579,7 +1579,6 @@ def configure(window: MainWindow) -> None:
                 window.clearProgress()
                 if not job_item.comparable:
                     print_log("Nothing to compare.")
-                    return
                 if job_item.isCanceled():
                     print_log("Canceled.")
                 else:
