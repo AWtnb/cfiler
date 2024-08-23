@@ -181,13 +181,14 @@ def configure(window: MainWindow) -> None:
     class JumpList:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
+            self._dests = []
 
-        def update(self, jump_table: dict) -> None:
-            for name, path in jump_table.items():
+        def register(self, dest_table: dict) -> None:
+            for name, path in dest_table.items():
                 p = Path(path)
                 try:
                     if p.exists():
-                        self._window.jump_list += [(name, str(p))]
+                        self._dests += [(name, str(p))]
                 except Exception as e:
                     print_log(e)
 
@@ -204,7 +205,7 @@ def configure(window: MainWindow) -> None:
                 parent_window=wnd,
                 ini=wnd.ini,
                 title=prompt,
-                items=wnd.jump_list,
+                items=self._dests,
                 initial_select=0,
                 onekey_search=False,
                 onekey_decide=False,
@@ -223,7 +224,7 @@ def configure(window: MainWindow) -> None:
         def jump(self) -> None:
             result, mod = self.select("Jump (other pane with Shift)")
             if -1 < result:
-                dest = self._window.jump_list[result][1]
+                dest = self._dests[result][1]
                 active = CPane(self._window, True)
                 other = CPane(self._window, False)
                 if mod == ckit.MODKEY_SHIFT:
@@ -233,7 +234,7 @@ def configure(window: MainWindow) -> None:
 
     JUMP_LIST = JumpList(window)
 
-    JUMP_LIST.update(
+    JUMP_LIST.register(
         {
             "Desktop": str(Path(USER_PROFILE, "Desktop")),
             "Dropbox": str(Path(USER_PROFILE, "Dropbox")),
