@@ -1876,7 +1876,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         window.command_Close(None)
         pyauto.shellExecute(None, path, "", "")
 
-    window.keymap["Enter"] = open_original
+    window.keymap["C-Enter"] = open_original
 
     def copy_content(_) -> None:
         enc = window.encoding.encoding
@@ -1924,4 +1924,4 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         window.command_Close(None)
         pyauto.shellExecute(None, path, "", "")
 
-    window.keymap["Enter"] = open_original
+    window.keymap["C-Enter"] = open_original
