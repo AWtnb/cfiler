@@ -134,7 +134,6 @@ def configure(window: MainWindow) -> None:
             "Home": window.command_CursorTop,
             "End": window.command_CursorBottom,
             "C-S-P": window.command_CommandLine,
-            "C-S-Space": window.command_CommandLine,
             "C-S-N": window.command_Mkdir,
             "H": window.command_GotoParentDir,
             "Left": window.command_GotoParentDir,
@@ -843,7 +842,7 @@ def configure(window: MainWindow) -> None:
             for mod, search_all in mapping.items():
                 KEYBINDER.bind(mod + key, self.invoke(search_all))
 
-    zyl().apply("Z")
+    zyl().apply("C-S-Space")
 
     class zyc:
         def __init__(self) -> None:
@@ -895,7 +894,7 @@ def configure(window: MainWindow) -> None:
                 for shift, offset in {"": -1, "S-": 1}.items():
                     KEYBINDER.bind(alt + shift + key, self.invoke(search_all, offset))
 
-    zyc().apply("Y")
+    zyc().apply("Z")
 
     KEYBINDER.bindmulti(
         {
