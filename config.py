@@ -844,6 +844,7 @@ def configure(window: MainWindow) -> None:
                 KEYBINDER.bind(mod + key, self.invoke(search_all))
 
     zyl().apply("C-S-Space")
+    zyl().apply("C-S-Z")
 
     class zyc:
         def __init__(self) -> None:
