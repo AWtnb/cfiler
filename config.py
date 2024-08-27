@@ -90,8 +90,10 @@ def print_log(s: str, padding: int = 1) -> None:
     p = "\n" * padding
     print(p + s + p)
 
+
 def delay(msec: int = 50) -> None:
     time.sleep(msec / 1000)
+
 
 def configure(window: MainWindow) -> None:
 
@@ -1255,18 +1257,27 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-U", open_parent_to_other)
 
-    def on_pdf_xchange_editor() -> None:
-        xchange_path = r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
-        if Path(xchange_path).exists():
-            pane = CPane(window)
-            paths = pane.selectedItemPaths
-            if len(paths) < 1:
-                paths.append(pane.focusedItemPath)
-            for path in paths:
-                if Path(path).suffix == ".pdf":
-                    shell_exec(xchange_path, path)
+    def on_pdf_viewer(viewer_path: str) -> None:
+        def _invoker() -> None:
+            if Path(viewer_path).exists():
+                pane = CPane(window)
+                paths = pane.selectedItemPaths
+                if len(paths) < 1:
+                    paths.append(pane.focusedItemPath)
+                for path in paths:
+                    if Path(path).suffix == ".pdf":
+                        shell_exec(viewer_path, path)
 
-    KEYBINDER.bind("C-P", on_pdf_xchange_editor)
+        return _invoker
+
+    KEYBINDER.bind(
+        "A-P",
+        on_pdf_viewer(r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"),
+    )
+    KEYBINDER.bind(
+        "C-P",
+        on_pdf_viewer(r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"),
+    )
 
     def on_vscode() -> None:
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
