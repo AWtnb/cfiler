@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 import unicodedata
 
 from collections import namedtuple
@@ -89,6 +90,8 @@ def print_log(s: str, padding: int = 1) -> None:
     p = "\n" * padding
     print(p + s + p)
 
+def delay(msec: int = 50) -> None:
+    time.sleep(msec / 1000)
 
 def configure(window: MainWindow) -> None:
 
@@ -815,6 +818,7 @@ def configure(window: MainWindow) -> None:
                 job_item.result = None
                 if not self.check():
                     return
+                delay(100)
                 proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
                 result = proc.stdout.strip()
                 if result:
@@ -870,6 +874,7 @@ def configure(window: MainWindow) -> None:
                     "-offset={}".format(offset),
                     "-cur={}".format(pane.currentPath),
                 ]
+                delay(100)
                 proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
                 result = proc.stdout.strip()
                 if result:
