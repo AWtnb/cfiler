@@ -252,6 +252,10 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-Space", JUMP_LIST.jump)
 
+    def check_log_selected() -> bool:
+        selection_left, selection_right = window.log_pane.selection
+        return selection_left != selection_right
+
     class CPane:
         def __init__(self, window: MainWindow, active: bool = True) -> None:
             self._window = window
@@ -976,7 +980,7 @@ def configure(window: MainWindow) -> None:
         def targets() -> List[str]:
             pane = CPane(window)
             if pane.isBlank:
-                return []
+                return [pane.currentPath]
             paths = pane.selectedItemPaths
             if len(paths) < 1:
                 paths.append(pane.focusedItemPath)
@@ -984,6 +988,9 @@ def configure(window: MainWindow) -> None:
 
         @staticmethod
         def toClipboard(ss: List[str]) -> None:
+            if check_log_selected():
+                window.command_SetClipboard_LogSelected(None)
+                return
             if 0 < len(ss):
                 ckit.setClipboardText(LINE_BREAK.join(ss))
                 print("\nCopied:")
@@ -1803,6 +1810,23 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("Q", clear_filter)
 
+    def make_junction() -> None:
+        active_pane = CPane(window)
+        if not active_pane.hasSelection:
+            return
+
+        inactive_pane = CPane(window, False)
+        dest = inactive_pane.currentPath
+        for src_path in active_pane.selectedItemPaths:
+            junction_path = str(Path(dest, Path(src_path).name))
+            try:
+                cmd = ["mklink", "/J", junction_path, src_path]
+                subprocess.check_call(cmd)
+            except Exception as e:
+                print(e)
+                print_log("(canceled)")
+                return
+
     def reset_hotkey() -> None:
         window.ini.set("HOTKEY", "activate_vk", "0")
         window.ini.set("HOTKEY", "activate_mod", "0")
@@ -1813,6 +1837,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
             "ExtractZipSmart": smart_extract,
             "HideUnselectedItems": hide_unselected,
