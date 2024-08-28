@@ -1818,10 +1818,15 @@ def configure(window: MainWindow) -> None:
         inactive_pane = CPane(window, False)
         dest = inactive_pane.currentPath
         for src_path in active_pane.selectedItemPaths:
-            junction_path = str(Path(dest, Path(src_path).name))
+            junction_path = Path(dest, Path(src_path).name)
+            if junction_path.exists():
+                print_log("'{}' already exists.".format(junction_path))
+                return
             try:
-                cmd = ["mklink", "/J", junction_path, src_path]
-                subprocess.check_call(cmd)
+                cmd = ["cmd", "/c", "mklink", "/J", str(junction_path), src_path]
+                proc = subprocess.run(cmd, capture_output=True, encoding="cp932")
+                result = proc.stdout.strip()
+                print_log(result)
             except Exception as e:
                 print(e)
                 print_log("(canceled)")
