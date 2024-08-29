@@ -1454,16 +1454,16 @@ def configure(window: MainWindow) -> None:
             or visible_rect.top <= rect.bottom
             or rect.top <= visible_rect.bottom
         ):
-            width = rect.right - rect.left
-            height = rect.bottom - rect.top
+            width = (visible_rect.right - visible_rect.left) // 2
+            height = visible_rect.bottom - visible_rect.top
             wnd.setRect([0, 0, width, height])
 
     def reload_config() -> None:
         window.configure()
         window.reloadTheme()
+        adjust_position()
         window.command_MoveSeparatorCenter(None)
         LeftPane(window).activate()
-        adjust_position()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print_log("{} reloaded config.py".format(ts))
 
