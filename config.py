@@ -10,7 +10,7 @@ import unicodedata
 
 from collections import namedtuple
 from pathlib import Path
-from typing import List, Callable, Union
+from typing import List, Tuple, Callable, Union
 
 import ckit
 import pyauto
@@ -183,6 +183,34 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER = Keybinder(window)
 
+    def invoke_listwindow(window: MainWindow, prompt: str, items) -> Tuple[str, int]:
+        pos = window.centerOfFocusedPaneInPixel()
+        list_window = ListWindow(
+            x=pos[0],
+            y=pos[1],
+            min_width=40,
+            min_height=1,
+            max_width=window.width() - 5,
+            max_height=window.height() - 3,
+            parent_window=window,
+            ini=window.ini,
+            title=prompt,
+            items=items,
+            initial_select=0,
+            onekey_search=False,
+            onekey_decide=False,
+            return_modkey=True,
+            keydown_hook=None,
+            statusbar_handler=None,
+        )
+        window.enable(False)
+        list_window.messageLoop()
+        result, mod = list_window.getResult()
+        window.enable(True)
+        window.activate()
+        list_window.destroy()
+        return result, mod
+
     class JumpList:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
@@ -197,37 +225,8 @@ def configure(window: MainWindow) -> None:
                 except Exception as e:
                     print_log(e)
 
-        def select(self, prompt: str) -> tuple:
-            wnd = self._window
-            pos = wnd.centerOfFocusedPaneInPixel()
-            list_window = ListWindow(
-                x=pos[0],
-                y=pos[1],
-                min_width=40,
-                min_height=1,
-                max_width=wnd.width() - 5,
-                max_height=wnd.height() - 3,
-                parent_window=wnd,
-                ini=wnd.ini,
-                title=prompt,
-                items=self._dests,
-                initial_select=0,
-                onekey_search=False,
-                onekey_decide=False,
-                return_modkey=True,
-                keydown_hook=None,
-                statusbar_handler=None,
-            )
-            wnd.enable(False)
-            list_window.messageLoop()
-            result, mod = list_window.getResult()
-            wnd.enable(True)
-            wnd.activate()
-            list_window.destroy()
-            return result, mod
-
         def jump(self) -> None:
-            result, mod = self.select("Jump (other pane with Shift)")
+            result, mod = invoke_listwindow(self._window, "Jump", self._dests)
             if -1 < result:
                 dest = self._dests[result][1]
                 active = CPane(self._window, True)
@@ -1720,31 +1719,7 @@ def configure(window: MainWindow) -> None:
             return
 
         exts.sort()
-        pos = window.centerOfFocusedPaneInPixel()
-        list_window = ListWindow(
-            x=pos[0],
-            y=pos[1],
-            min_width=40,
-            min_height=1,
-            max_width=window.width() - 5,
-            max_height=window.height() - 3,
-            parent_window=window,
-            ini=window.ini,
-            title="Select Extension",
-            items=exts,
-            initial_select=0,
-            onekey_search=False,
-            onekey_decide=False,
-            return_modkey=True,
-            keydown_hook=None,
-            statusbar_handler=None,
-        )
-        window.enable(False)
-        list_window.messageLoop()
-        result, mod = list_window.getResult()
-        window.enable(True)
-        window.activate()
-        list_window.destroy()
+        result, mod = invoke_listwindow(window, "Select Extension", exts)
 
         if result < 0:
             return
