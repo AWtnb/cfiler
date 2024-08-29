@@ -1438,11 +1438,32 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
 
+    Rect = namedtuple("Rect", ["left", "top", "right", "bottom"])
+
+    def adjust_position() -> None:
+        hwnd = window.getHWND()
+        wnd = pyauto.Window.fromHWND(hwnd)
+        rect = Rect(*wnd.getRect())
+        infos = pyauto.Window.getMonitorInfo()
+        if 1 < len(infos):
+            return
+        visible_rect = Rect(*infos[0][1])
+        if (
+            visible_rect.right <= rect.left
+            or rect.right <= visible_rect.left
+            or visible_rect.top <= rect.bottom
+            or rect.top <= visible_rect.bottom
+        ):
+            width = rect.right - rect.left
+            height = rect.bottom - rect.top
+            wnd.setRect([0, 0, width, height])
+
     def reload_config() -> None:
         window.configure()
         window.reloadTheme()
         window.command_MoveSeparatorCenter(None)
         LeftPane(window).activate()
+        adjust_position()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
         print_log("{} reloaded config.py".format(ts))
 
