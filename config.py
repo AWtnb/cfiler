@@ -1324,50 +1324,62 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-D", duplicate_file)
 
-    def smart_move_to_dir() -> None:
-        pane = CPane(window)
+    def smart_move_to_dir(remove_origin: bool) -> None:
+        if remove_origin:
+            prompt = "MoveTo"
+        else:
+            prompt = "CopyTo"
 
-        items = []
-        for item in pane.selectedItems:
-            if hasattr(item, "delete"):
-                items.append(item)
+        def _mover() -> None:
+            pane = CPane(window)
 
-        if len(items) < 1:
-            return
+            items = []
+            for item in pane.selectedItems:
+                if hasattr(item, "delete"):
+                    items.append(item)
 
-        possible_dests = []
-        names = [item.getName() for item in items]
-        for d in pane.dirs:
-            dn = d.getName()
-            if not dn in names:
-                possible_dests.append(dn)
+            if len(items) < 1:
+                return
 
-        def _listup_dests(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
-            found = []
-            cursor_offset = 0
-            for dd in possible_dests:
-                if dd.startswith(update_info.text):
-                    found.append(dd)
-            return found, cursor_offset
+            possible_dests = []
+            names = [item.getName() for item in items]
+            for d in pane.dirs:
+                dn = d.getName()
+                if not dn in names:
+                    possible_dests.append(dn)
 
-        prompt = "MoveTo"
-        result, mod = window.commandLine(
-            prompt,
-            auto_complete=True,
-            candidate_handler=_listup_dests,
-            return_modkey=True,
-        )
-        if not result:
-            return
+            def _listup_dests(
+                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+            ) -> tuple:
+                found = []
+                cursor_offset = 0
+                for dd in possible_dests:
+                    if dd.startswith(update_info.text):
+                        found.append(dd)
+                return found, cursor_offset
 
-        dir_path = Path(pane.currentPath, result)
-        if not dir_path.exists():
-            pane.mkdir(result)
-        pane.copyToChild(result, items, True)
-        if mod == ckit.MODKEY_SHIFT:
-            pane.openPath(str(dir_path))
+            result, mod = window.commandLine(
+                prompt,
+                auto_complete=True,
+                candidate_handler=_listup_dests,
+                return_modkey=True,
+            )
+            if not result:
+                return
 
-    KEYBINDER.bind("A-M", smart_move_to_dir)
+            dir_path = Path(pane.currentPath, result)
+            if not dir_path.exists():
+                pane.mkdir(result)
+            pane.copyToChild(result, items, remove_origin)
+            if mod == ckit.MODKEY_SHIFT:
+                pane.openPath(str(dir_path))
+            else:
+                pane.focusByName(result)
+
+        return _mover
+
+    KEYBINDER.bind("A-S-M", smart_move_to_dir(True))
+    KEYBINDER.bind("A-M", smart_move_to_dir(False))
 
     class TextFileMaker:
         def __init__(self, window: MainWindow) -> None:
