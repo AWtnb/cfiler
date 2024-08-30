@@ -141,8 +141,8 @@ def configure(window: MainWindow) -> None:
             "C-S-N": window.command_Mkdir,
             "H": window.command_GotoParentDir,
             "Left": window.command_GotoParentDir,
-            "A-C": window.command_ContextMenu,
-            "A-S-C": window.command_ContextMenuDir,
+            "S-F10": window.command_ContextMenu,
+            "A-S-F10": window.command_ContextMenuDir,
             "C-N": window.command_DuplicateCfiler,
             "C-Up": window.command_CursorUpSelectedOrBookmark,
             "C-K": window.command_CursorUpSelectedOrBookmark,
@@ -1422,8 +1422,8 @@ def configure(window: MainWindow) -> None:
 
         return _mover
 
-    KEYBINDER.bind("A-S-M", smart_move_to_dir(True))
-    KEYBINDER.bind("A-M", smart_move_to_dir(False))
+    KEYBINDER.bind("A-M", smart_move_to_dir(True))
+    KEYBINDER.bind("A-C", smart_move_to_dir(False))
 
     class TextFileMaker:
         def __init__(self, window: MainWindow) -> None:
