@@ -123,7 +123,6 @@ def configure(window: MainWindow) -> None:
             "A-F4": window.command_Quit,
             "C-Comma": window.command_ConfigMenu,
             "C-S-Comma": window.command_ConfigMenu2,
-            "N": window.command_Rename,
             "C-H": window.command_JumpHistory,
             "C-Z": window.command_JumpHistory,
             "Back": window.command_JumpHistory,
@@ -1292,6 +1291,50 @@ def configure(window: MainWindow) -> None:
             shell_exec(str(vscode_path), pane.currentPath)
 
     KEYBINDER.bind("V", on_vscode)
+
+    def invoke_renamer(append: Union[bool, None]) -> Callable:
+        def _renamer() -> None:
+            pane = CPane(window)
+            item = pane.focusedItem
+            if (
+                not hasattr(item, "rename")
+                or not hasattr(item, "utime")
+                or not hasattr(item, "uattr")
+            ):
+                return
+            org_path = Path(item.getFullpath())
+            offset = len(org_path.stem)
+            if append is None:
+                sel = [0, offset]
+            elif append:
+                sel = [offset, offset]
+            else:
+                sel = [0, 0]
+
+            new_name = window.commandLine(
+                title="NewName",
+                text=org_path.name,
+                selection=sel,
+            )
+
+            if not new_name:
+                return
+
+            new_path = str(org_path.with_name(new_name))
+
+            try:
+                window.subThreadCall(org_path.rename, (new_path,))
+                print_log("Renamed: {} ==> {}".format(org_path.name, new_name))
+                pane.refresh()
+                pane.focusByName(new_name)
+            except Exception as e:
+                print(e)
+
+        return _renamer
+
+    KEYBINDER.bind("A-N", invoke_renamer(None))
+    KEYBINDER.bind("N", invoke_renamer(True))
+    KEYBINDER.bind("S-N", invoke_renamer(False))
 
     def duplicate_file() -> None:
         pane = CPane(window)
