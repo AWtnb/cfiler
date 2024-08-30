@@ -1333,6 +1333,7 @@ def configure(window: MainWindow) -> None:
         return _renamer
 
     KEYBINDER.bind("A-N", invoke_renamer(None))
+    KEYBINDER.bind("F2", invoke_renamer(None))
     KEYBINDER.bind("N", invoke_renamer(True))
     KEYBINDER.bind("S-N", invoke_renamer(False))
 
