@@ -1506,9 +1506,11 @@ def configure(window: MainWindow) -> None:
         if (
             visible_rect.right <= rect.left
             or rect.right <= visible_rect.left
-            or visible_rect.top <= rect.bottom
-            or rect.top <= visible_rect.bottom
+            or rect.bottom <= visible_rect.top
+            or visible_rect.bottom <= rect.top
         ):
+            if wnd.isMaximized():
+                wnd.restore()
             left = (visible_rect.right - visible_rect.left) // 2
             wnd.setRect([left, 0, visible_rect.right, visible_rect.bottom])
 
