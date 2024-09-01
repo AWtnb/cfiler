@@ -4,7 +4,7 @@ On the same directory as `cfiler.exe` :
 
 1. Place [`config.py`](config.py) (or overwrite `_config.py`) .
 1. Make junction of [`setting`](setting) .
-1. (Optional) Make symlink of [`theme.ini`](theme.ini) to `theme/black/theme.ini`
+1. (Optional) Copy (or make symlink) [`theme.ini`](theme.ini) to `theme/black/theme.ini`
 
 ---
 
