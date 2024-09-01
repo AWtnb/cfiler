@@ -58,7 +58,6 @@ from cfiler_listwindow import ListWindow
 
 from cfiler_misc import candidate_Filename
 
-
 class PaintOption:
     LeftLocation = PAINT_LEFT_LOCATION
     LeftHeader = PAINT_LEFT_HEADER
