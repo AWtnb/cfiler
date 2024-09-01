@@ -1955,6 +1955,8 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["Right"] = window.command_PageDown
     window.keymap["Left"] = window.command_PageUp
     window.keymap["C-Comma"] = window.command_ConfigMenu
+    window.keymap["F3"] = window.command_SearchNext
+    window.keymap["S-F3"] = window.command_SearchPrev
 
     def to_top(_) -> None:
         window.scroll_info.pos = 0
