@@ -1,8 +1,8 @@
 # cfiler (内骨格) customization
 
 
-1. Place (or make junction of) [`CraftFiler`](CraftFiler) to `%APPDATA%/CraftFiler` .
-1. Place (or make symlink of) [`theme.ini`](theme.ini) to `theme/black` .
+1. Place (or make junction of) [`CraftFiler`](CraftFiler) on `%APPDATA%` .
+1. Place (or make symlink of) [`theme.ini`](theme.ini) on `theme/black` .
 
 
 With [Syncthing](https://syncthing.net/), append below on `.stignore` to skip syncing local history.
