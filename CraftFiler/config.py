@@ -58,6 +58,7 @@ from cfiler_listwindow import ListWindow
 
 from cfiler_misc import candidate_Filename
 
+
 class PaintOption:
     LeftLocation = PAINT_LEFT_LOCATION
     LeftHeader = PAINT_LEFT_HEADER
@@ -480,12 +481,11 @@ def configure(window: MainWindow) -> None:
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
 
-        def openPath(self, path: str) -> None:
+        def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
             target = Path(path)
             if not target.exists():
                 print_log("invalid path: '{}'".format(path))
                 return
-            focus_name = None
             if target.is_file():
                 path = str(target.parent)
                 focus_name = target.name
@@ -928,11 +928,15 @@ def configure(window: MainWindow) -> None:
         if len(result) < 1:
             return
         open_path = Path(pane.currentPath, result)
-        if mod == ckit.MODKEY_SHIFT:
-            CPane(window, False).openPath(str(open_path))
-            pane.focusOther()
+        if open_path.is_dir():
+            if mod == ckit.MODKEY_SHIFT:
+                pane.openPath(str(open_path))
+            else:
+                pane.openPath(str(open_path.parent), str(open_path.name))
         else:
             pane.openPath(str(open_path))
+            if mod == ckit.MODKEY_SHIFT:
+                shell_exec(str(open_path))
 
     KEYBINDER.bind("F", smart_jump_input)
 
@@ -1255,9 +1259,8 @@ def configure(window: MainWindow) -> None:
         parent = str(Path(active_pane.currentPath).parent)
         current_name = str(Path(active_pane.currentPath).name)
         inactive_pane = CPane(window, False)
-        inactive_pane.openPath(parent)
+        inactive_pane.openPath(parent, current_name)
         active_pane.focusOther()
-        inactive_pane.focusByName(current_name)
 
     KEYBINDER.bind("S-U", open_parent_to_other)
 
