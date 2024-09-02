@@ -799,7 +799,7 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_get_name, _mkdir)
         window.taskEnqueue(job, create_new_queue=False)
 
-    KEYBINDER.bind("S-C-A-N", ruled_mkdir)
+    KEYBINDER.bind("S-A-N", ruled_mkdir)
 
     class zyl:
         def __init__(self) -> None:
