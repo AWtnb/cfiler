@@ -1299,7 +1299,8 @@ def configure(window: MainWindow) -> None:
             pane = CPane(window)
             item = pane.focusedItem
             if (
-                not hasattr(item, "rename")
+                pane.isBlank
+                or not hasattr(item, "rename")
                 or not hasattr(item, "utime")
                 or not hasattr(item, "uattr")
             ):
