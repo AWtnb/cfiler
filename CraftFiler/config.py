@@ -1325,7 +1325,7 @@ def configure(window: MainWindow) -> None:
                 return
 
             new_name = new_stem + org_path.suffix
-            new_path = str(org_path.with_stem(new_stem))
+            new_path = str(org_path.with_name(new_name))
 
             try:
                 window.subThreadCall(org_path.rename, (new_path,))
