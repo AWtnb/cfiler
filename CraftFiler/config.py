@@ -1305,6 +1305,7 @@ def configure(window: MainWindow) -> None:
                 or not hasattr(item, "uattr")
             ):
                 return
+
             org_path = Path(item.getFullpath())
             offset = len(org_path.stem)
             if append is None:
@@ -1314,16 +1315,17 @@ def configure(window: MainWindow) -> None:
             else:
                 sel = [0, 0]
 
-            new_name = window.commandLine(
-                title="NewName",
-                text=org_path.name,
+            new_stem = window.commandLine(
+                title="NewStem",
+                text=org_path.stem,
                 selection=sel,
             )
 
-            if not new_name:
+            if not new_stem:
                 return
 
-            new_path = str(org_path.with_name(new_name))
+            new_name = new_stem + org_path.suffix
+            new_path = str(org_path.with_stem(new_stem))
 
             try:
                 window.subThreadCall(org_path.rename, (new_path,))
