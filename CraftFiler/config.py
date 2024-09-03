@@ -96,9 +96,9 @@ def configure(window: MainWindow) -> None:
     def print_log(s) -> None:
         ts = datetime.datetime.today().strftime(" %Y-%m-%d %H:%M:%S.%f ==")
         ww = window.width()
-        print("\n{}\n".format(ts.rjust(ww, "=")))
+        print("\n{}".format(ts.rjust(ww, "=")))
         print(s)
-        print("\n{}\n".format("=" * ww))
+        print("{}\n".format("=" * ww))
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -1527,7 +1527,8 @@ def configure(window: MainWindow) -> None:
         adjust_position()
         window.command_MoveSeparatorCenter(None)
         LeftPane(window).activate()
-        print_log("reloaded config.py")
+        ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
+        window.setStatusMessage("reloaded config.py | {}".format(ts), 2000)
 
     KEYBINDER.bind("C-R", reload_config)
     KEYBINDER.bind("F5", reload_config)
