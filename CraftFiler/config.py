@@ -87,16 +87,19 @@ USER_PROFILE = os.environ.get("USERPROFILE") or ""
 LINE_BREAK = os.linesep
 
 
-def print_log(s: str, padding: int = 1) -> None:
-    p = "\n" * padding
-    print(p + s + p)
-
-
 def delay(msec: int = 50) -> None:
     time.sleep(msec / 1000)
 
 
 def configure(window: MainWindow) -> None:
+
+    def print_log(s) -> None:
+        ts = datetime.datetime.today().strftime(" %Y-%m-%d %H:%M:%S.%f ==")
+        ww = window.width()
+        pad = max(ww - len(ts), 1)
+        print("\n{}{}\n".format("=" * pad, ts))
+        print(s)
+        print("\n{}\n".format("=" * ww))
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -1525,8 +1528,7 @@ def configure(window: MainWindow) -> None:
         adjust_position()
         window.command_MoveSeparatorCenter(None)
         LeftPane(window).activate()
-        ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
-        print_log("{} reloaded config.py".format(ts))
+        print_log("reloaded config.py")
 
     KEYBINDER.bind("C-R", reload_config)
     KEYBINDER.bind("F5", reload_config)
@@ -1653,7 +1655,7 @@ def configure(window: MainWindow) -> None:
 
                 Selector(window, False).clearAll()
 
-                print_log("=== comparing md5 hash ===")
+                print_log("comparing md5 hash")
 
                 window.setProgressValue(None)
 
@@ -1688,7 +1690,7 @@ def configure(window: MainWindow) -> None:
                 if job_item.isCanceled():
                     print_log("Canceled.")
                 else:
-                    print_log("======== finished ========")
+                    print_log("finished")
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
