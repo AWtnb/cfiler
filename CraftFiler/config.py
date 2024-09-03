@@ -96,8 +96,7 @@ def configure(window: MainWindow) -> None:
     def print_log(s) -> None:
         ts = datetime.datetime.today().strftime(" %Y-%m-%d %H:%M:%S.%f ==")
         ww = window.width()
-        pad = max(ww - len(ts), 1)
-        print("\n{}{}\n".format("=" * pad, ts))
+        print("\n{}\n".format(ts.rjust(ww, "=")))
         print(s)
         print("\n{}\n".format("=" * ww))
 
