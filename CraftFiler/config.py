@@ -94,11 +94,12 @@ def delay(msec: int = 50) -> None:
 def configure(window: MainWindow) -> None:
 
     def print_log(s) -> None:
-        ts = datetime.datetime.today().strftime(" %Y-%m-%d %H:%M:%S.%f ==")
+        sep = "-"
+        ts = datetime.datetime.today().strftime(" %Y-%m-%d %H:%M:%S.%f {}".format(sep*2))
         ww = window.width()
-        print("\n{}".format(ts.rjust(ww, "=")))
+        print("\n{}".format(ts.rjust(ww, sep)))
         print(s)
-        print("{}\n".format("=" * ww))
+        print("{}\n".format(sep * ww))
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
