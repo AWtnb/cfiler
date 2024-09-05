@@ -1766,15 +1766,21 @@ def configure(window: MainWindow) -> None:
         if result:
             SELECTOR.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
+    KEYBINDER.bind("Caret", select_stem_startswith)
+
     def select_stem_endswith() -> None:
         result, mod = window.commandLine("EndsWith", return_modkey=True)
         if result:
             SELECTOR.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
+    KEYBINDER.bind("4", select_stem_endswith)
+
     def select_stem_contains() -> None:
         result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
             SELECTOR.stemContains(result, mod == ckit.MODKEY_SHIFT)
+
+    KEYBINDER.bind("Colon", select_stem_contains)
 
     def select_byext() -> None:
 
