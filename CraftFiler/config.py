@@ -95,7 +95,9 @@ def configure(window: MainWindow) -> None:
 
     def print_log(s) -> None:
         sep = "-"
-        ts = datetime.datetime.today().strftime(" %Y-%m-%d %H:%M:%S.%f {}".format(sep*2))
+        ts = datetime.datetime.today().strftime(
+            " %Y-%m-%d %H:%M:%S.%f {}".format(sep * 2)
+        )
         ww = window.width()
         print("\n{}".format(ts.rjust(ww, sep)))
         print(s)
@@ -1998,8 +2000,10 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         content = Path(path).read_text(enc)
         ckit.setClipboardText(content)
         window.command_Close(None)
-        print_log(
-            "copied content of '{}' in {} encoding.".format(window.item.getName(), enc)
+        print(
+            "\ncopied content of '{}' in {} encoding.\n".format(
+                window.item.getName(), enc
+            )
         )
 
     window.keymap["C-C"] = copy_content
@@ -2029,6 +2033,33 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["S-K"] = window.command_ScrollUp
     window.keymap["F"] = window.command_ZoomPolicyFit
     window.keymap["Q"] = window.command_Close
+
+    def to_top(_) -> None:
+        if 0 < window.job_queue.numItems():
+            return
+        if window.cursor == 0:
+            return
+        window.cursor = 0
+        if window.cursor_handler:
+            window.cursor_handler(window.items[window.cursor])
+        window.decode()
+
+    window.keymap["A"] = to_top
+    window.keymap["Home"] = to_top
+
+    def to_end(_) -> None:
+        if 0 < window.job_queue.numItems():
+            return
+        last = len(window.items) - 1
+        if window.cursor == last:
+            return
+        window.cursor = last
+        if window.cursor_handler:
+            window.cursor_handler(window.items[window.cursor])
+        window.decode()
+
+    window.keymap["E"] = to_end
+    window.keymap["End"] = to_end
 
     def open_original(_) -> None:
         item = window.items[window.cursor]
