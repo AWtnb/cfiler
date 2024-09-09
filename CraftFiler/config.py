@@ -54,7 +54,7 @@ from cfiler_filelist import (
 )
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
-from cfiler_listwindow import ListWindow
+from cfiler_listwindow import ListWindow, ListItem
 
 from cfiler_misc import candidate_Filename
 
@@ -219,16 +219,16 @@ def configure(window: MainWindow) -> None:
     class JumpList:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
-            self._names = []
-            self._table = {}
+            self._list_items = []
+            self._menu_table = {}
 
         def register(self, dest_table: dict) -> None:
             for name, path in dest_table.items():
                 p = Path(path)
                 try:
                     if p.exists():
-                        self._table[name] = path
-                        self._names.append(name)
+                        self._menu_table[name] = path
+                        self._list_items.append(ListItem(name, False))
                 except Exception as e:
                     print_log(e)
 
@@ -237,21 +237,26 @@ def configure(window: MainWindow) -> None:
             bookmark = self._window.bookmark.getItems()
             return sorted(bookmark, key=lambda p: Path(p).name.lower())
 
+        def to_menu_name(self, path: str) -> str:
+            p = Path(path)
+            names = [item.name for item in self._list_items]
+            if p.name in names:
+                return "{} ({})".format(p.name, p.parent)
+            return p.name
+
         def register_bookmark(self) -> None:
             for path in self.bookmarks:
-                if path not in self._table.values():
-                    p = Path(path)
-                    name = "{} [B]".format(p.name)
-                    if p.name in self._names:
-                        name = "{} ({})[B]".format(p.name, p.parent)
-                    self._names.append(name)
-                    self._table[name] = path
+                if path not in self._menu_table.values():
+                    name = self.to_menu_name(path)
+                    self._menu_table[name] = path
+                    item = ListItem(name, True)
+                    self._list_items.append(item)
 
         def jump(self) -> None:
-            result, mod = invoke_listwindow(self._window, "Jump", self._names)
+            result, mod = invoke_listwindow(self._window, "Jump", self._list_items)
             if -1 < result:
-                name = self._names[result]
-                dest = self._table[name]
+                item = self._list_items[result]
+                dest = self._menu_table[item.name]
                 active = CPane(self._window, True)
                 other = CPane(self._window, False)
                 if mod == ckit.MODKEY_SHIFT:
