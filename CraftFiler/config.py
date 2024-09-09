@@ -1959,24 +1959,36 @@ def configure(window: MainWindow) -> None:
 
 def configure_ListWindow(window: ckit.TextWindow) -> None:
 
-    def smart_cursorUp(_) -> None:
-        window.select -= 1
-        if window.select < 0:
-            window.select = len(window.items) - 1
+    def refresh() -> None:
         window.scroll_info.makeVisible(
             window.select, window.itemsHeight(), window.scroll_margin
         )
         window.paint()
+
+    def to_top(_) -> None:
+        window.select = 0
+        refresh()
+
+    def to_end(_) -> None:
+        window.select = len(window.items) - 1
+        refresh()
+
+    def smart_cursorUp(_) -> None:
+        window.select -= 1
+        if window.select < 0:
+            window.select = len(window.items) - 1
+        refresh()
 
     def smart_cursorDown(_) -> None:
         window.select += 1
         if len(window.items) - 1 < window.select:
             window.select = 0
-        window.scroll_info.makeVisible(
-            window.select, window.itemsHeight(), window.scroll_margin
-        )
-        window.paint()
+        refresh()
 
+    window.keymap["A"] = to_top
+    window.keymap["Home"] = to_top
+    window.keymap["E"] = to_end
+    window.keymap["End"] = to_end
     window.keymap["J"] = smart_cursorDown
     window.keymap["Down"] = smart_cursorDown
     window.keymap["K"] = smart_cursorUp
