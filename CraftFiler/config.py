@@ -219,21 +219,37 @@ def configure(window: MainWindow) -> None:
     class JumpList:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
-            self._dests = []
+            self._names = []
+            self._table = {}
 
         def register(self, dest_table: dict) -> None:
             for name, path in dest_table.items():
                 p = Path(path)
                 try:
                     if p.exists():
-                        self._dests += [(name, str(p))]
+                        self._table[name] = path
+                        self._names.append(name)
                 except Exception as e:
                     print_log(e)
 
+        def register_bookmark(self) -> None:
+            bookmark = self._window.bookmark
+            for path in bookmark.getItems():
+                if path not in self._table.values():
+                    p = Path(path)
+                    if p.name in self._names:
+                        n = "{} ({})".format(p.name, p.parent)
+                        self._names.append(n)
+                        self._table[n] = path
+                    else:
+                        self._names.append(p.name)
+                        self._table[p.name] = path
+
         def jump(self) -> None:
-            result, mod = invoke_listwindow(self._window, "Jump", self._dests)
+            result, mod = invoke_listwindow(self._window, "Jump", self._names)
             if -1 < result:
-                dest = self._dests[result][1]
+                name = self._names[result]
+                dest = self._table[name]
                 active = CPane(self._window, True)
                 other = CPane(self._window, False)
                 if mod == ckit.MODKEY_SHIFT:
@@ -246,13 +262,14 @@ def configure(window: MainWindow) -> None:
     JUMP_LIST.register(
         {
             "Desktop": str(Path(USER_PROFILE, "Desktop")),
+            "Scan": r"X:\scan",
             "Dropbox": str(Path(USER_PROFILE, "Dropbox")),
             "Dropbox Share": str(
                 Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
             ),
-            "Scan": r"X:\scan",
         }
     )
+    JUMP_LIST.register_bookmark()
 
     KEYBINDER.bind("C-Space", JUMP_LIST.jump)
 
