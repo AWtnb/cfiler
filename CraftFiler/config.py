@@ -232,18 +232,20 @@ def configure(window: MainWindow) -> None:
                 except Exception as e:
                     print_log(e)
 
+        @property
+        def bookmarks(self) -> List[str]:
+            bookmark = self._window.bookmark.getItems()
+            return sorted(bookmark, key=lambda p: Path(p).name.lower())
+
         def register_bookmark(self) -> None:
-            bookmark = self._window.bookmark
-            for path in bookmark.getItems():
+            for path in self.bookmarks:
                 if path not in self._table.values():
                     p = Path(path)
+                    name = "{} [B]".format(p.name)
                     if p.name in self._names:
-                        n = "{} ({})".format(p.name, p.parent)
-                        self._names.append(n)
-                        self._table[n] = path
-                    else:
-                        self._names.append(p.name)
-                        self._table[p.name] = path
+                        name = "{} ({})[B]".format(p.name, p.parent)
+                    self._names.append(name)
+                    self._table[name] = path
 
         def jump(self) -> None:
             result, mod = invoke_listwindow(self._window, "Jump", self._names)
@@ -1555,16 +1557,18 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-R", reload_config)
     KEYBINDER.bind("F5", reload_config)
 
-    def starting_position() -> None:
+    def starting_position(both_pane: bool = False) -> None:
+        window.command_MoveSeparatorCenter(None)
         desktop_path = str(Path(USER_PROFILE, "Desktop"))
         pane = CPane(window, True)
         if pane.currentPath != desktop_path:
             pane.openPath(desktop_path)
-        window.command_ChdirInactivePaneToOther(None)
-        window.command_MoveSeparatorCenter(None)
-        LeftPane(window).activate()
+        if both_pane:
+            window.command_ChdirInactivePaneToOther(None)
+            LeftPane(window).activate()
 
-    KEYBINDER.bind("0", starting_position)
+    KEYBINDER.bind("0", lambda: starting_position(False))
+    KEYBINDER.bind("S-0", lambda: starting_position(True))
 
     def open_doc() -> None:
         help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
