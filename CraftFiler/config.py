@@ -93,6 +93,43 @@ def delay(msec: int = 50) -> None:
 
 def configure(window: MainWindow) -> None:
 
+    def set_custom_theme() -> None:
+        color_table = {
+            "bg": (18, 37, 48),
+            "fg": (255, 255, 255),
+            "file_fg": (230, 230, 230),
+            "dir_fg": (244, 215, 26),
+            "hidden_file_fg": (85, 85, 85),
+            "hidden_dir_fg": (85, 85, 50),
+            "error_file_fg": (255, 0, 0),
+            "select_file_bg1": (30, 100, 150),
+            "select_file_bg2": (30, 100, 150),
+            "bookmark_file_bg1": (107, 58, 112),
+            "bookmark_file_bg2": (107, 58, 112),
+            "file_cursor": (127, 255, 187),
+            # status bar/ pane status bar
+            "bar_fg": (0, 0, 0),
+            "bar_error_fg": (200, 0, 0),
+            # commandline / text input
+            "cursor0": (255, 255, 255),
+            "cursor1": (255, 64, 64),
+            "choice_bg": (50, 50, 50),
+            "choice_fg": (255, 255, 255),
+            "select_bg": (30, 100, 150),
+            "select_fg": (255, 255, 255),
+            # diff viewer
+            "diff_bg1": (100, 50, 50),
+            "diff_bg2": (50, 100, 50),
+            "diff_bg3": (50, 50, 100),
+        }
+        ckit.setTheme("custom", color_table)
+        window.theme_enabled = True
+        window.updateThemePosSize()
+        window.updateColor()
+        window.updateWallpaper()
+
+    set_custom_theme()
+
     def print_log(s) -> None:
         sep = "-"
         ts = datetime.datetime.today().strftime(
@@ -1552,7 +1589,6 @@ def configure(window: MainWindow) -> None:
 
     def reload_config() -> None:
         window.configure()
-        window.reloadTheme()
         adjust_position()
         window.command_MoveSeparatorCenter(None)
         LeftPane(window).activate()
