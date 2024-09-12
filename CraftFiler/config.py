@@ -1520,13 +1520,20 @@ def configure(window: MainWindow) -> None:
             item = pane.byIndex(i)
             if item.selected() and hasattr(item, "delete"):
                 items.append(item)
-        if len(items) < 1:
+        count = len(items)
+        if count < 1:
             return
 
         dest_name = "_obsolete"
         if pane.byName(dest_name) < 0:
             pane.mkdir(dest_name, False)
         pane.copyToChild(dest_name, items, True)
+
+        msg = "moving {} item".format(count)
+        if 1 < count:
+            msg += "s"
+        msg += " to '{}'".format(dest_name)
+        print_log(msg)
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
 
