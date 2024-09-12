@@ -2037,18 +2037,19 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["C-Enter"] = open_original
 
     def copy_content(_) -> None:
+        path = Path(window.item.getFullpath())
         enc = window.encoding.encoding
         if window.encoding.bom:
-            enc = enc + "-sig"
-        path = window.item.getFullpath()
-        content = Path(path).read_text(enc)
+            enc += "-sig"
+        content = path.read_text(enc)
         ckit.setClipboardText(content)
         window.command_Close(None)
-        print(
-            "\ncopied content of '{}' in {} encoding.\n".format(
-                window.item.getName(), enc
-            )
-        )
+        msg = "copied content of '{}' ".format(path.name)
+        if enc:
+            msg += "as {} encoding.".format(enc)
+        else:
+            msg += "as binary-decoded.".format(enc)
+        print("\n{}\n".format(msg))
 
     window.keymap["C-C"] = copy_content
 
