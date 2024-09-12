@@ -1524,7 +1524,8 @@ def configure(window: MainWindow) -> None:
             return
 
         dest_name = "_obsolete"
-        pane.mkdir(dest_name, False)
+        if pane.byName(dest_name) < 0:
+            pane.mkdir(dest_name, False)
         pane.copyToChild(dest_name, items, True)
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
