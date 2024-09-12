@@ -745,10 +745,10 @@ def configure(window: MainWindow) -> None:
         other_focus = other_pane.focusedItem
         other_path = other_pane.currentPath
 
-        pane.openPath(other_path, other_focus.getName())
+        pane.openPath(other_path, other_focus.getName() or None)
         pane.selectByNames(other_selects)
 
-        other_pane.openPath(current_path, current_focus.getName())
+        other_pane.openPath(current_path, current_focus.getName() or None)
         other_pane.selectByNames(pane_selects)
 
         LeftPane(window).activate()
