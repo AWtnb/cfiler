@@ -1325,6 +1325,52 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("V", on_vscode)
 
+    def rename_insert() -> None:
+        pane = CPane(window)
+        if pane.isBlank:
+            return
+
+        items = []
+        if pane.hasSelection:
+            items = pane.selectedItems
+        else:
+            items.append(pane.focusedItem)
+
+        result, mod = window.commandLine("Append (Shift to head)", return_modkey=True)
+
+        if not result:
+            return
+
+        to_head = mod == ckit.MODKEY_SHIFT
+
+        for item in items:
+            if (
+                not hasattr(item, "rename")
+                or not hasattr(item, "utime")
+                or not hasattr(item, "uattr")
+            ):
+                continue
+
+            org_path = Path(item.getFullpath())
+            if to_head:
+                new_name = result + org_path.name
+            else:
+                new_name = org_path.stem + result + org_path.suffix
+
+            new_path = org_path.with_name(new_name)
+            if new_path.exists():
+                print_log("'{}' already exists!".format(new_name))
+                continue
+
+            try:
+                window.subThreadCall(org_path.rename, (str(new_path),))
+                print_log("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
+                pane.refresh()
+            except Exception as e:
+                print(e)
+
+    KEYBINDER.bind("S-I", rename_insert)
+
     def invoke_renamer(append: Union[bool, None]) -> Callable:
         def _renamer() -> None:
             pane = CPane(window)
@@ -1360,7 +1406,7 @@ def configure(window: MainWindow) -> None:
 
             try:
                 window.subThreadCall(org_path.rename, (new_path,))
-                print_log("Renamed: {} ==> {}".format(org_path.name, new_name))
+                print_log("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
                 pane.refresh()
                 pane.focusByName(new_name)
             except Exception as e:
