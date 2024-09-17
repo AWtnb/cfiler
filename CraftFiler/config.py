@@ -461,17 +461,24 @@ def configure(window: MainWindow) -> None:
         def applySelectionHighlight(self) -> None:
             self.repaint(PO.Upper)
 
+        def isValidIndex(self, i: int) -> bool:
+            if self.isBlank:
+                return False
+            if i < 0:
+                return False
+            if self.count - 1 < i:
+                return False
+            return True
+
         def toggleSelection(self, i: int) -> None:
-            if self.isBlank or i < 0 or self.count - 1 < i:
-                return
-            self.fileList.selectItem(i, None)
-            self.applySelectionHighlight()
+            if self.isValidIndex(i):
+                self.fileList.selectItem(i, None)
+                self.applySelectionHighlight()
 
         def setSelectionState(self, i: int, state: bool) -> None:
-            if self.isBlank or i < 0 or self.count - 1 < i:
-                return
-            self.fileList.selectItem(i, state)
-            self.applySelectionHighlight()
+            if self.isValidIndex(i):
+                self.fileList.selectItem(i, state)
+                self.applySelectionHighlight()
 
         def select(self, i: int) -> None:
             self.setSelectionState(i, True)
@@ -1830,9 +1837,11 @@ def configure(window: MainWindow) -> None:
             for name in names:
                 i = pane.byName(name)
                 if select_common:
-                    pane.setSelectionState(i, name in inactive.names)
+                    if name in inactive.names:
+                        pane.toggleSelection(i)
                 else:
-                    pane.setSelectionState(i, name not in inactive.names)
+                    if name not in inactive.names:
+                        pane.toggleSelection(i)
 
         return _selector
 
