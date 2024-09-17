@@ -1817,27 +1817,24 @@ def configure(window: MainWindow) -> None:
 
         shell_exec(exe_path, str(left_path), str(right_path))
 
-    def select_name_common() -> None:
-        pane = CPane(window)
-        inactive = CPane(window, False)
+    def invoke_name_based_selector(select_common: bool) -> Callable:
+        def _selector() -> None:
+            pane = CPane(window)
+            inactive = CPane(window, False)
 
-        selected_at_first = pane.hasSelection
-        for i in range(pane.count):
-            item = pane.byIndex(i)
-            if selected_at_first and not item.selected():
-                continue
-            pane.setSelectionState(i, item.getName() in inactive.names)
+            if pane.hasSelection:
+                names = pane.selectedItemNames
+            else:
+                names = pane.names
 
-    def select_name_unique() -> None:
-        pane = CPane(window)
-        inactive = CPane(window, False)
+            for name in names:
+                i = pane.byName(name)
+                if select_common:
+                    pane.setSelectionState(i, name in inactive.names)
+                else:
+                    pane.setSelectionState(i, name not in inactive.names)
 
-        selected_at_first = pane.hasSelection
-        for i in range(pane.count):
-            item = pane.byIndex(i)
-            if selected_at_first and not item.selected():
-                continue
-            pane.setSelectionState(i, item.getName() not in inactive.names)
+        return _selector
 
     def select_stem_startswith() -> None:
         result, mod = window.commandLine("StartsWith", return_modkey=True)
@@ -1999,8 +1996,8 @@ def configure(window: MainWindow) -> None:
             "Diffinity": diffinity,
             "RenamePseudoVoicing": rename_pseudo_voicing,
             "CompareFileHash": compare_file_hash,
-            "SelectNameUnique": select_name_unique,
-            "SelectNameCommon": select_name_common,
+            "SelectNameUnique": invoke_name_based_selector(False),
+            "SelectNameCommon": invoke_name_based_selector(True),
             "SelectStemStartsWith": select_stem_startswith,
             "SelectStemEndsWith": select_stem_endswith,
             "SelectStemContains": select_stem_contains,
