@@ -462,10 +462,14 @@ def configure(window: MainWindow) -> None:
             self.repaint(PO.Upper)
 
         def toggleSelection(self, i: int) -> None:
+            if self.isBlank or i < 0 or self.count - 1 < i:
+                return
             self.fileList.selectItem(i, None)
             self.applySelectionHighlight()
 
         def setSelectionState(self, i: int, state: bool) -> None:
+            if self.isBlank or i < 0 or self.count - 1 < i:
+                return
             self.fileList.selectItem(i, state)
             self.applySelectionHighlight()
 
@@ -1817,29 +1821,23 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         inactive = CPane(window, False)
 
-        if pane.hasSelection:
-            names = pane.selectedItemNames
-            search_pane = inactive
-        else:
-            names = inactive.names
-            search_pane = pane
-
-        for i in range(search_pane.count):
-            item = search_pane.byIndex(i)
-            if item.getName() in names:
-                search_pane.select(i)
+        selected_at_first = pane.hasSelection
+        for i in range(pane.count):
+            item = pane.byIndex(i)
+            if selected_at_first and not item.selected():
+                continue
+            pane.setSelectionState(i, item.getName() in inactive.names)
 
     def select_name_unique() -> None:
         pane = CPane(window)
-        names = pane.names
-        other = CPane(window, False)
-        other_names = other.names
+        inactive = CPane(window, False)
+
+        selected_at_first = pane.hasSelection
         for i in range(pane.count):
             item = pane.byIndex(i)
-            pane.setSelectionState(i, item.getName() not in other_names)
-        for i in range(other.count):
-            item = other.byIndex(i)
-            other.setSelectionState(i, item.getName() not in names)
+            if selected_at_first and not item.selected():
+                continue
+            pane.setSelectionState(i, item.getName() not in inactive.names)
 
     def select_stem_startswith() -> None:
         result, mod = window.commandLine("StartsWith", return_modkey=True)
