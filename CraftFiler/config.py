@@ -1549,9 +1549,7 @@ def configure(window: MainWindow) -> None:
                 prompt = "NewFileName"
                 if 0 < len(extension):
                     prompt = prompt + " (.{})".format(extension)
-                result = window.commandLine(
-                    prompt, auto_complete=True, candidate_handler=_listup_files
-                )
+                result = window.commandLine(prompt, candidate_handler=_listup_files)
                 if not result:
                     return
                 filename = result.strip()
