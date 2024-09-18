@@ -555,6 +555,9 @@ def configure(window: MainWindow) -> None:
             self._window.subThreadCall(self.lister.mkdir, (name, None))
             self.refresh()
             if focus:
+                sep = "/"
+                if os.sep in name or sep in name:
+                    name = name.replace(os.sep, sep).split(sep)[0]
                 self.focus(self._window.cursorFromName(self.fileList, name))
 
         def copyToChild(
