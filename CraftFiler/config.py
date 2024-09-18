@@ -1039,10 +1039,13 @@ def configure(window: MainWindow) -> None:
                 return
             if 0 < len(ss):
                 ckit.setClipboardText(LINE_BREAK.join(ss))
-                print("\nCopied:")
-                for s in ss:
-                    print("- '{}'".format(s))
-                print()
+                if len(ss) == 1:
+                    window.setStatusMessage("Copied: '{}'".format(ss[0]), 2000)
+                else:
+                    print("\nCopied:")
+                    for s in ss:
+                        print("- '{}'".format(s))
+                    print()
 
         @classmethod
         def paths(cls) -> None:
