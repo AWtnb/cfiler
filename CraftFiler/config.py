@@ -2117,8 +2117,10 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
 
 def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["F11"] = window.command_ToggleMaximize
+    window.keymap["H"] = window.command_CursorUp
     window.keymap["J"] = window.command_CursorDown
     window.keymap["K"] = window.command_CursorUp
+    window.keymap["L"] = window.command_CursorDown
     window.keymap["S-Semicolon"] = window.command_ZoomIn
     window.keymap["Z"] = window.command_ZoomIn
     window.keymap["Minus"] = window.command_ZoomOut
