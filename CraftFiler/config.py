@@ -750,25 +750,25 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C", quick_copy)
 
     def swap_pane() -> None:
-        pane = CPane(window, True)
-        pane_selects = pane.selectedItemNames
-        current_path = pane.currentPath
-        current_focus_name = None
-        if not pane.isBlank:
-            current_focus_name = pane.focusedItem.getName()
+        active = CPane(window, True)
+        active_selects = active.selectedItemNames
+        active_path = active.currentPath
+        active_focus_name = None
+        if not active.isBlank:
+            active_focus_name = active.focusedItem.getName()
 
-        other_pane = CPane(window, False)
-        other_selects = other_pane.selectedItemNames
-        other_path = other_pane.currentPath
-        other_focus_name = None
-        if not other_pane.isBlank:
-            other_focus_name = other_pane.focusedItem.getName()
+        inactive = CPane(window, False)
+        inactive_selects = inactive.selectedItemNames
+        inactive_path = inactive.currentPath
+        inactive_focus_name = None
+        if not inactive.isBlank:
+            inactive_focus_name = inactive.focusedItem.getName()
 
-        pane.openPath(other_path, other_focus_name)
-        pane.selectByNames(other_selects)
+        active.openPath(inactive_path, inactive_focus_name)
+        active.selectByNames(inactive_selects)
 
-        other_pane.openPath(current_path, current_focus_name)
-        other_pane.selectByNames(pane_selects)
+        inactive.openPath(active_path, active_focus_name)
+        inactive.selectByNames(active_selects)
 
         LeftPane(window).activate()
 
