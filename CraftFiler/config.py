@@ -753,16 +753,21 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window, True)
         pane_selects = pane.selectedItemNames
         current_path = pane.currentPath
-        current_focus = pane.focusedItem
+        current_focus_name = None
+        if not pane.isBlank:
+            current_focus_name = pane.focusedItem.getName()
+
         other_pane = CPane(window, False)
         other_selects = other_pane.selectedItemNames
-        other_focus = other_pane.focusedItem
         other_path = other_pane.currentPath
+        other_focus_name = None
+        if not other_pane.isBlank:
+            other_focus_name = other_pane.focusedItem.getName()
 
-        pane.openPath(other_path, other_focus.getName() or None)
+        pane.openPath(other_path, other_focus_name)
         pane.selectByNames(other_selects)
 
-        other_pane.openPath(current_path, current_focus.getName() or None)
+        other_pane.openPath(current_path, current_focus_name)
         other_pane.selectByNames(pane_selects)
 
         LeftPane(window).activate()
