@@ -1455,6 +1455,8 @@ def configure(window: MainWindow) -> None:
             result = result.strip()
             if len(result) < 1:
                 return
+            if src_path.is_file() and "." not in result:
+                result = result + src_path.suffix
             new_path = src_path.with_name(result)
             if new_path.exists():
                 print_log("same item exists!")
