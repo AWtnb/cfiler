@@ -1356,16 +1356,50 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("V", on_vscode)
 
-    def rename_substr() -> None:
-        pane = CPane(window)
-        if pane.isBlank:
-            return
+    class Renamer:
+        def __init__(self, window: MainWindow) -> None:
+            self._window = window
+            self._pane = CPane(self._window)
 
-        items = []
-        if pane.hasSelection:
-            items = pane.selectedItems
-        else:
-            items.append(pane.focusedItem)
+        @staticmethod
+        def renamable(item) -> bool:
+            return (
+                hasattr(item, "rename")
+                and hasattr(item, "utime")
+                and hasattr(item, "uattr")
+            )
+
+        @property
+        def targets(self) -> list:
+            if self._pane.hasSelection:
+                items = []
+                for item in self._pane.selectedItems:
+                    if self.renamable(item):
+                        items.append(item)
+                return items
+            item = self._pane.focusedItem
+            if self.renamable(item):
+                return [item]
+            return []
+
+        def execute(self, org_path: Path, new_name: str) -> None:
+            new_path = org_path.with_name(new_name)
+            if new_path.exists():
+                print_log("'{}' already exists!".format(new_name))
+                return
+            try:
+                self._window.subThreadCall(org_path.rename, (str(new_path),))
+                print_log("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
+                self._pane.refresh()
+            except Exception as e:
+                print(e)
+
+    def rename_substr() -> None:
+        renamer = Renamer(window)
+
+        targets = renamer.targets
+        if len(targets) < 1:
+            return
 
         result, mod = window.commandLine(
             "Substr length (Shift from tail)", return_modkey=True
@@ -1376,14 +1410,7 @@ def configure(window: MainWindow) -> None:
 
         from_tail = mod == ckit.MODKEY_SHIFT
 
-        for item in items:
-            if (
-                not hasattr(item, "rename")
-                or not hasattr(item, "utime")
-                or not hasattr(item, "uattr")
-            ):
-                continue
-
+        for item in targets:
             org_path = Path(item.getFullpath())
             if from_tail:
                 stem = org_path.stem
@@ -1391,31 +1418,16 @@ def configure(window: MainWindow) -> None:
             else:
                 new_name = org_path.name[int(result) :]
 
-            new_path = org_path.with_name(new_name)
-            if new_path.exists():
-                print_log("'{}' already exists!".format(new_name))
-                continue
-
-            try:
-                window.subThreadCall(org_path.rename, (str(new_path),))
-                print_log("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
-                pane.refresh()
-            except Exception as e:
-                print(e)
+            renamer.execute(org_path, new_name)
 
     KEYBINDER.bind("S-S", rename_substr)
 
-
     def rename_insert() -> None:
-        pane = CPane(window)
-        if pane.isBlank:
-            return
+        renamer = Renamer(window)
 
-        items = []
-        if pane.hasSelection:
-            items = pane.selectedItems
-        else:
-            items.append(pane.focusedItem)
+        targets = renamer.targets
+        if len(targets) < 1:
+            return
 
         result, mod = window.commandLine("Append (Shift to head)", return_modkey=True)
 
@@ -1424,31 +1436,14 @@ def configure(window: MainWindow) -> None:
 
         to_head = mod == ckit.MODKEY_SHIFT
 
-        for item in items:
-            if (
-                not hasattr(item, "rename")
-                or not hasattr(item, "utime")
-                or not hasattr(item, "uattr")
-            ):
-                continue
-
+        for item in targets:
             org_path = Path(item.getFullpath())
             if to_head:
                 new_name = result + org_path.name
             else:
                 new_name = org_path.stem + result + org_path.suffix
 
-            new_path = org_path.with_name(new_name)
-            if new_path.exists():
-                print_log("'{}' already exists!".format(new_name))
-                continue
-
-            try:
-                window.subThreadCall(org_path.rename, (str(new_path),))
-                print_log("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
-                pane.refresh()
-            except Exception as e:
-                print(e)
+            renamer.execute(org_path, new_name)
 
     KEYBINDER.bind("S-I", rename_insert)
 
