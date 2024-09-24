@@ -1134,7 +1134,7 @@ def configure(window: MainWindow) -> None:
 
         def byFunction(self, func: Callable, negative: bool = False) -> None:
             pane = self.pane
-            for item in self.selectedOrAllItems:
+            for item in pane.selectedOrAllItems:
                 path = item.getFullpath()
                 if (negative and not func(path)) or (not negative and func(path)):
                     name = item.getName()
