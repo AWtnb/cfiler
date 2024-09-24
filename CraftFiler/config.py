@@ -1110,7 +1110,14 @@ def configure(window: MainWindow) -> None:
 
         def toTop(self) -> None:
             pane = self.pane
-            for item in self.targets:
+            targets = []
+            for i in range(pane.count):
+                if i <= pane.cursor:
+                    item = pane.byIndex(i)
+                    if pane.focusedItem.selected() and not item.selected():
+                        continue
+                    targets.append(item)
+            for item in targets:
                 name = item.getName()
                 idx = pane.byName(name)
                 if idx <= pane.cursor:
@@ -1118,7 +1125,14 @@ def configure(window: MainWindow) -> None:
 
         def toEnd(self) -> None:
             pane = self.pane
-            for item in self.targets:
+            targets = []
+            for i in range(pane.count):
+                if pane.cursor <= i:
+                    item = pane.byIndex(i)
+                    if pane.focusedItem.selected() and not item.selected():
+                        continue
+                    targets.append(item)
+            for item in targets:
                 name = item.getName()
                 idx = pane.byName(name)
                 if pane.cursor <= idx:
