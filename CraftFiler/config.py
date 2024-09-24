@@ -1000,9 +1000,17 @@ def configure(window: MainWindow) -> None:
         if len(active_pane.selectedItems) < 1:
             return
 
-        out_dir = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
-        active_pane.mkdir(out_dir, False)
-        extract_path = str(Path(active_pane.currentPath, out_dir))
+        dirname_filler = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
+        result = window.commandLine("Extract as", text=dirname_filler)
+        if not result:
+            return
+
+        if active_pane.byName(result) != -1:
+            print_log("'{}' already exists.".format(result))
+            return
+
+        active_pane.mkdir(result, False)
+        extract_path = str(Path(active_pane.currentPath, result))
 
         inactive_pane = CPane(window, False)
         inactive_pane.openPath(extract_path)
