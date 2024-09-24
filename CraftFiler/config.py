@@ -1101,6 +1101,11 @@ def configure(window: MainWindow) -> None:
             for i in range(pane.count):
                 pane.select(i)
 
+        def toggleAll(self) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                pane.toggleSelection(i)
+
         def toTop(self) -> None:
             pane = self.pane
             for i in range(pane.count):
@@ -1170,6 +1175,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bindmulti(
         {
             "C-A": SELECTOR.allItems,
+            "C-S-A": SELECTOR.toggleAll,
             "U": SELECTOR.clearAll,
             "A-F": SELECTOR.files,
             "A-D": SELECTOR.dirs,
