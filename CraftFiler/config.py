@@ -1110,14 +1110,14 @@ def configure(window: MainWindow) -> None:
 
         def itemsToTop(self, only_selected: bool) -> list:
             pane = self.pane
-            targets = []
+            items = []
             for i in range(pane.count):
                 if i <= pane.cursor:
                     item = pane.byIndex(i)
                     if only_selected and not item.selected():
                         continue
-                    targets.append(item)
-            return targets
+                    items.append(item)
+            return items
 
         def toTop(self) -> None:
             pane = self.pane
@@ -1127,20 +1127,20 @@ def configure(window: MainWindow) -> None:
                 if idx <= pane.cursor:
                     pane.toggleSelection(idx)
 
-        def itemsToEnd(self, only_selected: bool) -> list:
+        def itemsToBottom(self, only_selected: bool) -> list:
             pane = self.pane
-            targets = []
+            items = []
             for i in range(pane.count):
                 if pane.cursor <= i:
                     item = pane.byIndex(i)
                     if only_selected and not item.selected():
                         continue
-                    targets.append(item)
-            return targets
+                    items.append(item)
+            return items
 
-        def toEnd(self) -> None:
+        def toBottom(self) -> None:
             pane = self.pane
-            for item in self.itemsToEnd(pane.focusedItem.selected()):
+            for item in self.itemsToBottom(pane.focusedItem.selected()):
                 name = item.getName()
                 idx = pane.byName(name)
                 if pane.cursor <= idx:
@@ -1194,8 +1194,8 @@ def configure(window: MainWindow) -> None:
             "A-D": SELECTOR.dirs,
             "S-Home": SELECTOR.toTop,
             "S-A": SELECTOR.toTop,
-            "S-End": SELECTOR.toEnd,
-            "S-E": SELECTOR.toEnd,
+            "S-End": SELECTOR.toBottom,
+            "S-E": SELECTOR.toBottom,
         }
     )
 
@@ -2060,7 +2060,7 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
         window.select = 0
         refresh()
 
-    def to_end(_) -> None:
+    def to_bottom(_) -> None:
         window.select = len(window.items) - 1
         refresh()
 
@@ -2078,8 +2078,8 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
 
     window.keymap["A"] = to_top
     window.keymap["Home"] = to_top
-    window.keymap["E"] = to_end
-    window.keymap["End"] = to_end
+    window.keymap["E"] = to_bottom
+    window.keymap["End"] = to_bottom
     window.keymap["J"] = smart_cursorDown
     window.keymap["Down"] = smart_cursorDown
     window.keymap["K"] = smart_cursorUp
@@ -2113,12 +2113,12 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["A"] = to_top
     window.keymap["Home"] = to_top
 
-    def to_end(_) -> None:
+    def to_bottom(_) -> None:
         window.scroll_info.pos = window._numLines() - 1
         window.paint()
 
-    window.keymap["E"] = to_end
-    window.keymap["End"] = to_end
+    window.keymap["E"] = to_bottom
+    window.keymap["End"] = to_bottom
 
     def open_original(_) -> None:
         path = window.item.getFullpath()
@@ -2185,7 +2185,7 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["A"] = to_top
     window.keymap["Home"] = to_top
 
-    def to_end(_) -> None:
+    def to_last(_) -> None:
         if 0 < window.job_queue.numItems():
             return
         last = len(window.items) - 1
@@ -2196,8 +2196,8 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
             window.cursor_handler(window.items[window.cursor])
         window.decode()
 
-    window.keymap["E"] = to_end
-    window.keymap["End"] = to_end
+    window.keymap["E"] = to_last
+    window.keymap["End"] = to_last
 
     def open_original(_) -> None:
         item = window.items[window.cursor]
