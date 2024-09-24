@@ -1763,10 +1763,26 @@ def configure(window: MainWindow) -> None:
                 digest = hashlib.md5(f.read(64 * 1024)).hexdigest()
             return digest
 
+        @property
+        def targets(self) -> list:
+            if self._active_pane.hasSelection:
+                items = []
+                for item in self._active_pane.selectedItems:
+                    if not item.isdir():
+                        items.append(item)
+                return items
+            return self._active_pane.files
+
+        def unselect_inactive_pane(self) -> None:
+            for i in range(self._inactive_pane.count):
+                self._inactive_pane.unSelect(i)
+
         def traverse_inactive_pane(self) -> list:
             paths = []
             for item in self._inactive_pane.items:
                 if item.isdir():
+                    if item.getName().startswith("."):
+                        continue
                     for _, _, files in item.walk():
                         for file in files:
                             paths.append(file.getFullpath())
@@ -1776,21 +1792,11 @@ def configure(window: MainWindow) -> None:
 
         def compare(self) -> None:
             def _scan(job_item: ckit.JobItem) -> None:
-                items = []
-                from_selection = self._active_pane.hasSelection
+                targets = self.targets
 
-                if from_selection:
-                    for item in self._active_pane.selectedItems:
-                        if not item.isdir():
-                            items.append(item)
-                else:
-                    items = self._active_pane.files
-
-                job_item.comparable = 0 < len(items)
+                job_item.comparable = 0 < len(targets)
                 if not job_item.comparable:
                     return
-
-                Selector(window, False).clearAll()
 
                 print_log("comparing md5 hash")
 
@@ -1804,14 +1810,17 @@ def configure(window: MainWindow) -> None:
                     digest = self.to_hash(path)
                     table[digest] = table.get(digest, []) + [str(rel)]
 
+                self.unselect_inactive_pane()
+                compare_with_selected_items = self._active_pane.hasSelection
                 cloned_items = ClonedItems()
-                for file in items:
+
+                for file in targets:
                     if job_item.isCanceled():
                         return
                     digest = self.to_hash(file.getFullpath())
                     if digest in table:
                         name = file.getName()
-                        if not from_selection:
+                        if not compare_with_selected_items:
                             self._active_pane.selectByName(name)
                         cloned_items.register(name, table[digest])
 
@@ -1822,12 +1831,13 @@ def configure(window: MainWindow) -> None:
 
             def _finish(job_item: ckit.JobItem) -> None:
                 window.clearProgress()
-                if not job_item.comparable:
-                    print_log("Nothing to compare.")
-                if job_item.isCanceled():
-                    print_log("Canceled.")
+                if job_item.comparable:
+                    if job_item.isCanceled():
+                        print_log("canceled")
+                    else:
+                        print_log("finished")
                 else:
-                    print_log("finished")
+                    print_log("finished (nothing to compare)")
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
