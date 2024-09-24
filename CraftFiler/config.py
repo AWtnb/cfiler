@@ -1088,7 +1088,7 @@ def configure(window: MainWindow) -> None:
                 pane.select(i)
 
         @property
-        def targets(self) -> list:
+        def selectedOrAllItems(self) -> list:
             pane = self.pane
             if pane.hasSelection:
                 return pane.selectedItems
@@ -1096,43 +1096,51 @@ def configure(window: MainWindow) -> None:
 
         def files(self) -> None:
             pane = self.pane
-            for item in self.targets:
+            for item in self.selectedOrAllItems:
                 name = item.getName()
                 if not item.isdir():
                     pane.toggleSelection(pane.byName(name))
 
         def dirs(self) -> None:
             pane = self.pane
-            for item in self.targets:
+            for item in self.selectedOrAllItems:
                 name = item.getName()
                 if item.isdir():
                     pane.toggleSelection(pane.byName(name))
 
-        def toTop(self) -> None:
+        def itemsToTop(self, only_selected: bool) -> list:
             pane = self.pane
             targets = []
             for i in range(pane.count):
                 if i <= pane.cursor:
                     item = pane.byIndex(i)
-                    if pane.focusedItem.selected() and not item.selected():
+                    if only_selected and not item.selected():
                         continue
                     targets.append(item)
-            for item in targets:
+            return targets
+
+        def toTop(self) -> None:
+            pane = self.pane
+            for item in self.itemsToTop(pane.focusedItem.selected()):
                 name = item.getName()
                 idx = pane.byName(name)
                 if idx <= pane.cursor:
                     pane.toggleSelection(idx)
 
-        def toEnd(self) -> None:
+        def itemsToEnd(self, only_selected: bool) -> list:
             pane = self.pane
             targets = []
             for i in range(pane.count):
                 if pane.cursor <= i:
                     item = pane.byIndex(i)
-                    if pane.focusedItem.selected() and not item.selected():
+                    if only_selected and not item.selected():
                         continue
                     targets.append(item)
-            for item in targets:
+            return targets
+
+        def toEnd(self) -> None:
+            pane = self.pane
+            for item in self.itemsToEnd(pane.focusedItem.selected()):
                 name = item.getName()
                 idx = pane.byName(name)
                 if pane.cursor <= idx:
@@ -1145,7 +1153,7 @@ def configure(window: MainWindow) -> None:
 
         def byFunction(self, func: Callable, negative: bool = False) -> None:
             pane = self.pane
-            for item in self.targets:
+            for item in self.selectedOrAllItems:
                 path = item.getFullpath()
                 if (negative and not func(path)) or (not negative and func(path)):
                     name = item.getName()
@@ -1894,7 +1902,7 @@ def configure(window: MainWindow) -> None:
     def select_byext() -> None:
 
         exts = []
-        for item in SELECTOR.targets:
+        for item in SELECTOR.selectedOrAllItems:
             ext = Path(item.getFullpath()).suffix
             if ext and ext not in exts:
                 exts.append(ext)
