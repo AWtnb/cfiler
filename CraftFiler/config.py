@@ -435,6 +435,12 @@ def configure(window: MainWindow) -> None:
             return items
 
         @property
+        def selectedOrAllItems(self) -> list:
+            if self.hasSelection:
+                return self.selectedItems
+            return self.items
+
+        @property
         def selectedItemPaths(self) -> list:
             return [item.getFullpath() for item in self.selectedItems]
 
@@ -1095,64 +1101,31 @@ def configure(window: MainWindow) -> None:
             for i in range(pane.count):
                 pane.select(i)
 
-        @property
-        def selectedOrAllItems(self) -> list:
+        def toTop(self) -> None:
             pane = self.pane
-            if pane.hasSelection:
-                return pane.selectedItems
-            return pane.items
+            for i in range(pane.count):
+                if i <= pane.cursor:
+                    pane.toggleSelection(i)
+
+        def toBottom(self) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                if pane.cursor <= i:
+                    pane.toggleSelection(i)
 
         def files(self) -> None:
             pane = self.pane
-            for item in self.selectedOrAllItems:
+            for item in pane.selectedOrAllItems:
                 name = item.getName()
                 if not item.isdir():
                     pane.toggleSelection(pane.byName(name))
 
         def dirs(self) -> None:
             pane = self.pane
-            for item in self.selectedOrAllItems:
+            for item in pane.selectedOrAllItems:
                 name = item.getName()
                 if item.isdir():
                     pane.toggleSelection(pane.byName(name))
-
-        def itemsToTop(self, only_selected: bool) -> list:
-            pane = self.pane
-            items = []
-            for i in range(pane.count):
-                if i <= pane.cursor:
-                    item = pane.byIndex(i)
-                    if only_selected and not item.selected():
-                        continue
-                    items.append(item)
-            return items
-
-        def toTop(self) -> None:
-            pane = self.pane
-            for item in self.itemsToTop(pane.focusedItem.selected()):
-                name = item.getName()
-                idx = pane.byName(name)
-                if idx <= pane.cursor:
-                    pane.toggleSelection(idx)
-
-        def itemsToBottom(self, only_selected: bool) -> list:
-            pane = self.pane
-            items = []
-            for i in range(pane.count):
-                if pane.cursor <= i:
-                    item = pane.byIndex(i)
-                    if only_selected and not item.selected():
-                        continue
-                    items.append(item)
-            return items
-
-        def toBottom(self) -> None:
-            pane = self.pane
-            for item in self.itemsToBottom(pane.focusedItem.selected()):
-                name = item.getName()
-                idx = pane.byName(name)
-                if pane.cursor <= idx:
-                    pane.toggleSelection(idx)
 
         def clearAll(self) -> None:
             pane = self.pane
@@ -1918,9 +1891,9 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("Colon", select_stem_contains)
 
     def select_byext() -> None:
-
+        pane = CPane(window)
         exts = []
-        for item in SELECTOR.selectedOrAllItems:
+        for item in pane.selectedOrAllItems:
             ext = Path(item.getFullpath()).suffix
             if ext and ext not in exts:
                 exts.append(ext)
