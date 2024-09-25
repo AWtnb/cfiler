@@ -170,7 +170,9 @@ def configure(window: MainWindow) -> None:
             return "\n".join(lines)
 
         def overwrite(self) -> None:
-            self._theme_path.write_text(self.to_string())
+            theme = self.to_string()
+            if not self._theme_path.exists() or self._theme_path.read_text() != theme:
+                self._theme_path.write_text(theme)
 
     def set_theme(theme_table: dict):
         t = Themer()
