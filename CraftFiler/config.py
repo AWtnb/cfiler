@@ -124,6 +124,7 @@ def configure(window: MainWindow) -> None:
 
     apply_cfiler_command(
         {
+            "S-Enter": window.command_View,
             "C-S-Q": window.command_CancelTask,
             "C-Q": window.command_Quit,
             "A-F4": window.command_Quit,
