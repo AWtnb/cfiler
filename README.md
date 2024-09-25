@@ -12,8 +12,6 @@ cfiler.ini
 $d = "CraftFiler"; New-Item -Path ($env:APPDATA | Join-Path -ChildPath $d) -Value ($pwd.Path | Join-Path -ChildPath $d) -ItemType Junction
 ```
 
-If necessary, place (or make symlink of) [`theme.ini`](theme.ini) on `theme/black` .
-
 ---
 
 https://sites.google.com/site/craftware/cfiler

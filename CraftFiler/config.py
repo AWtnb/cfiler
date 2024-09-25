@@ -93,6 +93,118 @@ def delay(msec: int = 50) -> None:
 
 def configure(window: MainWindow) -> None:
 
+    class Themer:
+        def __init__(self) -> None:
+            color = window.ini.get("THEME", "name")
+
+            if color == "black":
+                colortable = {
+                    "bg": (0, 0, 0),
+                    "fg": (255, 255, 255),
+                    "cursor0": (255, 255, 255),
+                    "cursor1": (255, 64, 64),
+                    "bar_fg": (0, 0, 0),
+                    "bar_error_fg": (200, 0, 0),
+                    "file_fg": (255, 255, 255),
+                    "dir_fg": (255, 255, 150),
+                    "hidden_file_fg": (85, 85, 85),
+                    "hidden_dir_fg": (85, 85, 50),
+                    "error_file_fg": (255, 0, 0),
+                    "select_file_bg1": (30, 100, 150),
+                    "select_file_bg2": (60, 200, 255),
+                    "bookmark_file_bg2": (100, 70, 0),
+                    "bookmark_file_bg1": (140, 110, 0),
+                    "file_cursor": (255, 128, 128),
+                    "select_bg": (30, 100, 150),
+                    "select_fg": (255, 255, 255),
+                    "choice_bg": (50, 50, 50),
+                    "choice_fg": (255, 255, 255),
+                    "diff_bg1": (100, 50, 50),
+                    "diff_bg2": (50, 100, 50),
+                    "diff_bg3": (50, 50, 100),
+                }
+            else:
+                colortable = {
+                    "bg": (255, 255, 255),
+                    "fg": (0, 0, 0),
+                    "cursor0": (255, 255, 255),
+                    "cursor1": (0, 255, 255),
+                    "bar_fg": (255, 255, 255),
+                    "bar_error_fg": (255, 0, 0),
+                    "file_fg": (0, 0, 0),
+                    "dir_fg": (100, 50, 0),
+                    "hidden_file_fg": (100, 100, 100),
+                    "hidden_dir_fg": (200, 150, 100),
+                    "error_file_fg": (255, 0, 0),
+                    "select_file_bg1": (60, 150, 220),
+                    "select_file_bg2": (80, 200, 255),
+                    "bookmark_file_bg2": (220, 150, 50),
+                    "bookmark_file_bg1": (255, 200, 50),
+                    "file_cursor": (255, 70, 70),
+                    "select_bg": (70, 200, 255),
+                    "select_fg": (0, 0, 0),
+                    "choice_bg": (150, 150, 150),
+                    "choice_fg": (0, 0, 0),
+                    "diff_bg1": (100, 50, 50),
+                    "diff_bg2": (50, 100, 50),
+                    "diff_bg3": (50, 50, 100),
+                }
+            self._theme_path = Path(ckit.getAppExePath(), "theme", color, "theme.ini")
+            self._data = colortable
+
+        def update(self, key: str, value: str) -> None:
+            if key in self._data:
+                if type(value) is tuple:
+                    self._data[key] = value
+                else:
+                    colorcode = value.strip("#")
+                    if len(colorcode) == 6:
+                        r, g, b = colorcode[:2], colorcode[2:4], colorcode[4:6]
+                        self._data[key] = (int(r, 16), int(g, 16), int(b, 16))
+
+        def to_string(self) -> str:
+            lines = ["[COLOR]"]
+            for key, value in self._data.items():
+                line = "{} = {}".format(key, value)
+                lines.append(line)
+            return "\n".join(lines)
+
+        def overwrite(self) -> None:
+            self._theme_path.write_text(self.to_string())
+
+    def set_theme(theme_table: dict):
+        t = Themer()
+        for k, v in theme_table.items():
+            t.update(k, v)
+        t.overwrite()
+
+    CUSTOM_THEME = {
+        "bg": "#122530",
+        "fg": "#FFFFFF",
+        "cursor0": "#FFFFFF",
+        "cursor1": "#FF4040",
+        "bar_fg": "#000000",
+        "bar_error_fg": "#C80000",
+        "file_fg": "#E6E6E6",
+        "dir_fg": "#F4D71A",
+        "hidden_file_fg": "#555555",
+        "hidden_dir_fg": "#555532",
+        "error_file_fg": "#FF0000",
+        "select_file_bg1": "#1E6496",
+        "select_file_bg2": "#1E6496",
+        "bookmark_file_bg1": "#6B3A70",
+        "bookmark_file_bg2": "#6B3A70",
+        "file_cursor": "#7FFFBB",
+        "select_bg": "#1E6496",
+        "select_fg": "#FFFFFF",
+        "choice_bg": "#323232",
+        "choice_fg": "#FFFFFF",
+        "diff_bg1": "#643232",
+        "diff_bg2": "#326432",
+        "diff_bg3": "#323264",
+    }
+    set_theme(CUSTOM_THEME)
+
     def print_log(s) -> None:
         sep = "-"
         ts = datetime.datetime.today().strftime(
