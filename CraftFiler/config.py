@@ -94,8 +94,7 @@ def delay(msec: int = 50) -> None:
 def configure(window: MainWindow) -> None:
 
     class Themer:
-        def __init__(self) -> None:
-            color = window.ini.get("THEME", "name")
+        def __init__(self, color: str) -> None:
 
             if color == "black":
                 colortable = {
@@ -175,7 +174,8 @@ def configure(window: MainWindow) -> None:
                 self._theme_path.write_text(theme)
 
     def set_theme(theme_table: dict):
-        t = Themer()
+        color = window.ini.get("THEME", "name")
+        t = Themer(color)
         for k, v in theme_table.items():
             t.update(k, v)
         t.overwrite()
