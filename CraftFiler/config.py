@@ -686,10 +686,7 @@ def configure(window: MainWindow) -> None:
         def copyToChild(
             self, dest_name: str, items: list, remove_origin: bool = False
         ) -> None:
-            if remove_origin:
-                mode = "m"
-            else:
-                mode = "c"
+            mode = "m" if remove_origin else "c"
             child_lister = self.lister.getChild(dest_name)
             window._copyMoveCommon(
                 self.entity,
@@ -723,9 +720,10 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         if pane.isBlank or pane.count == 1:
             return
-        pane.entity.cursor -= 1
-        if pane.cursor < 0:
+        if pane.cursor == 0:
             pane.entity.cursor = pane.count - 1
+        else:
+            pane.entity.cursor -= 1
         pane.scrollToCursor()
 
     KEYBINDER.bind("K", smart_cursorUp)
@@ -735,9 +733,10 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         if pane.isBlank or pane.count == 1:
             return
-        pane.entity.cursor += 1
-        if pane.count - 1 < pane.cursor:
+        if pane.cursor == pane.count - 1:
             pane.entity.cursor = 0
+        else:
+            pane.entity.cursor += 1
         pane.scrollToCursor()
 
     KEYBINDER.bind("J", smart_cursorDown)
@@ -876,16 +875,15 @@ def configure(window: MainWindow) -> None:
         active = CPane(window, True)
         active_selects = active.selectedItemNames
         active_path = active.currentPath
-        active_focus_name = None
-        if not active.isBlank:
-            active_focus_name = active.focusedItem.getName()
+        active_focus_name = None if active.isBlank else active.focusedItem.getName()
 
         inactive = CPane(window, False)
         inactive_selects = inactive.selectedItemNames
         inactive_path = inactive.currentPath
-        inactive_focus_name = None
-        if not inactive.isBlank:
-            inactive_focus_name = inactive.focusedItem.getName()
+
+        inactive_focus_name = (
+            None if inactive.isBlank else inactive.focusedItem.getName()
+        )
 
         active.openPath(inactive_path, inactive_focus_name)
         active.selectByNames(inactive_selects)
@@ -1646,10 +1644,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S-D", duplicate_file)
 
     def smart_move_to_dir(remove_origin: bool) -> None:
-        if remove_origin:
-            prompt = "MoveTo"
-        else:
-            prompt = "CopyTo"
+        prompt = "MoveTo" if remove_origin else "CopyTo"
 
         def _mover() -> None:
             pane = CPane(window)
@@ -1665,8 +1660,7 @@ def configure(window: MainWindow) -> None:
             possible_dests = []
             names = [item.getName() for item in items]
             for d in pane.dirs:
-                dn = d.getName()
-                if not dn in names:
+                if (dn := d.getName()) not in names:
                     possible_dests.append(dn)
 
             def _listup_dests(
@@ -2021,10 +2015,7 @@ def configure(window: MainWindow) -> None:
             pane = CPane(window)
             inactive = CPane(window, False)
 
-            if pane.hasSelection:
-                names = pane.selectedItemNames
-            else:
-                names = pane.names
+            names = pane.selectedItemNames if pane.hasSelection else pane.names
 
             for name in names:
                 i = pane.byName(name)
@@ -2235,15 +2226,17 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
         refresh()
 
     def smart_cursorUp(_) -> None:
-        window.select -= 1
-        if window.select < 0:
+        if window.select == 0:
             window.select = len(window.items) - 1
+        else:
+            window.select -= 1
         refresh()
 
     def smart_cursorDown(_) -> None:
-        window.select += 1
-        if len(window.items) - 1 < window.select:
+        if window.select == len(window.items) - 1:
             window.select = 0
+        else:
+            window.select += 1
         refresh()
 
     window.keymap["A"] = to_top
