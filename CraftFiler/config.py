@@ -303,7 +303,9 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER = Keybinder(window)
 
-    def invoke_listwindow(window: MainWindow, prompt: str, items) -> Tuple[str, int]:
+    def invoke_listwindow(
+        window: MainWindow, prompt: str, items, ini_pos: int = 0
+    ) -> Tuple[str, int]:
         pos = window.centerOfFocusedPaneInPixel()
         list_window = ListWindow(
             x=pos[0],
@@ -316,7 +318,7 @@ def configure(window: MainWindow) -> None:
             ini=window.ini,
             title=prompt,
             items=items,
-            initial_select=0,
+            initial_select=ini_pos,
             onekey_search=False,
             onekey_decide=False,
             return_modkey=True,
@@ -2036,21 +2038,27 @@ def configure(window: MainWindow) -> None:
         return _selector
 
     def select_stem_startswith() -> None:
-        result, mod = window.commandLine("StartsWith", return_modkey=True)
+        pane = CPane(window)
+        s = Path(pane.focusedItemPath).stem
+        result, mod = window.commandLine("StartsWith", return_modkey=True, text=s)
         if result:
             SELECTOR.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("Caret", select_stem_startswith)
 
     def select_stem_endswith() -> None:
-        result, mod = window.commandLine("EndsWith", return_modkey=True)
+        pane = CPane(window)
+        s = Path(pane.focusedItemPath).stem
+        result, mod = window.commandLine("EndsWith", return_modkey=True, text=s)
         if result:
             SELECTOR.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("4", select_stem_endswith)
 
     def select_stem_contains() -> None:
-        result, mod = window.commandLine("Contains", return_modkey=True)
+        pane = CPane(window)
+        s = Path(pane.focusedItemPath).stem
+        result, mod = window.commandLine("Contains", return_modkey=True, text=s)
         if result:
             SELECTOR.stemContains(result, mod == ckit.MODKEY_SHIFT)
 
@@ -2068,7 +2076,12 @@ def configure(window: MainWindow) -> None:
             return
 
         exts.sort()
-        result, mod = invoke_listwindow(window, "Select Extension", exts)
+
+        sel = 0
+        if (cur := Path(pane.focusedItemPath).suffix) in exts:
+            sel = exts.index(cur)
+
+        result, mod = invoke_listwindow(window, "Select Extension", exts, sel)
 
         if result < 0:
             return
