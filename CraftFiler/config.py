@@ -1772,31 +1772,34 @@ def configure(window: MainWindow) -> None:
 
     Rect = namedtuple("Rect", ["left", "top", "right", "bottom"])
 
-    def adjust_position() -> None:
+    def to_home_position(force: bool) -> None:
         hwnd = window.getHWND()
         wnd = pyauto.Window.fromHWND(hwnd)
         rect = Rect(*wnd.getRect())
         infos = pyauto.Window.getMonitorInfo()
-        if 1 < len(infos):
-            return
-        visible_rect = Rect(*infos[0][1])
-        if (
-            visible_rect.right <= rect.left
-            or rect.right <= visible_rect.left
-            or rect.bottom <= visible_rect.top
-            or visible_rect.bottom <= rect.top
-        ):
-            if wnd.isMaximized():
-                wnd.restore()
-            left = (visible_rect.right - visible_rect.left) // 2
-            wnd.setRect([left, 0, visible_rect.right, visible_rect.bottom])
+        if force or len(infos) == 1:
+            info = infos[1] if infos[0][2] != 1 and 1 < len(infos) else infos[0]
+            visible_rect = Rect(*info[1])
+            if (
+                force
+                or visible_rect.right <= rect.left
+                or rect.right <= visible_rect.left
+                or rect.bottom <= visible_rect.top
+                or visible_rect.bottom <= rect.top
+            ):
+                if wnd.isMaximized():
+                    wnd.restore()
+                left = (visible_rect.right - visible_rect.left) // 2
+                wnd.setRect([left, 0, visible_rect.right, visible_rect.bottom])
+        window.command_MoveSeparatorCenter(None)
+        LeftPane(window).activate()
+
+    KEYBINDER.bind("C-0", lambda: to_home_position(True))
 
     def reload_config() -> None:
         window.configure()
         window.reloadTheme()
-        adjust_position()
-        window.command_MoveSeparatorCenter(None)
-        LeftPane(window).activate()
+        to_home_position(False)
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
         window.setStatusMessage("reloaded config.py | {}".format(ts), 2000)
 
