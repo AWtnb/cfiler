@@ -902,12 +902,9 @@ def configure(window: MainWindow) -> None:
 
         def read_src(self) -> str:
             p = Path(self._current_path)
-            depth = len(p.parents) + 1
-            for _ in range(depth):
-                f = Path(p, self._src_name)
-                if f.exists():
+            for path in p.parents:
+                if (f := Path(path, self._src_name)).exists():
                     return f.read_text("utf-8")
-                p = p.parent
             return ""
 
         def fzf(self) -> str:
@@ -1151,6 +1148,18 @@ def configure(window: MainWindow) -> None:
         window.setStatusMessage("copied current path: '{}'".format(p), 3000)
 
     KEYBINDER.bind("C-A-P", copy_current_path)
+
+    def show_fullname() -> None:
+        pane = CPane(window)
+        path = Path(pane.focusedItemPath)
+        root = path.drive
+        for p in path.parents:
+            if (Path(p, ".root")).exists():
+                root = str(p)
+                break
+        window.setStatusMessage(str(path)[len(root) :], 3000)
+
+    KEYBINDER.bind("C-S", show_fullname)
 
     class Clipper:
         def __init__(self) -> None:
