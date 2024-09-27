@@ -795,6 +795,10 @@ def configure(window: MainWindow) -> None:
             return True
 
         p = pane.focusedItemPath
+        if os.path.getsize(p) == 0:
+            window.command_Execute(None)
+            return True
+
         ext = Path(p).suffix
 
         if ext in CFILER_EXTENSION.archiver:
@@ -2294,6 +2298,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         pyauto.shellExecute(None, path, "", "")
 
     window.keymap["C-Enter"] = open_original
+    window.keymap["C-L"] = open_original
 
     def copy_content(_) -> None:
         path = Path(window.item.getFullpath())
@@ -2374,3 +2379,4 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         pyauto.shellExecute(None, path, "", "")
 
     window.keymap["C-Enter"] = open_original
+    window.keymap["C-L"] = open_original
