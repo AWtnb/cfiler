@@ -1730,7 +1730,9 @@ def configure(window: MainWindow) -> None:
                 prompt = "NewFileName"
                 if 0 < len(extension):
                     prompt = prompt + " (.{})".format(extension)
-                result = window.commandLine(prompt, candidate_handler=_listup_files)
+                result, mod = window.commandLine(
+                    prompt, candidate_handler=_listup_files, return_modkey=True
+                )
                 if not result:
                     return
                 filename = result.strip()
@@ -1738,10 +1740,13 @@ def configure(window: MainWindow) -> None:
                     return
                 if 0 < len(extension):
                     filename = filename + "." + extension
-                if Path(pane.currentPath, filename).exists():
+                new_path = Path(pane.currentPath, filename)
+                if new_path.exists():
                     print_log("'{}' already exists.".format(filename))
                     return
                 pane.touch(filename)
+                if mod == ckit.MODKEY_SHIFT:
+                    shell_exec(str(new_path))
 
             return _func
 
