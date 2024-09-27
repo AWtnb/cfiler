@@ -259,12 +259,12 @@ def configure(window: MainWindow) -> None:
             "Home": window.command_CursorTop,
             "End": window.command_CursorBottom,
             "C-S-P": window.command_CommandLine,
-            "C-S-N": window.command_Mkdir,
+            "C-M": window.command_Mkdir,
             "H": window.command_GotoParentDir,
             "Left": window.command_GotoParentDir,
             "S-F10": window.command_ContextMenu,
             "A-S-F10": window.command_ContextMenuDir,
-            "C-N": window.command_DuplicateCfiler,
+            "C-S-N": window.command_DuplicateCfiler,
             "C-Up": window.command_CursorUpSelectedOrBookmark,
             "C-K": window.command_CursorUpSelectedOrBookmark,
             "C-Down": window.command_CursorDownSelectedOrBookmark,
@@ -794,46 +794,47 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return True
 
-        focus_path = Path(pane.focusedItemPath)
-        if focus_path.is_file() and os.path.getsize(str(focus_path)) == 0:
+        focus_path = pane.focusedItemPath
+        p = Path(focus_path)
+        if p.is_file() and os.path.getsize(focus_path) == 0:
             window.command_Execute(None)
             return True
 
-        ext = focus_path.suffix
+        ext = p.suffix
 
         if ext in CFILER_EXTENSION.archiver:
             return True
 
         if ext in CFILER_EXTENSION.music or ext == ".m4a":
-            return shell_exec(p)
+            return shell_exec(focus_path)
 
         if ext == ".pdf":
             sumatra_path = Path(
                 USER_PROFILE, r"AppData\Local\SumatraPDF\SumatraPDF.exe"
             )
             if sumatra_path.exists():
-                return shell_exec(str(sumatra_path), p)
+                return shell_exec(str(sumatra_path), focus_path)
 
         if ext in [".xlsx", ".xls"]:
             excel_path = Path(
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Excel.lnk"
             )
             if excel_path.exists():
-                return shell_exec(str(excel_path), p)
+                return shell_exec(str(excel_path), focus_path)
 
         if ext in [".docx", ".doc"]:
             word_path = Path(
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Word.lnk"
             )
             if word_path.exists():
-                return shell_exec(str(word_path), p)
+                return shell_exec(str(word_path), focus_path)
 
         if ext in [".pptx", ".ppt"]:
             word_path = Path(
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PowerPoint.lnk"
             )
             if word_path.exists():
-                return shell_exec(str(word_path), p)
+                return shell_exec(str(word_path), focus_path)
 
         return False
 
@@ -1754,7 +1755,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("T", TEXT_FILE_MAKER.invoke("txt"))
     KEYBINDER.bind("A-T", TEXT_FILE_MAKER.invoke("md"))
-    KEYBINDER.bind("S-T", TEXT_FILE_MAKER.invoke(""))
+    KEYBINDER.bind("C-N", TEXT_FILE_MAKER.invoke(""))
 
     def to_obsolete_dir() -> None:
         pane = CPane(window)
