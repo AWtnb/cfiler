@@ -1246,11 +1246,23 @@ def configure(window: MainWindow) -> None:
                 if i <= pane.cursor:
                     pane.toggleSelection(i)
 
+        def clearToTop(self) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                if i <= pane.cursor:
+                    pane.unSelect(i)
+
         def toBottom(self) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.cursor <= i:
                     pane.toggleSelection(i)
+
+        def clearToBottom(self) -> None:
+            pane = self.pane
+            for i in range(pane.count):
+                if pane.cursor <= i:
+                    pane.unSelect(i)
 
         def files(self) -> None:
             pane = self.pane
@@ -1315,8 +1327,12 @@ def configure(window: MainWindow) -> None:
             "A-D": SELECTOR.dirs,
             "S-Home": SELECTOR.toTop,
             "S-A": SELECTOR.toTop,
+            "A-S-Home": SELECTOR.clearToTop,
+            "A-S-A": SELECTOR.clearToTop,
             "S-End": SELECTOR.toBottom,
             "S-E": SELECTOR.toBottom,
+            "A-S-End": SELECTOR.clearToBottom,
+            "A-S-E": SELECTOR.clearToBottom,
         }
     )
 
