@@ -794,12 +794,12 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return True
 
-        p = pane.focusedItemPath
-        if os.path.getsize(p) == 0:
+        focus_path = Path(pane.focusedItemPath)
+        if focus_path.is_file() and os.path.getsize(str(focus_path)) == 0:
             window.command_Execute(None)
             return True
 
-        ext = Path(p).suffix
+        ext = focus_path.suffix
 
         if ext in CFILER_EXTENSION.archiver:
             return True
