@@ -1485,7 +1485,7 @@ def configure(window: MainWindow) -> None:
             )
 
         @property
-        def targets(self) -> list:
+        def candidate(self) -> list:
             if self._pane.hasSelection:
                 items = []
                 for item in self._pane.selectedItems:
@@ -1512,7 +1512,7 @@ def configure(window: MainWindow) -> None:
     def rename_substr() -> None:
         renamer = Renamer(window)
 
-        targets = renamer.targets
+        targets = renamer.candidate
         if len(targets) < 1:
             return
 
@@ -1540,7 +1540,7 @@ def configure(window: MainWindow) -> None:
     def rename_insert() -> None:
         renamer = Renamer(window)
 
-        targets = renamer.targets
+        targets = renamer.candidate
         if len(targets) < 1:
             return
 
@@ -1565,13 +1565,9 @@ def configure(window: MainWindow) -> None:
     def invoke_renamer(append: Union[bool, None]) -> Callable:
         def _renamer() -> None:
             pane = CPane(window)
+            renamer = Renamer(window)
             item = pane.focusedItem
-            if (
-                pane.isBlank
-                or not hasattr(item, "rename")
-                or not hasattr(item, "utime")
-                or not hasattr(item, "uattr")
-            ):
+            if not renamer.renamable(item) or pane.isBlank:
                 return
 
             org_path = Path(item.getFullpath())
@@ -1593,15 +1589,7 @@ def configure(window: MainWindow) -> None:
                 return
 
             new_name = new_stem + org_path.suffix
-            new_path = str(org_path.with_name(new_name))
-
-            try:
-                window.subThreadCall(org_path.rename, (new_path,))
-                print_log("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
-                pane.refresh()
-                pane.focusByName(new_name)
-            except Exception as e:
-                print(e)
+            renamer.execute(org_path, new_name)
 
         return _renamer
 
