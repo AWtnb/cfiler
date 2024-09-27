@@ -1149,17 +1149,22 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-A-P", copy_current_path)
 
-    def show_fullname() -> None:
-        pane = CPane(window)
-        path = Path(pane.focusedItemPath)
-        root = path.drive
-        for p in path.parents:
-            if (Path(p, ".root")).exists():
-                root = str(p)
-                break
-        window.setStatusMessage(str(path)[len(root) :], 3000)
+    def toggle_pane_width() -> None:
+        half = (window.width() - 1) // 2
+        if window.focus == MainWindow.FOCUS_LEFT:
+            if window.left_window_width == half:
+                window.left_window_width = window.width() - 1
+            else:
+                window.left_window_width = half
+        else:
+            if window.left_window_width == half:
+                window.left_window_width = 0
+            else:
+                window.left_window_width = half
+        window.updateThemePosSize()
+        window.paint(PO.Upper)
 
-    KEYBINDER.bind("C-S", show_fullname)
+    KEYBINDER.bind("C-S", toggle_pane_width)
 
     class Clipper:
         def __init__(self) -> None:
