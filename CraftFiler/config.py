@@ -339,15 +339,14 @@ def configure(window: MainWindow) -> None:
             self._list_items = []
             self._menu_table = {}
 
-        def register(self, dest_table: dict) -> None:
-            for name, path in dest_table.items():
-                p = Path(path)
-                try:
-                    if p.exists():
-                        self._menu_table[name] = path
-                        self._list_items.append(ListItem(name, False))
-                except Exception as e:
-                    print_log(e)
+        def register(self, name: str, path: str) -> None:
+            p = Path(path)
+            try:
+                if p.exists():
+                    self._menu_table[name] = path
+                    self._list_items.append(ListItem(name, False))
+            except Exception as e:
+                print_log(e)
 
         @property
         def bookmarks(self) -> List[str]:
@@ -370,6 +369,17 @@ def configure(window: MainWindow) -> None:
                     self._list_items.append(item)
 
         def jump(self) -> None:
+            for name, path in {
+                "Desktop": str(Path(USER_PROFILE, "Desktop")),
+                "Scan": r"X:\scan",
+                "Dropbox": str(Path(USER_PROFILE, "Dropbox")),
+                "Dropbox Share": str(
+                    Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
+                ),
+            }.items():
+                self.register(name, path)
+            self.register_bookmark()
+
             result, mod = invoke_listwindow(self._window, "Jump", self._list_items)
             if -1 < result:
                 item = self._list_items[result]
@@ -381,21 +391,7 @@ def configure(window: MainWindow) -> None:
                 else:
                     active.openPath(dest)
 
-    JUMP_LIST = JumpList(window)
-
-    JUMP_LIST.register(
-        {
-            "Desktop": str(Path(USER_PROFILE, "Desktop")),
-            "Scan": r"X:\scan",
-            "Dropbox": str(Path(USER_PROFILE, "Dropbox")),
-            "Dropbox Share": str(
-                Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
-            ),
-        }
-    )
-    JUMP_LIST.register_bookmark()
-
-    KEYBINDER.bind("C-Space", JUMP_LIST.jump)
+    KEYBINDER.bind("C-Space", lambda: JumpList(window).jump())
 
     def check_log_selected() -> bool:
         selection_left, selection_right = window.log_pane.selection
