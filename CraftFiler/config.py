@@ -755,53 +755,53 @@ def configure(window: MainWindow) -> None:
             print_log("invalid path: '{}'".format(path))
             return False
 
-    class CFilerExtension:
+    class ExtensionChecker:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
 
-        @property
-        def archiver(self) -> List[str]:
-            exts = []
+            self._archivers = []
             for archiver in self._window.archiver_list:
                 for ext in archiver[0].split():
-                    exts.append(ext[1:])
-            return exts
+                    self._archivers.append(ext[1:])
+            self._images = window.image_file_ext_list
+            self._musics = window.music_file_ext_list
 
-        @property
-        def image(self) -> List[str]:
-            exts = []
-            for im in self._window.image_file_ext_list:
-                exts.append(im)
-            return exts
+        def is_archiver(self, ext: str) -> bool:
+            return ext in self._archivers
 
-        @property
-        def music(self) -> List[str]:
-            exts = []
-            for im in self._window.music_file_ext_list:
-                exts.append(im)
-            return exts
+        def is_image(self, ext: str) -> bool:
+            return ext in self._images
 
-    CFILER_EXTENSION = CFilerExtension(window)
+        def is_music(self, ext: str) -> bool:
+            return ext in self._musics
+
+    EXTENSION_CHECKER = ExtensionChecker(window)
 
     def hook_enter() -> bool:
         # returning `True` skips default action.
 
         pane = CPane(window)
         if pane.isBlank:
+            pane.focusOther()
             return True
 
         focus_path = pane.focusedItemPath
         p = Path(focus_path)
-        if p.is_file() and os.path.getsize(focus_path) == 0:
-            window.command_Execute(None)
-            return True
+        if p.is_dir():
+            return False
+
+        if os.path.getsize(focus_path) == 0:
+            return shell_exec(focus_path)
 
         ext = p.suffix
 
-        if ext in CFILER_EXTENSION.archiver:
+        if EXTENSION_CHECKER.is_image(ext):
+            return False
+
+        if EXTENSION_CHECKER.is_archiver(ext):
             return True
 
-        if ext in CFILER_EXTENSION.music or ext == ".m4a":
+        if EXTENSION_CHECKER.is_music(ext) or ext == ".m4a":
             return shell_exec(focus_path)
 
         if ext == ".pdf":
@@ -826,30 +826,18 @@ def configure(window: MainWindow) -> None:
                 return shell_exec(str(word_path), focus_path)
 
         if ext in [".pptx", ".ppt"]:
-            word_path = Path(
+            ppt_path = Path(
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PowerPoint.lnk"
             )
-            if word_path.exists():
-                return shell_exec(str(word_path), focus_path)
+            if ppt_path.exists():
+                return shell_exec(str(ppt_path), focus_path)
 
         return False
 
     window.enter_hook = hook_enter
 
-    def smart_enter() -> None:
-        pane = CPane(window)
-        if pane.isBlank:
-            pane.focusOther()
-        else:
-            if pane.focusedItem.isdir():
-                window.command_Enter(None)
-            else:
-                if Path(pane.focusedItemPath).suffix in CFILER_EXTENSION.archiver:
-                    return
-                window.command_Execute(None)
-
-    KEYBINDER.bind("L", smart_enter)
-    KEYBINDER.bind("Right", smart_enter)
+    KEYBINDER.bind("L", window.command_Enter)
+    KEYBINDER.bind("Right", window.command_Enter)
 
     def toggle_hidden() -> None:
         window.showHiddenFile(not window.isHiddenFileVisible())
@@ -1111,9 +1099,11 @@ def configure(window: MainWindow) -> None:
 
     def smart_extract() -> None:
         active_pane = CPane(window)
+        checker = ExtensionChecker(window)
 
         for item in active_pane.selectedItems:
-            if Path(item.getFullpath()).suffix not in CFILER_EXTENSION.archiver:
+            ext = Path(item.getFullpath()).suffix
+            if not checker.is_archiver(ext):
                 active_pane.unSelect(active_pane.byName(item.getName()))
 
         if len(active_pane.selectedItems) < 1:
