@@ -1230,7 +1230,7 @@ def configure(window: MainWindow) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if i <= pane.cursor:
-                    pane.toggleSelection(i)
+                    pane.select(i)
 
         def clearToTop(self) -> None:
             pane = self.pane
@@ -1242,7 +1242,7 @@ def configure(window: MainWindow) -> None:
             pane = self.pane
             for i in range(pane.count):
                 if pane.cursor <= i:
-                    pane.toggleSelection(i)
+                    pane.select(i)
 
         def clearToBottom(self) -> None:
             pane = self.pane
