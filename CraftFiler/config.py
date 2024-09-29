@@ -2311,17 +2311,16 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     def copy_content(_) -> None:
         path = Path(window.item.getFullpath())
         enc = window.encoding.encoding
-        if window.encoding.bom:
-            enc += "-sig"
-        content = path.read_text(enc)
-        ckit.setClipboardText(content)
-        window.command_Close(None)
-        msg = "copied content of '{}' ".format(path.name)
         if enc:
-            msg += "as {} encoding.".format(enc)
+            if window.encoding.bom:
+                enc += "-sig"
+            content = path.read_text(enc)
+            ckit.setClipboardText(content)
+            msg = "copied content of '{}' as {} encoding.".format(path.name, enc)
         else:
-            msg += "as binary-decoded.".format(enc)
+            msg = "copied nothing: previewing '{}' as binary mode.".format(path.name)
         print("\n{}\n".format(msg))
+        window.command_Close(None)
 
     window.keymap["C-C"] = copy_content
 
