@@ -1276,7 +1276,6 @@ def configure(window: MainWindow) -> None:
                 if (negative and not func(path)) or (not negative and func(path)):
                     name = item.getName()
                     pane.toggleSelection(pane.byName(name))
-            pane.focus(pane.selectionTop)
 
         def byExtension(self, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
@@ -2048,7 +2047,9 @@ def configure(window: MainWindow) -> None:
     def select_stem_startswith() -> None:
         pane = CPane(window)
         s = Path(pane.focusedItemPath).stem
-        result, mod = window.commandLine("StartsWith", return_modkey=True, text=s)
+        result, mod = window.commandLine(
+            "StartsWith", return_modkey=True, text=s, selection=[0, len(s)]
+        )
         if result:
             SELECTOR.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
@@ -2057,7 +2058,9 @@ def configure(window: MainWindow) -> None:
     def select_stem_endswith() -> None:
         pane = CPane(window)
         s = Path(pane.focusedItemPath).stem
-        result, mod = window.commandLine("EndsWith", return_modkey=True, text=s)
+        result, mod = window.commandLine(
+            "EndsWith", return_modkey=True, text=s, selection=[0, len(s)]
+        )
         if result:
             SELECTOR.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
@@ -2066,7 +2069,9 @@ def configure(window: MainWindow) -> None:
     def select_stem_contains() -> None:
         pane = CPane(window)
         s = Path(pane.focusedItemPath).stem
-        result, mod = window.commandLine("Contains", return_modkey=True, text=s)
+        result, mod = window.commandLine(
+            "Contains", return_modkey=True, text=s, selection=[0, len(s)]
+        )
         if result:
             SELECTOR.stemContains(result, mod == ckit.MODKEY_SHIFT)
 
