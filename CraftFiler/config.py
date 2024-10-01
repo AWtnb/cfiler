@@ -1030,10 +1030,6 @@ def configure(window: MainWindow) -> None:
                 if not self.check():
                     return
                 pane = CPane(window)
-                if pane.isBlank:
-                    return
-                if len(pane.dirs) < 1 and not search_all:
-                    return
                 cmd = self._cmd + [
                     "-all={}".format(search_all),
                     "-offset={}".format(offset),
