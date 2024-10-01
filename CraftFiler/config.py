@@ -901,9 +901,11 @@ def configure(window: MainWindow) -> None:
             if len(src) < 1:
                 print_log("src file '{}' not found...".format(self._src_name))
                 return ""
+            src = "\n".join(sorted(sorted(src.splitlines()), key=len))
             try:
+                cmd = ["fzf.exe", "--no-sort"]
                 proc = subprocess.run(
-                    "fzf.exe", input=src, capture_output=True, encoding="utf-8"
+                    cmd, input=src, capture_output=True, encoding="utf-8"
                 )
                 result = proc.stdout.strip()
                 if proc.returncode == 0:
