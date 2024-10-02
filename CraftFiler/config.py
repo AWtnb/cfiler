@@ -764,6 +764,36 @@ def configure(window: MainWindow) -> None:
             print_log("invalid path: '{}'".format(path))
             return False
 
+    def toggle_pane_width() -> None:
+        half = (window.width() - 1) // 2
+        if window.focus == MainWindow.FOCUS_LEFT:
+            if window.left_window_width == half:
+                window.left_window_width = window.width() - 1
+            else:
+                window.left_window_width = half
+        else:
+            if window.left_window_width == half:
+                window.left_window_width = 0
+            else:
+                window.left_window_width = half
+        window.updateThemePosSize()
+        window.paint(PO.Upper)
+
+    KEYBINDER.bind("C-S", toggle_pane_width)
+
+    def smart_focus_other() -> None:
+        window.command_FocusOther(None)
+        min_width = 10
+        if window.focus == MainWindow.FOCUS_LEFT:
+            if min_width < window.left_window_width:
+                return
+        else:
+            if window.left_window_width < window.width() - min_width:
+                return
+        window.command_MoveSeparatorCenter(None)
+
+    KEYBINDER.bind("C-L", smart_focus_other)
+
     class ExtensionChecker:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
@@ -791,7 +821,7 @@ def configure(window: MainWindow) -> None:
 
         pane = CPane(window)
         if pane.isBlank:
-            pane.focusOther()
+            smart_focus_other()
             return True
 
         focus_path = pane.focusedItemPath
@@ -1150,36 +1180,6 @@ def configure(window: MainWindow) -> None:
         window.setStatusMessage("copied current path: '{}'".format(p), 3000)
 
     KEYBINDER.bind("C-A-P", copy_current_path)
-
-    def toggle_pane_width() -> None:
-        half = (window.width() - 1) // 2
-        if window.focus == MainWindow.FOCUS_LEFT:
-            if window.left_window_width == half:
-                window.left_window_width = window.width() - 1
-            else:
-                window.left_window_width = half
-        else:
-            if window.left_window_width == half:
-                window.left_window_width = 0
-            else:
-                window.left_window_width = half
-        window.updateThemePosSize()
-        window.paint(PO.Upper)
-
-    KEYBINDER.bind("C-S", toggle_pane_width)
-
-    def smart_focus_other() -> None:
-        window.command_FocusOther(None)
-        min_width = 10
-        if window.focus == MainWindow.FOCUS_LEFT:
-            if min_width < window.left_window_width:
-                return
-        else:
-            if window.left_window_width < window.width() - min_width:
-                return
-        window.command_MoveSeparatorCenter(None)
-
-    KEYBINDER.bind("C-L", smart_focus_other)
 
     class Clipper:
         def __init__(self) -> None:
