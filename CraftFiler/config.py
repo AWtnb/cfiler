@@ -447,6 +447,16 @@ def configure(window: MainWindow) -> None:
             return items
 
         @property
+        def stems(self) -> list:
+            items = []
+            if self.isBlank:
+                return items
+            for i in range(self.count):
+                path = self.pathByIndex(i)
+                items.append(Path(path).stem)
+            return items
+
+        @property
         def history(self) -> History:
             return self._pane.history
 
@@ -2048,9 +2058,18 @@ def configure(window: MainWindow) -> None:
 
     def select_stem_startswith() -> None:
         pane = CPane(window)
-        s = Path(pane.focusedItemPath).stem
+        stems = pane.stems
+        stem = Path(pane.focusedItemPath).stem
+        ln = len(stem)
+        offset = ln
+        for i in range(1, ln):
+            part = stem[:i]
+            found = [s for s in stems if s.startswith(part)]
+            if len(found) < 2:
+                offset = i - 1
+                break
         result, mod = window.commandLine(
-            "StartsWith", return_modkey=True, text=s, selection=[0, len(s)]
+            "StartsWith", return_modkey=True, text=stem, selection=[offset, ln]
         )
         if result:
             SELECTOR.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
@@ -2059,9 +2078,19 @@ def configure(window: MainWindow) -> None:
 
     def select_stem_endswith() -> None:
         pane = CPane(window)
-        s = Path(pane.focusedItemPath).stem
+        stems = pane.stems
+        stem = Path(pane.focusedItemPath).stem
+        ln = len(stem)
+        offset = ln
+        for i in range(1, ln):
+            part = stem[i:]
+            found = [s for s in stems if s.endswith(part)]
+            if 1 < len(found):
+                offset = i
+                break
+
         result, mod = window.commandLine(
-            "EndsWith", return_modkey=True, text=s, selection=[0, len(s)]
+            "EndsWith", return_modkey=True, text=stem, selection=[0, offset]
         )
         if result:
             SELECTOR.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
@@ -2070,10 +2099,7 @@ def configure(window: MainWindow) -> None:
 
     def select_stem_contains() -> None:
         pane = CPane(window)
-        s = Path(pane.focusedItemPath).stem
-        result, mod = window.commandLine(
-            "Contains", return_modkey=True, text=s, selection=[0, len(s)]
-        )
+        result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
             SELECTOR.stemContains(result, mod == ckit.MODKEY_SHIFT)
 
