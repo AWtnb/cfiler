@@ -250,7 +250,6 @@ def configure(window: MainWindow) -> None:
             "C-D": window.command_Delete,
             "C-A-D": window.command_SelectDrive,
             "P": window.command_FocusOther,
-            "C-L": window.command_FocusOther,
             "C-Right": window.command_FocusOther,
             "O": window.command_ChdirActivePaneToOther,
             "S-O": window.command_ChdirInactivePaneToOther,
@@ -1168,6 +1167,19 @@ def configure(window: MainWindow) -> None:
         window.paint(PO.Upper)
 
     KEYBINDER.bind("C-S", toggle_pane_width)
+
+    def smart_focus_other() -> None:
+        window.command_FocusOther(None)
+        min_width = 10
+        if window.focus == MainWindow.FOCUS_LEFT:
+            if min_width < window.left_window_width:
+                return
+        else:
+            if window.left_window_width < window.width() - min_width:
+                return
+        window.command_MoveSeparatorCenter(None)
+
+    KEYBINDER.bind("C-L", smart_focus_other)
 
     class Clipper:
         def __init__(self) -> None:
