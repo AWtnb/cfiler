@@ -2376,6 +2376,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         else:
             msg = "copied nothing: previewing '{}' as binary mode.".format(path.name)
         print("\n{}\n".format(msg))
+        delay(200)
         window.command_Close(None)
 
     window.keymap["C-C"] = copy_content
