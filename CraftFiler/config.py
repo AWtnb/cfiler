@@ -272,6 +272,12 @@ def configure(window: MainWindow) -> None:
             "CloseBracket": window.command_MoveSeparatorRight,
             "Yen": window.command_MoveSeparatorCenter,
             "A-S": window.command_SetSorter,
+            "A-C-J": window.command_LogDown,
+            "A-C-K": window.command_LogUp,
+            "A-C-Down": window.command_LogDown,
+            "A-C-Up": window.command_LogUp,
+            "S-OpenBracket": window.command_MoveSeparatorUp,
+            "S-CloseBracket": window.command_MoveSeparatorDown,
         }
     )
 
