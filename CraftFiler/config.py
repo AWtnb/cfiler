@@ -360,7 +360,9 @@ def configure(window: MainWindow) -> None:
 
         @property
         def bookmarks(self) -> List[str]:
-            bookmark = self._window.bookmark.getItems()
+            bookmark = [
+                path for path in self._window.bookmark.getItems() if Path(path).exists()
+            ]
             return sorted(bookmark, key=lambda p: Path(p).name.lower())
 
         def to_menu_name(self, path: str) -> str:
