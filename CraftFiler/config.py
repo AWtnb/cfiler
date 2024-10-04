@@ -1127,10 +1127,15 @@ def configure(window: MainWindow) -> None:
 
     def smart_jump_input() -> None:
         pane = CPane(window)
+
+        def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
+            found = [name for name in pane.names if name.startswith(update_info.text)]
+            return found, 0
+
         result, mod = window.commandLine(
             title="JumpInputSmart",
             auto_complete=True,
-            candidate_handler=candidate_Filename(pane.fileList.getLocation()),
+            candidate_handler=_listup_names,
             return_modkey=True,
         )
         if result == None:
@@ -1711,12 +1716,8 @@ def configure(window: MainWindow) -> None:
             def _listup_dests(
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
             ) -> tuple:
-                found = []
-                cursor_offset = 0
-                for dd in possible_dests:
-                    if dd.startswith(update_info.text):
-                        found.append(dd)
-                return found, cursor_offset
+                found = [dd for dd in possible_dests if dd.startswith(update_info.text)]
+                return found, 0
 
             result, mod = window.commandLine(
                 prompt,
@@ -1759,12 +1760,8 @@ def configure(window: MainWindow) -> None:
                 def _listup_files(
                     update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
                 ) -> tuple:
-                    found = []
-                    cursor_offset = 0
-                    for bn in basenames:
-                        if bn.startswith(update_info.text):
-                            found.append(bn)
-                    return found, cursor_offset
+                    found = [bn for bn in basenames if bn.startswith(update_info.text)]
+                    return found, 0
 
                 prompt = "NewFileName"
                 if 0 < len(extension):
