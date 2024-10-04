@@ -102,15 +102,15 @@ def configure(window: MainWindow) -> None:
             if t[0] == self._now[0]:
                 if t[1] == self._now[1] and t[2] == self._now[2]:
                     return "----/--/--"
-                return f"----/{t[1]:02}/{t[2]:02}"
-            return f"{t[0]}/{t[1]:02}/{t[2]:02}"
+                return "----/{:02}/{:02}".format(t[1], t[2])
+            return "{}/{:02}/{:02}".format(t[0], t[1], t[2])
 
         def _timestr(self) -> str:
             t = self._time
-            return f" {t[3]:02}:{t[4]:02}:{t[5]:02}"
+            return "{:02}:{:02}:{:02}".format(t[3], t[4], t[5])
 
         def tostr(self) -> str:
-            return f"{self._datestr()} {self._timestr()}"
+            return self._datestr() + " " + self._timestr()
 
     def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(window, item, width, _):
         if item.isdir():
@@ -118,7 +118,7 @@ def configure(window: MainWindow) -> None:
         else:
             str_size = getFileSizeString(item.size()).rjust(6)
 
-        str_size_time = f"{str_size} {ItemTimestamp(item).tostr()}"
+        str_size_time = str_size + " " + ItemTimestamp(item).tostr()
 
         width = max(40, width)
         filename_width = width - len(str_size_time)
