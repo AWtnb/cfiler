@@ -56,7 +56,7 @@ from cfiler_filelist import (
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow, ListItem
 
-from cfiler_misc import candidate_Filename
+from cfiler_misc import getFileSizeString
 
 
 class PaintOption:
@@ -92,6 +92,56 @@ def delay(msec: int = 50) -> None:
 
 
 def configure(window: MainWindow) -> None:
+
+    def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(window, item, width, userdata):
+        if item.isdir():
+            str_size = "<DIR>"
+        else:
+            str_size = getFileSizeString(item.size()).rjust(6)
+
+        if not hasattr(userdata, "now"):
+            userdata.now = time.localtime()
+
+        t = item.time()
+        if (
+            t[0] == userdata.now[0]
+            and t[1] == userdata.now[1]
+            and t[2] == userdata.now[2]
+        ):
+            timestamp = " " * len("yyyy-mm-dd ")
+        else:
+            timestamp = f"{t[0]}-{t[1]:02}-{t[2]:02} "
+
+        timestamp += f"{t[3]:02}:{t[4]:02}:{t[5]:02}"
+        str_size_time = f"{str_size} {timestamp}"
+
+        width = max(40, width)
+        filename_width = width - len(str_size_time)
+
+        if item.isdir():
+            body, ext = item.getName(), None
+        else:
+            body, ext = ckit.splitExt(item.getName())
+
+        if ext:
+            body_width = min(width, filename_width - 6)
+            return (
+                ckit.adjustStringWidth(
+                    window, body, body_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
+                )
+                + ckit.adjustStringWidth(
+                    window, ext, 6, ckit.ALIGN_LEFT, ckit.ELLIPSIS_NONE
+                )
+                + str_size_time
+            )
+        return (
+            ckit.adjustStringWidth(
+                window, body, filename_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
+            )
+            + str_size_time
+        )
+
+    window.itemformat = itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS
 
     class Themer:
         def __init__(self, color: str) -> None:
