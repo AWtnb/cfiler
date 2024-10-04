@@ -1559,7 +1559,7 @@ def configure(window: MainWindow) -> None:
                 return [item]
             return []
 
-        def execute(self, org_path: Path, new_name: str) -> None:
+        def execute(self, org_path: Path, new_name: str, focus: bool = False) -> None:
             new_path = org_path.with_name(new_name)
             if new_path.exists():
                 print_log("'{}' already exists!".format(new_name))
@@ -1568,6 +1568,8 @@ def configure(window: MainWindow) -> None:
                 self._window.subThreadCall(org_path.rename, (str(new_path),))
                 print_log("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
                 self._pane.refresh()
+                if focus:
+                    self._pane.focusByName(new_name)
             except Exception as e:
                 print(e)
 
@@ -1641,17 +1643,18 @@ def configure(window: MainWindow) -> None:
             else:
                 sel = [0, 0]
 
-            new_stem = window.commandLine(
+            new_stem, mod = window.commandLine(
                 title="NewStem",
                 text=org_path.stem,
                 selection=sel,
+                return_modkey=True,
             )
 
             if not new_stem:
                 return
 
             new_name = new_stem + org_path.suffix
-            renamer.execute(org_path, new_name)
+            renamer.execute(org_path, new_name, mod == ckit.MODKEY_SHIFT)
 
         return _renamer
 
