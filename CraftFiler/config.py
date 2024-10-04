@@ -92,28 +92,33 @@ def delay(msec: int = 50) -> None:
 
 
 def configure(window: MainWindow) -> None:
+    class ItemTimestamp:
+        def __init__(self, item) -> None:
+            self._time = item.time()
+            self._now = time.localtime()
 
-    def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(window, item, width, userdata):
+        def _datestr(self) -> str:
+            t = self._time
+            if t[0] == self._now[0]:
+                if t[1] == self._now[1] and t[2] == self._now[2]:
+                    return "----/--/--"
+                return f"----/{t[1]:02}/{t[2]:02}"
+            return f"{t[0]}/{t[1]:02}/{t[2]:02}"
+
+        def _timestr(self) -> str:
+            t = self._time
+            return f" {t[3]:02}:{t[4]:02}:{t[5]:02}"
+
+        def tostr(self) -> str:
+            return f"{self._datestr()} {self._timestr()}"
+
+    def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(window, item, width, _):
         if item.isdir():
             str_size = "<DIR>"
         else:
             str_size = getFileSizeString(item.size()).rjust(6)
 
-        if not hasattr(userdata, "now"):
-            userdata.now = time.localtime()
-
-        t = item.time()
-        if (
-            t[0] == userdata.now[0]
-            and t[1] == userdata.now[1]
-            and t[2] == userdata.now[2]
-        ):
-            timestamp = " " * len("yyyy-mm-dd ")
-        else:
-            timestamp = f"{t[0]}-{t[1]:02}-{t[2]:02} "
-
-        timestamp += f"{t[3]:02}:{t[4]:02}:{t[5]:02}"
-        str_size_time = f"{str_size} {timestamp}"
+        str_size_time = f"{str_size} {ItemTimestamp(item).tostr()}"
 
         width = max(40, width)
         filename_width = width - len(str_size_time)
