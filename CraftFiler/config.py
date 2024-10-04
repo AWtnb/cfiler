@@ -2192,20 +2192,18 @@ def configure(window: MainWindow) -> None:
 
     def rename_pseudo_voicing() -> None:
         pane = CPane(window)
+        renamer = Renamer(window)
         items = pane.selectedItems
         for item in items:
+            if not renamer.renamable(item):
+                continue
             name = item.getName()
             pv = PseudoVoicing(name)
             pv.fix_voicing()
             pv.fix_half_voicing()
-            newname = pv.formatted
-            if name != newname:
-                try:
-                    item.rename(newname)
-                    print("RENAMED: '{}' ==> '{}'".format(name, newname))
-                    item._selected = False
-                except Exception as e:
-                    print(e)
+            new_name = pv.formatted
+            org_path = Path(item.getFullpath())
+            renamer.execute(org_path, new_name)
 
     class custom_filter:
         def __init__(self, patterns: List[str]) -> None:
