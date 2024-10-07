@@ -1014,7 +1014,7 @@ def configure(window: MainWindow) -> None:
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
-                result = proc.stdout.strip()
+                result = proc.stdout
                 if proc.returncode == 0:
                     return result
             except Exception as e:
@@ -1045,12 +1045,12 @@ def configure(window: MainWindow) -> None:
             result_lines = result.splitlines()
             if 2 < len(result_lines):
                 return "", False
+            open_dir = 1 < len(result_lines[0])
             result_name = result_lines[-1]
             if len(result_name) < 1:
                 return "", False
             if -1 < (i := result_name.find("|")):
                 result_name = result_name[:i].strip()
-            open_dir = 1 < len(result_lines)
             if result_name.startswith("#"):
                 idx = self.get_index()
                 return (idx + result_name[1:]), open_dir
