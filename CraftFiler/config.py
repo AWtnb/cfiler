@@ -1010,7 +1010,7 @@ def configure(window: MainWindow) -> None:
                 return ""
             src = "\n".join(sorted(sorted(src.splitlines()), key=len))
             try:
-                cmd = ["fzf.exe", "--no-sort"]
+                cmd = ["fzf.exe", "--no-sort", "--expect", "ctrl-space"]
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
@@ -1038,16 +1038,18 @@ def configure(window: MainWindow) -> None:
             fmt = "{:0" + str(width) + "}"
             return fmt.format(idxs[-1] + 1)
 
-        def get_name(self) -> str:
-            line = self.fzf()
-            if -1 < (i := line.find("|")):
-                line = line[:i].strip()
-            if len(line) < 1:
-                return ""
-            if line.startswith("#"):
+        def get_name(self) -> Tuple[str, bool]:
+            result = self.fzf()
+            mod, result_name = result.splitlines()[:2]
+            if -1 < (i := result_name.find("|")):
+                result_name = result_name[:i].strip()
+            if len(result_name) < 1:
+                return "", False
+            open_dir = 0 < len(mod)
+            if result_name.startswith("#"):
                 idx = self.get_index()
-                return idx + line[1:]
-            return line
+                return (idx + result_name[1:]), open_dir
+            return result_name, open_dir
 
     def ruled_mkdir() -> None:
         pane = CPane(window)
@@ -1055,12 +1057,15 @@ def configure(window: MainWindow) -> None:
         def _get_name(job_item: ckit.JobItem) -> None:
             job_item.name = ""
             dr = DirRule(pane.currentPath)
-            job_item.name = dr.get_name()
+            job_item.name, job_item.open = dr.get_name()
 
         def _mkdir(job_item: ckit.JobItem) -> None:
             name = job_item.name
             if 0 < len(name):
                 pane.mkdir(name)
+                if job_item.open:
+                    p = str(Path(pane.currentPath, job_item.name))
+                    pane.openPath(p)
 
         job = ckit.JobItem(_get_name, _mkdir)
         window.taskEnqueue(job, create_new_queue=False)
