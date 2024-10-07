@@ -1040,12 +1040,17 @@ def configure(window: MainWindow) -> None:
 
         def get_name(self) -> Tuple[str, bool]:
             result = self.fzf()
-            mod, result_name = result.splitlines()[:2]
-            if -1 < (i := result_name.find("|")):
-                result_name = result_name[:i].strip()
+            if len(result) < 1:
+                return "", False
+            result_lines = result.splitlines()
+            if 2 < len(result_lines):
+                return "", False
+            result_name = result_lines[-1]
             if len(result_name) < 1:
                 return "", False
-            open_dir = 0 < len(mod)
+            if -1 < (i := result_name.find("|")):
+                result_name = result_name[:i].strip()
+            open_dir = 1 < len(result_lines)
             if result_name.startswith("#"):
                 idx = self.get_index()
                 return (idx + result_name[1:]), open_dir
