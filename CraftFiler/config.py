@@ -267,15 +267,29 @@ def configure(window: MainWindow) -> None:
     }
     set_theme(CUSTOM_THEME)
 
-    def print_log(s) -> None:
+    class Logger:
         sep = "-"
-        ts = datetime.datetime.today().strftime(
-            " %Y-%m-%d %H:%M:%S.%f {}".format(sep * 2)
-        )
-        ww = window.width()
-        print("\n{}".format(ts.rjust(ww, sep)))
-        print(s)
-        print("{}\n".format(sep * ww))
+
+        def __init__(self, window: MainWindow) -> None:
+            self._width = window.width()
+
+        @property
+        def header(self) -> str:
+            ts = datetime.datetime.today().strftime(
+                " %Y-%m-%d %H:%M:%S.%f {}".format(self.sep * 2)
+            )
+            return "\n{}".format(ts.rjust(self._width, self.sep))
+
+        @property
+        def footer(self) -> str:
+            return "{}\n".format(self.sep * self._width)
+
+        def log(self, s) -> None:
+            print(self.header)
+            print(s)
+            print(self.footer)
+
+    LOGGER = Logger(window)
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -411,7 +425,7 @@ def configure(window: MainWindow) -> None:
                     self._menu_table[name] = path
                     self._list_items.append(ListItem(name, False))
             except Exception as e:
-                print_log(e)
+                LOGGER.log(e)
 
         @property
         def bookmarks(self) -> List[str]:
@@ -720,7 +734,7 @@ def configure(window: MainWindow) -> None:
         def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
             target = Path(path)
             if not target.exists():
-                print_log("invalid path: '{}'".format(path))
+                LOGGER.log("invalid path: '{}'".format(path))
                 return
             if target.is_file():
                 path = str(target.parent)
@@ -730,11 +744,11 @@ def configure(window: MainWindow) -> None:
 
         def touch(self, name: str) -> None:
             if not hasattr(self.lister, "touch"):
-                print_log("cannot make file here.")
+                LOGGER.log("cannot make file here.")
                 return
             dp = Path(self.currentPath, name)
             if dp.exists() and dp.is_file():
-                print_log("file '{}' already exists.".format(name))
+                LOGGER.log("file '{}' already exists.".format(name))
                 return
             self._window.subThreadCall(self.lister.touch, (name,))
             self.refresh()
@@ -742,11 +756,11 @@ def configure(window: MainWindow) -> None:
 
         def mkdir(self, name: str, focus: bool = True) -> None:
             if not hasattr(self.lister, "mkdir"):
-                print_log("cannot make directory here.")
+                LOGGER.log("cannot make directory here.")
                 return
             dp = Path(self.currentPath, name)
             if dp.exists() and dp.is_dir():
-                print_log("directory '{}' already exists.".format(name))
+                LOGGER.log("directory '{}' already exists.".format(name))
                 return
             self._window.subThreadCall(self.lister.mkdir, (name, None))
             self.refresh()
@@ -829,7 +843,7 @@ def configure(window: MainWindow) -> None:
             pyauto.shellExecute(None, path, " ".join(params), "")
             return True
         except:
-            print_log("invalid path: '{}'".format(path))
+            LOGGER.log("invalid path: '{}'".format(path))
             return False
 
     def toggle_pane_width() -> None:
@@ -1006,7 +1020,7 @@ def configure(window: MainWindow) -> None:
         def fzf(self) -> str:
             src = self.read_src().strip()
             if len(src) < 1:
-                print_log("src file '{}' not found...".format(self._src_name))
+                LOGGER.log("src file '{}' not found...".format(self._src_name))
                 return ""
             src = "\n".join(sorted(sorted(src.splitlines()), key=len))
             try:
@@ -1104,7 +1118,7 @@ def configure(window: MainWindow) -> None:
                 if result:
                     if proc.returncode != 0:
                         if result:
-                            print_log(result)
+                            LOGGER.log(result)
                         return
                     job_item.result = result
 
@@ -1160,7 +1174,7 @@ def configure(window: MainWindow) -> None:
                 if result:
                     if proc.returncode != 0:
                         if result:
-                            print_log(result)
+                            LOGGER.log(result)
                         return
                     job_item.result = result
 
@@ -1239,7 +1253,7 @@ def configure(window: MainWindow) -> None:
             return
 
         if active_pane.byName(result) != -1:
-            print_log("'{}' already exists.".format(result))
+            LOGGER.log("'{}' already exists.".format(result))
             return
 
         active_pane.mkdir(result, False)
@@ -1627,11 +1641,11 @@ def configure(window: MainWindow) -> None:
         def execute(self, org_path: Path, new_name: str, focus: bool = False) -> None:
             new_path = org_path.with_name(new_name)
             if new_path.exists():
-                print_log("'{}' already exists!".format(new_name))
+                print("'{}' already exists!".format(new_name))
                 return
             try:
                 self._window.subThreadCall(org_path.rename, (str(new_path),))
-                print_log("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
+                print("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
                 self._pane.refresh()
                 if focus:
                     self._pane.focusByName(new_name)
@@ -1654,6 +1668,7 @@ def configure(window: MainWindow) -> None:
 
         from_tail = mod == ckit.MODKEY_SHIFT
 
+        print(LOGGER.header)
         for item in targets:
             org_path = Path(item.getFullpath())
             if from_tail:
@@ -1663,6 +1678,7 @@ def configure(window: MainWindow) -> None:
                 new_name = org_path.name[int(result) :]
 
             renamer.execute(org_path, new_name)
+        print(LOGGER.footer)
 
     KEYBINDER.bind("S-S", rename_substr)
 
@@ -1680,6 +1696,7 @@ def configure(window: MainWindow) -> None:
 
         to_head = mod == ckit.MODKEY_SHIFT
 
+        print(LOGGER.header)
         for item in targets:
             org_path = Path(item.getFullpath())
             if to_head:
@@ -1688,6 +1705,7 @@ def configure(window: MainWindow) -> None:
                 new_name = org_path.stem + result + org_path.suffix
 
             renamer.execute(org_path, new_name)
+        print(LOGGER.footer)
 
     KEYBINDER.bind("S-I", rename_insert)
 
@@ -1719,7 +1737,10 @@ def configure(window: MainWindow) -> None:
                 return
 
             new_name = new_stem + org_path.suffix
+
+            print(LOGGER.header)
             renamer.execute(org_path, new_name, mod == ckit.MODKEY_SHIFT)
+            print(LOGGER.footer)
 
         return _renamer
 
@@ -1746,7 +1767,7 @@ def configure(window: MainWindow) -> None:
                 result = result + src_path.suffix
             new_path = src_path.with_name(result)
             if new_path.exists():
-                print_log("same item exists!")
+                LOGGER.log("same item exists!")
                 return
 
             def _copy_as(new_path: str) -> None:
@@ -1846,7 +1867,7 @@ def configure(window: MainWindow) -> None:
                     filename = filename + "." + extension
                 new_path = Path(pane.currentPath, filename)
                 if new_path.exists():
-                    print_log("'{}' already exists.".format(filename))
+                    LOGGER.log("'{}' already exists.".format(filename))
                     return
                 pane.touch(filename)
                 if mod == ckit.MODKEY_SHIFT:
@@ -1881,7 +1902,7 @@ def configure(window: MainWindow) -> None:
         if 1 < count:
             msg += "s"
         msg += " to '{}'".format(dest_name)
-        print_log(msg)
+        LOGGER.log(msg)
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
 
@@ -1952,7 +1973,7 @@ def configure(window: MainWindow) -> None:
                 shell_exec(dp)
         else:
             shell_exec(USER_PROFILE)
-            print_log("cannot find repo dir. open user profile instead.")
+            LOGGER.log("cannot find repo dir. open user profile instead.")
 
     KEYBINDER.bind("C-E", edit_config)
 
@@ -2051,7 +2072,7 @@ def configure(window: MainWindow) -> None:
                 if not job_item.comparable:
                     return
 
-                print_log("comparing md5 hash")
+                LOGGER.log("comparing md5 hash")
 
                 window.setProgressValue(None)
 
@@ -2086,11 +2107,11 @@ def configure(window: MainWindow) -> None:
                 window.clearProgress()
                 if job_item.comparable:
                     if job_item.isCanceled():
-                        print_log("canceled")
+                        LOGGER.log("canceled")
                     else:
-                        print_log("finished")
+                        LOGGER.log("finished")
                 else:
-                    print_log("finished (nothing to compare)")
+                    LOGGER.log("finished (nothing to compare)")
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
@@ -2102,28 +2123,28 @@ def configure(window: MainWindow) -> None:
     def diffinity() -> None:
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
         if not exe_path.exists():
-            print_log("cannnot find diffinity.exe...")
+            LOGGER.log("cannnot find diffinity.exe...")
             return
 
         left_pane = LeftPane(window)
         left_selcted = left_pane.selectedItemPaths
         if len(left_selcted) != 1:
-            print_log("select just 1 file on left pane.")
+            LOGGER.log("select just 1 file on left pane.")
             return
         left_path = Path(left_selcted[0])
         if not left_path.is_file():
-            print_log("selected item on left pane is not comparable.")
+            LOGGER.log("selected item on left pane is not comparable.")
             return
         left_pane = LeftPane(window)
 
         right_pane = RightPane(window)
         right_selcted = right_pane.selectedItemPaths
         if len(right_selcted) != 1:
-            print_log("select just 1 file on right pane.")
+            LOGGER.log("select just 1 file on right pane.")
             return
         right_path = Path(right_selcted[0])
         if not right_path.is_file():
-            print_log("selected item on right pane is not comparable.")
+            LOGGER.log("selected item on right pane is not comparable.")
             return
 
         shell_exec(exe_path, str(left_path), str(right_path))
@@ -2307,16 +2328,16 @@ def configure(window: MainWindow) -> None:
         for src_path in active_pane.selectedItemPaths:
             junction_path = Path(dest, Path(src_path).name)
             if junction_path.exists():
-                print_log("'{}' already exists.".format(junction_path))
+                LOGGER.log("'{}' already exists.".format(junction_path))
                 return
             try:
                 cmd = ["cmd", "/c", "mklink", "/J", str(junction_path), src_path]
                 proc = subprocess.run(cmd, capture_output=True, encoding="cp932")
                 result = proc.stdout.strip()
-                print_log(result)
+                LOGGER.log(result)
             except Exception as e:
                 print(e)
-                print_log("(canceled)")
+                LOGGER.log("(canceled)")
                 return
 
     def reset_hotkey() -> None:
