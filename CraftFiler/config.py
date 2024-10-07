@@ -1296,36 +1296,32 @@ def configure(window: MainWindow) -> None:
             return paths
 
         @staticmethod
-        def toClipboard(ss: List[str]) -> None:
+        def toClipboard(ss: List[str], genre: str) -> None:
             if check_log_selected():
                 window.command_SetClipboard_LogSelected(None)
                 return
             if 0 < len(ss):
                 ckit.setClipboardText(LINE_BREAK.join(ss))
-                if len(ss) == 1:
-                    window.setStatusMessage("Copied: '{}'".format(ss[0]), 2000)
-                else:
-                    print("\nCopied:")
-                    for s in ss:
-                        print("- '{}'".format(s))
-                    print()
+                if 1 < len(ss):
+                    genre += "s"
+                window.setStatusMessage("Copied {} {}".format(len(ss), genre), 2000)
 
         @classmethod
         def paths(cls) -> None:
             paths = cls.targets()
-            cls.toClipboard(paths)
+            cls.toClipboard(paths, "path")
 
         @classmethod
         def names(cls) -> None:
             paths = cls.targets()
             names = [Path(path).name for path in paths]
-            cls.toClipboard(names)
+            cls.toClipboard(names, "name")
 
         @classmethod
         def basenames(cls) -> None:
             paths = cls.targets()
             basenames = [Path(path).stem for path in paths]
-            cls.toClipboard(basenames)
+            cls.toClipboard(basenames, "basename")
 
     KEYBINDER.bind("C-C", Clipper().paths)
     KEYBINDER.bind("C-S-C", Clipper().names)
