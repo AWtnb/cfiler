@@ -544,11 +544,11 @@ def configure(window: MainWindow) -> None:
         def history(self) -> History:
             return self._pane.history
 
-        def appendHistory(self, path: str) -> History:
+        def appendHistory(self, path: str, mark: bool = False) -> History:
             p = Path(path)
             lister = self.lister
             visible = isinstance(lister, lister_Default)
-            return self._pane.history.append(str(p.parent), p.name, visible, False)
+            return self.entity.history.append(str(p.parent), p.name, visible, mark)
 
         @property
         def cursor(self) -> int:
@@ -933,6 +933,7 @@ def configure(window: MainWindow) -> None:
                 USER_PROFILE, r"AppData\Local\SumatraPDF\SumatraPDF.exe"
             )
             if sumatra_path.exists():
+                pane.appendHistory(focus_path, True)
                 return shell_exec(str(sumatra_path), focus_path)
 
         if ext in [".xlsx", ".xls"]:
@@ -940,6 +941,7 @@ def configure(window: MainWindow) -> None:
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Excel.lnk"
             )
             if excel_path.exists():
+                pane.appendHistory(focus_path, True)
                 return shell_exec(str(excel_path), focus_path)
 
         if ext in [".docx", ".doc"]:
@@ -947,6 +949,7 @@ def configure(window: MainWindow) -> None:
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Word.lnk"
             )
             if word_path.exists():
+                pane.appendHistory(focus_path, True)
                 return shell_exec(str(word_path), focus_path)
 
         if ext in [".pptx", ".ppt"]:
@@ -954,6 +957,7 @@ def configure(window: MainWindow) -> None:
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PowerPoint.lnk"
             )
             if ppt_path.exists():
+                pane.appendHistory(focus_path, True)
                 return shell_exec(str(ppt_path), focus_path)
 
         return False
