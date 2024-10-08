@@ -540,15 +540,11 @@ def configure(window: MainWindow) -> None:
                 items.append(Path(path).stem)
             return items
 
-        @property
-        def history(self) -> History:
-            return self._pane.history
-
-        def appendHistory(self, path: str, mark: bool = False) -> History:
+        def appendHistory(self, path: str, mark: bool = False) -> None:
             p = Path(path)
             lister = self.lister
             visible = isinstance(lister, lister_Default)
-            return self.entity.history.append(str(p.parent), p.name, visible, mark)
+            self.entity.history.append(str(p.parent), p.name, visible, mark)
 
         @property
         def cursor(self) -> int:
@@ -915,50 +911,57 @@ def configure(window: MainWindow) -> None:
             return False
 
         if os.path.getsize(focus_path) == 0:
+            pane.appendHistory(focus_path, True)
             return shell_exec(focus_path)
 
         ext = p.suffix
 
         if EXTENSION_CHECKER.is_image(ext):
+            pane.appendHistory(focus_path, True)
             return False
 
         if EXTENSION_CHECKER.is_archiver(ext):
             return True
 
         if EXTENSION_CHECKER.is_music(ext) or ext == ".m4a":
+            pane.appendHistory(focus_path, True)
             return shell_exec(focus_path)
 
         if ext == ".pdf":
             sumatra_path = Path(
                 USER_PROFILE, r"AppData\Local\SumatraPDF\SumatraPDF.exe"
             )
-            if sumatra_path.exists():
-                pane.appendHistory(focus_path, True)
-                return shell_exec(str(sumatra_path), focus_path)
+            if not sumatra_path.exists():
+                return False
+            pane.appendHistory(focus_path, True)
+            return shell_exec(str(sumatra_path), focus_path)
 
         if ext in [".xlsx", ".xls"]:
             excel_path = Path(
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Excel.lnk"
             )
-            if excel_path.exists():
-                pane.appendHistory(focus_path, True)
-                return shell_exec(str(excel_path), focus_path)
+            if not excel_path.exists():
+                return False
+            pane.appendHistory(focus_path, True)
+            return shell_exec(str(excel_path), focus_path)
 
         if ext in [".docx", ".doc"]:
             word_path = Path(
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Word.lnk"
             )
-            if word_path.exists():
-                pane.appendHistory(focus_path, True)
-                return shell_exec(str(word_path), focus_path)
+            if not word_path.exists():
+                return False
+            pane.appendHistory(focus_path, True)
+            return shell_exec(str(word_path), focus_path)
 
         if ext in [".pptx", ".ppt"]:
             ppt_path = Path(
                 r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PowerPoint.lnk"
             )
-            if ppt_path.exists():
-                pane.appendHistory(focus_path, True)
-                return shell_exec(str(ppt_path), focus_path)
+            if not ppt_path.exists():
+                return False
+            pane.appendHistory(focus_path, True)
+            return shell_exec(str(ppt_path), focus_path)
 
         return False
 
