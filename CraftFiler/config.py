@@ -911,8 +911,8 @@ def configure(window: MainWindow) -> None:
             return False
 
         if os.path.getsize(focus_path) == 0:
-            pane.appendHistory(focus_path, True)
-            return shell_exec(focus_path)
+            window.command_Execute(None)
+            return True
 
         ext = p.suffix
 
@@ -923,45 +923,13 @@ def configure(window: MainWindow) -> None:
         if EXTENSION_CHECKER.is_archiver(ext):
             return True
 
-        if EXTENSION_CHECKER.is_music(ext) or ext == ".m4a":
-            pane.appendHistory(focus_path, True)
-            return shell_exec(focus_path)
+        if EXTENSION_CHECKER.is_music(ext):
+            window.command_Execute(None)
+            return True
 
-        if ext == ".pdf":
-            sumatra_path = Path(
-                USER_PROFILE, r"AppData\Local\SumatraPDF\SumatraPDF.exe"
-            )
-            if not sumatra_path.exists():
-                return False
-            pane.appendHistory(focus_path, True)
-            return shell_exec(str(sumatra_path), focus_path)
-
-        if ext in [".xlsx", ".xls"]:
-            excel_path = Path(
-                r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Excel.lnk"
-            )
-            if not excel_path.exists():
-                return False
-            pane.appendHistory(focus_path, True)
-            return shell_exec(str(excel_path), focus_path)
-
-        if ext in [".docx", ".doc"]:
-            word_path = Path(
-                r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Word.lnk"
-            )
-            if not word_path.exists():
-                return False
-            pane.appendHistory(focus_path, True)
-            return shell_exec(str(word_path), focus_path)
-
-        if ext in [".pptx", ".ppt"]:
-            ppt_path = Path(
-                r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\PowerPoint.lnk"
-            )
-            if not ppt_path.exists():
-                return False
-            pane.appendHistory(focus_path, True)
-            return shell_exec(str(ppt_path), focus_path)
+        if ext in [".m4a", ".pdf", ".xlsx", ".xls", ".docx", ".doc", ".pptx", ".ppt"]:
+            window.command_Execute(None)
+            return True
 
         return False
 
