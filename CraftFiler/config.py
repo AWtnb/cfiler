@@ -2461,9 +2461,12 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["End"] = to_bottom
 
     def open_original(_) -> None:
-        path = window.item.getFullpath()
+        pane = window.main_window.activePane()
+        visible = isinstance(pane.file_list.getLister(), lister_Default)
+        path = Path(window.item.getFullpath())
         window.command_Close(None)
-        pyauto.shellExecute(None, path, "", "")
+        pane.history.append(str(path.parent), path.name, visible, True)
+        pyauto.shellExecute(None, str(path), "", "")
 
     window.keymap["C-Enter"] = open_original
     window.keymap["C-L"] = open_original
