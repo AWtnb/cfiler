@@ -379,10 +379,6 @@ def configure(window: MainWindow) -> None:
         def bind(self, key: str, func: Callable) -> None:
             self._window.keymap[key] = self.wrap(func)
 
-        def bindmulti(self, mapping: dict) -> None:
-            for key, func in mapping.items():
-                self._window.keymap[key] = self.wrap(func)
-
     KEYBINDER = Keybinder(window)
 
     def invoke_listwindow(
@@ -692,14 +688,29 @@ def configure(window: MainWindow) -> None:
         def select(self, i: int) -> None:
             self.setSelectionState(i, True)
 
+        def selectAll(self) -> None:
+            for i in range(self.count):
+                self.select(i)
+
         def unSelect(self, i: int) -> None:
             self.setSelectionState(i, False)
+
+        def unSelectAll(self) -> None:
+            for i in range(self.count):
+                self.unSelect(i)
 
         def selectByName(self, name: str) -> None:
             i = self.byName(name)
             if i < 0:
                 return
             self.select(i)
+            self.applySelectionHighlight()
+
+        def unSelectByName(self, name: str) -> None:
+            i = self.byName(name)
+            if i < 0:
+                return
+            self.unSelect(i)
             self.applySelectionHighlight()
 
         def selectByNames(self, names: list) -> None:
@@ -1174,13 +1185,8 @@ def configure(window: MainWindow) -> None:
                     KEYBINDER.bind(alt + shift + key, self.invoke(search_all, offset))
 
     zyc().apply("Z")
-
-    KEYBINDER.bindmulti(
-        {
-            "S-F": zyc().invoke(False, 0),
-            "C-F": zyc().invoke(True, 0),
-        }
-    )
+    KEYBINDER.bind("S-F", zyc().invoke(False, 0))
+    KEYBINDER.bind("C-F", zyc().invoke(True, 0))
 
     def smart_jump_input() -> None:
         pane = CPane(window)
@@ -1315,18 +1321,16 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-S-B", Clipper().basenames)
 
     class Selector:
-        def __init__(self, window: MainWindow, active: bool = True) -> None:
+        def __init__(self, window: MainWindow) -> None:
             self._window = window
-            self._active = active
 
         @property
         def pane(self) -> CPane:
-            return CPane(self._window, self._active)
+            return CPane(self._window)
 
         def allItems(self) -> None:
             pane = self.pane
-            for i in range(pane.count):
-                pane.select(i)
+            pane.selectAll()
 
         def toggleAll(self) -> None:
             pane = self.pane
@@ -1348,13 +1352,13 @@ def configure(window: MainWindow) -> None:
         def toBottom(self) -> None:
             pane = self.pane
             for i in range(pane.count):
-                if pane.cursor <= i:
+                if pane.cursor < i:
                     pane.select(i)
 
         def clearToBottom(self) -> None:
             pane = self.pane
             for i in range(pane.count):
-                if pane.cursor <= i:
+                if pane.cursor < i:
                     pane.unSelect(i)
 
         def files(self) -> None:
@@ -1373,8 +1377,7 @@ def configure(window: MainWindow) -> None:
 
         def clearAll(self) -> None:
             pane = self.pane
-            for i in range(pane.count):
-                pane.unSelect(i)
+            pane.unSelectAll()
 
         def byFunction(self, func: Callable, negative: bool = False) -> None:
             pane = self.pane
@@ -1408,29 +1411,29 @@ def configure(window: MainWindow) -> None:
 
             self.byFunction(_checkPath, negative)
 
-    SELECTOR = Selector(window)
+        def apply(self) -> None:
+            for k, v in {
+                "C-A": self.allItems,
+                "C-S-A": self.toggleAll,
+                "U": self.clearAll,
+                "A-F": self.files,
+                "A-D": self.dirs,
+                "S-Home": self.toTop,
+                "S-A": self.toTop,
+                "A-S-Home": self.clearToTop,
+                "A-S-A": self.clearToTop,
+                "S-End": self.toBottom,
+                "S-E": self.toBottom,
+                "A-S-End": self.clearToBottom,
+                "A-S-E": self.clearToBottom,
+            }.items():
+                KEYBINDER.bind(k, v)
 
-    KEYBINDER.bindmulti(
-        {
-            "C-A": SELECTOR.allItems,
-            "C-S-A": SELECTOR.toggleAll,
-            "U": SELECTOR.clearAll,
-            "A-F": SELECTOR.files,
-            "A-D": SELECTOR.dirs,
-            "S-Home": SELECTOR.toTop,
-            "S-A": SELECTOR.toTop,
-            "A-S-Home": SELECTOR.clearToTop,
-            "A-S-A": SELECTOR.clearToTop,
-            "S-End": SELECTOR.toBottom,
-            "S-E": SELECTOR.toBottom,
-            "A-S-End": SELECTOR.clearToBottom,
-            "A-S-E": SELECTOR.clearToBottom,
-        }
-    )
+    Selector(window).apply()
 
     def unselect_panes() -> None:
-        Selector(window, True).clearAll()
-        Selector(window, False).clearAll()
+        CPane(window).unSelectAll()
+        CPane(window, False).unSelectAll()
 
     KEYBINDER.bind("C-U", unselect_panes)
 
@@ -2138,23 +2141,37 @@ def configure(window: MainWindow) -> None:
 
         shell_exec(exe_path, str(left_path), str(right_path))
 
-    def invoke_name_based_selector(select_common: bool) -> Callable:
-        def _selector() -> None:
-            pane = CPane(window)
-            inactive = CPane(window, False)
+    def select_name_common() -> None:
+        pane = CPane(window)
+        active_names = pane.names
+        inactive = CPane(window, False)
+        inactive_names = [item.getName() for item in inactive.selectedOrAllItems]
 
-            names = pane.selectedItemNames if pane.hasSelection else pane.names
+        if pane.hasSelection:
+            active_selected = pane.selectedItemNames
+            for name in active_selected:
+                if name not in inactive_names:
+                    pane.unSelectByName(name)
+        else:
+            for name in active_names:
+                if name in inactive_names:
+                    pane.selectByName(name)
 
-            for name in names:
-                i = pane.byName(name)
-                if select_common:
-                    if name in inactive.names:
-                        pane.toggleSelection(i)
-                else:
-                    if name not in inactive.names:
-                        pane.toggleSelection(i)
+    def select_name_unique() -> None:
+        pane = CPane(window)
+        active_names = pane.names
+        inactive = CPane(window, False)
+        inactive_names = [item.getName() for item in inactive.selectedOrAllItems]
 
-        return _selector
+        if pane.hasSelection:
+            active_selected = pane.selectedItemNames
+            for name in active_selected:
+                if name in inactive_names:
+                    pane.unSelectByName(name)
+        else:
+            for name in active_names:
+                if name not in inactive_names:
+                    pane.selectByName(name)
 
     def select_stem_startswith() -> None:
         pane = CPane(window)
@@ -2172,7 +2189,7 @@ def configure(window: MainWindow) -> None:
             "StartsWith", return_modkey=True, text=stem, selection=[offset, ln]
         )
         if result:
-            SELECTOR.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
+            Selector(window).stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("Caret", select_stem_startswith)
 
@@ -2193,7 +2210,7 @@ def configure(window: MainWindow) -> None:
             "EndsWith", return_modkey=True, text=stem, selection=[0, offset]
         )
         if result:
-            SELECTOR.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
+            Selector(window).stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("4", select_stem_endswith)
 
@@ -2201,7 +2218,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
-            SELECTOR.stemContains(result, mod == ckit.MODKEY_SHIFT)
+            Selector(window).stemContains(result, mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("Colon", select_stem_contains)
 
@@ -2227,7 +2244,7 @@ def configure(window: MainWindow) -> None:
         if result < 0:
             return
 
-        SELECTOR.byExtension(exts[result], mod == ckit.MODKEY_SHIFT)
+        Selector(window).byExtension(exts[result], mod == ckit.MODKEY_SHIFT)
 
     KEYBINDER.bind("S-X", select_byext)
 
@@ -2347,8 +2364,8 @@ def configure(window: MainWindow) -> None:
             "Diffinity": diffinity,
             "RenamePseudoVoicing": rename_pseudo_voicing,
             "CompareFileHash": compare_file_hash,
-            "SelectNameUnique": invoke_name_based_selector(False),
-            "SelectNameCommon": invoke_name_based_selector(True),
+            "SelectNameUnique": select_name_unique,
+            "SelectNameCommon": select_name_common,
             "SelectStemStartsWith": select_stem_startswith,
             "SelectStemEndsWith": select_stem_endswith,
             "SelectStemContains": select_stem_contains,
