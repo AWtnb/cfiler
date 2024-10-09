@@ -1352,7 +1352,7 @@ def configure(window: MainWindow) -> None:
         def toBottom(self) -> None:
             pane = self.pane
             for i in range(pane.count):
-                if pane.cursor < i:
+                if pane.cursor <= i:
                     pane.select(i)
 
         def clearToBottom(self) -> None:
