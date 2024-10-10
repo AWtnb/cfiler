@@ -1711,7 +1711,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-I", rename_insert)
 
-    def invoke_renamer(append: Union[bool, None]) -> Callable:
+    def invoke_renamer(append: bool) -> Callable:
         def _renamer() -> None:
             pane = CPane(window)
             renamer = Renamer(window)
@@ -1721,12 +1721,8 @@ def configure(window: MainWindow) -> None:
 
             org_path = Path(item.getFullpath())
             offset = len(org_path.stem)
-            if append is None:
-                sel = [0, offset]
-            elif append:
-                sel = [offset, offset]
-            else:
-                sel = [0, 0]
+            o = offset if append else 0
+            sel = [o, o]
 
             new_stem, mod = window.commandLine(
                 title="NewStem",
@@ -1747,8 +1743,6 @@ def configure(window: MainWindow) -> None:
 
         return _renamer
 
-    KEYBINDER.bind("A-N", invoke_renamer(None))
-    KEYBINDER.bind("F2", invoke_renamer(None))
     KEYBINDER.bind("N", invoke_renamer(True))
     KEYBINDER.bind("S-N", invoke_renamer(False))
 
