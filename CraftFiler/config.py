@@ -1008,7 +1008,7 @@ def configure(window: MainWindow) -> None:
             if self.expect:
                 if len(lines) != 2:
                     return FzfResult("", False)
-                return FzfResult(lines[1], 1 < len(lines[0]))
+                return FzfResult(lines[1], 0 < len(lines[0]))
             return FzfResult(lines[0], False)
 
     class DirRule:
