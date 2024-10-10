@@ -1724,10 +1724,22 @@ def configure(window: MainWindow) -> None:
             o = offset if append else 0
             sel = [o, o]
 
+            def _listup_stems(
+                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+            ) -> tuple:
+                found = []
+                for name in pane.names:
+                    if name.startswith(update_info.text):
+                        stem = Path(pane.currentPath, name).stem
+                        found.append(stem)
+                return found, 0
+
             new_stem, mod = window.commandLine(
                 title="NewStem",
                 text=org_path.stem,
                 selection=sel,
+                candidate_handler=_listup_stems,
+                auto_complete=True,
                 return_modkey=True,
             )
 
