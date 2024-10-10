@@ -2036,8 +2036,10 @@ def configure(window: MainWindow) -> None:
 
         @staticmethod
         def to_hash(path: str) -> str:
+            mb = 1024 * 1024
+            read_size = 1 * mb if 5 * mb < os.path.getsize(path) else None
             with open(path, "rb") as f:
-                digest = hashlib.md5(f.read(64 * 1024)).hexdigest()
+                digest = hashlib.md5(f.read(read_size)).hexdigest()
             return digest
 
         @property
@@ -2119,7 +2121,7 @@ def configure(window: MainWindow) -> None:
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
 
-    def compare_file_hash() -> None:
+    def find_same_file() -> None:
         pd = PaneDiff()
         pd.compare()
 
@@ -2381,7 +2383,7 @@ def configure(window: MainWindow) -> None:
             "ClearFilter": clear_filter,
             "Diffinity": diffinity,
             "RenamePseudoVoicing": rename_pseudo_voicing,
-            "CompareFileHash": compare_file_hash,
+            "FindSameFile": find_same_file,
             "SelectNameUnique": select_name_unique,
             "SelectNameCommon": select_name_common,
             "SelectStemStartsWith": select_stem_startswith,
