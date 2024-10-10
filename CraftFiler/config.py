@@ -8,9 +8,8 @@ import subprocess
 import time
 import unicodedata
 
-from collections import namedtuple
 from pathlib import Path
-from typing import List, Tuple, Callable, Union
+from typing import List, Tuple, Callable, Union, NamedTuple
 
 import ckit
 import pyauto
@@ -994,6 +993,24 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S", swap_pane)
 
+    class FzfResult(NamedTuple):
+        text: str
+        modified: bool
+
+    class FzfResultParser:
+        def __init__(self, expect: bool) -> None:
+            self.expect = expect
+
+        def parse(self, stdout: str) -> FzfResult:
+            if len(stdout) < 1:
+                return FzfResult("", False)
+            lines = stdout.splitlines()
+            if self.expect:
+                if len(lines) != 2:
+                    return FzfResult("", False)
+                return FzfResult(lines[1], 1 < len(lines[0]))
+            return FzfResult(lines[0], False)
+
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
             self._current_path = current_path
@@ -1043,15 +1060,9 @@ def configure(window: MainWindow) -> None:
 
         def get_name(self) -> Tuple[str, bool]:
             result = self.fzf()
-            if len(result) < 1:
-                return "", False
-            result_lines = result.splitlines()
-            if 2 < len(result_lines):
-                return "", False
-            open_dir = 1 < len(result_lines[0])
-            result_name = result_lines[-1]
-            if len(result_name) < 1:
-                return "", False
+            fr = FzfResultParser(True).parse(result)
+            result_name = fr.text
+            open_dir = fr.modified
             if -1 < (i := result_name.find("|")):
                 result_name = result_name[:i].strip()
             if result_name.startswith("#"):
@@ -1898,7 +1909,11 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
 
-    Rect = namedtuple("Rect", ["left", "top", "right", "bottom"])
+    class Rect(NamedTuple):
+        left: int
+        top: int
+        right: int
+        bottom: int
 
     def to_home_position(force: bool) -> None:
         hwnd = window.getHWND()
@@ -1969,7 +1984,9 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-E", edit_config)
 
-    ClonedItem = namedtuple("ClonedItem", ["origin", "clones"])
+    class ClonedItem(NamedTuple):
+        origin: str
+        clones: list
 
     class ClonedItems:
         _items: List[ClonedItem]
