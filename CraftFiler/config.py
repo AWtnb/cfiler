@@ -2194,16 +2194,20 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         stems = pane.stems
         stem = Path(pane.focusedItemPath).stem
-        ln = len(stem)
-        offset = ln
-        for i in range(1, ln):
-            part = stem[:i]
-            found = [s for s in stems if s.startswith(part)]
-            if len(found) < 2:
-                offset = i - 1
+        offset = 0
+        ss = stem.split("_")
+        while 1 < len(ss):
+            ss.pop()
+            head = "_".join(ss)
+            found = [s for s in stems if s.startswith(head)]
+            if 1 < len(found):
+                offset = len(head)
                 break
+
+        t = stem[:offset] if 0 < offset else stem
+        cur = [len(stem)] * 2
         result, mod = window.commandLine(
-            "StartsWith", return_modkey=True, text=stem, selection=[offset, ln]
+            "StartsWith", return_modkey=True, text=t, selection=cur
         )
         if result:
             Selector(window).stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
@@ -2214,17 +2218,21 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         stems = pane.stems
         stem = Path(pane.focusedItemPath).stem
-        ln = len(stem)
-        offset = ln
-        for i in range(1, ln):
-            part = stem[i:]
-            found = [s for s in stems if s.endswith(part)]
+        offset = 0
+        ss = stem.split("_")
+        while 1 < len(ss):
+            ss.pop(0)
+            tail = ("_").join(ss)
+            found = [s for s in stems if s.endswith(tail)]
             if 1 < len(found):
-                offset = i
+                offset = len(stem) - len(tail)
                 break
 
+        t = stem[offset:] if 0 < offset else stem
+        cur = [0] * 2
+
         result, mod = window.commandLine(
-            "EndsWith", return_modkey=True, text=stem, selection=[0, offset]
+            "EndsWith", return_modkey=True, text=t, selection=cur
         )
         if result:
             Selector(window).stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
@@ -2232,7 +2240,6 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("4", select_stem_endswith)
 
     def select_stem_contains() -> None:
-        pane = CPane(window)
         result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
             Selector(window).stemContains(result, mod == ckit.MODKEY_SHIFT)
