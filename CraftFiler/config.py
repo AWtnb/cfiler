@@ -838,7 +838,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("J", smart_cursorDown)
     KEYBINDER.bind("Down", smart_cursorDown)
 
-    def shell_exec(path: str, *args) -> bool:
+    def shell_exec(path: str, *args) -> None:
         if type(path) is not str:
             path = str(path)
         params = []
@@ -850,10 +850,8 @@ def configure(window: MainWindow) -> None:
                     params.append(arg)
         try:
             pyauto.shellExecute(None, path, " ".join(params), "")
-            return True
         except:
             Logger().log("invalid path: '{}'".format(path))
-            return False
 
     def toggle_pane_width() -> None:
         half = (window.width() - 1) // 2
@@ -952,6 +950,30 @@ def configure(window: MainWindow) -> None:
         window.showHiddenFile(not window.isHiddenFileVisible())
 
     KEYBINDER.bind("C-S-H", toggle_hidden)
+
+    def open_with_editor() -> None:
+        pane = CPane(window)
+        if pane.isBlank or pane.focusedItem.isdir():
+            return
+
+        editors = {
+            "notepad": Path(r"C:\Windows\System32\notepad.exe"),
+            "mery": Path(USER_PROFILE, r"AppData\Local\Programs\Mery\Mery.exe"),
+            "vscode": Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"),
+        }
+        names = []
+        for name, path in editors.items():
+            if path.exists():
+                names.append(name)
+        if len(names) < 1:
+            return
+
+        result, _ = invoke_listwindow(window, "edit by:", names)
+        if -1 < result:
+            path = str(editors.get(names[result]))
+            shell_exec(path, pane.focusedItemPath)
+
+    KEYBINDER.bind("C-O", open_with_editor)
 
     def quick_move() -> None:
         pane = CPane(window)
