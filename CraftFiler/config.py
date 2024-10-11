@@ -1011,6 +1011,61 @@ def configure(window: MainWindow) -> None:
                 return FzfResult(lines[1], 0 < len(lines[0]))
             return FzfResult(lines[0], False)
 
+    class FuzzyBookmark:
+
+        def __init__(self, window: MainWindow) -> None:
+            self._bookmarks = [
+                path for path in window.bookmark.getItems() if Path(path).exists()
+            ]
+
+        @property
+        def table(self) -> dict:
+            d = {}
+            for path in self._bookmarks:
+                p = Path(path)
+                name = p.name
+                if name in d.keys():
+                    name = "{}({})".format(name, p.parent)
+                d[name] = path
+            return d
+
+        def fzf(self) -> str:
+            src = "\n".join(sorted(self.table.keys(), reverse=True))
+            try:
+                cmd = ["fzf.exe"]
+                proc = subprocess.run(
+                    cmd, input=src, capture_output=True, encoding="utf-8"
+                )
+                result = proc.stdout
+                if proc.returncode == 0:
+                    return result
+            except Exception as e:
+                print(e)
+            return ""
+
+        def get_path(self) -> str:
+            result = self.fzf()
+            fr = FzfResultParser(False).parse(result)
+            sel = fr.text
+            return self.table.get(sel, "")
+
+    def fuzzy_bookmark() -> None:
+        pane = CPane(window)
+
+        def _get_path(job_item: ckit.JobItem) -> None:
+            fb = FuzzyBookmark(window)
+            job_item.path = fb.get_path()
+
+        def _open(job_item: ckit.JobItem) -> None:
+            path = job_item.path
+            if 0 < len(path):
+                pane.openPath(path)
+
+        job = ckit.JobItem(_get_path, _open)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    KEYBINDER.bind("B", fuzzy_bookmark)
+
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
             self._current_path = current_path
