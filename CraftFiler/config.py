@@ -2243,37 +2243,55 @@ def configure(window: MainWindow) -> None:
 
         shell_exec(exe_path, str(left_path), str(right_path))
 
-    def select_name_common() -> None:
+    def from_inactive_names() -> None:
         pane = CPane(window)
+        pane.unSelectAll()
         active_names = pane.names
         inactive = CPane(window, False)
         inactive_names = [item.getName() for item in inactive.selectedOrAllItems]
+        for name in active_names:
+            if name in inactive_names:
+                pane.selectByName(name)
 
-        if pane.hasSelection:
-            active_selected = pane.selectedItemNames
-            for name in active_selected:
-                if name not in inactive_names:
-                    pane.unSelectByName(name)
-        else:
-            for name in active_names:
-                if name in inactive_names:
-                    pane.selectByName(name)
+    def from_active_names() -> None:
+        pane = CPane(window)
+        active_names = [item.getName() for item in pane.selectedOrAllItems]
+        inactive = CPane(window, False)
+        inactive.unSelectAll()
+        inactive_names = inactive.names
+        for name in inactive_names:
+            if name in active_names:
+                inactive.selectByName(name)
+
+    def select_name_common() -> None:
+        pane = CPane(window)
+        pane.unSelectAll()
+        active_names = pane.names
+        inactive = CPane(window, False)
+        inactive.unSelectAll()
+        inactive_names = inactive.names
+
+        for name in active_names:
+            if name in inactive_names:
+                pane.selectByName(name)
+        for name in inactive_names:
+            if name in active_names:
+                inactive.selectByName(name)
 
     def select_name_unique() -> None:
         pane = CPane(window)
+        pane.unSelectAll()
         active_names = pane.names
         inactive = CPane(window, False)
-        inactive_names = [item.getName() for item in inactive.selectedOrAllItems]
+        inactive.unSelectAll()
+        inactive_names = inactive.names
 
-        if pane.hasSelection:
-            active_selected = pane.selectedItemNames
-            for name in active_selected:
-                if name in inactive_names:
-                    pane.unSelectByName(name)
-        else:
-            for name in active_names:
-                if name not in inactive_names:
-                    pane.selectByName(name)
+        for name in active_names:
+            if name not in inactive_names:
+                pane.selectByName(name)
+        for name in inactive_names:
+            if name not in active_names:
+                inactive.selectByName(name)
 
     def select_stem_startswith() -> None:
         pane = CPane(window)
@@ -2473,6 +2491,8 @@ def configure(window: MainWindow) -> None:
             "Diffinity": diffinity,
             "RenamePseudoVoicing": rename_pseudo_voicing,
             "FindSameFile": find_same_file,
+            "FromInactiveNames": from_inactive_names,
+            "FromActiveNames": from_active_names,
             "SelectNameUnique": select_name_unique,
             "SelectNameCommon": select_name_common,
             "SelectStemStartsWith": select_stem_startswith,
