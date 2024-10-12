@@ -90,6 +90,13 @@ def delay(msec: int = 50) -> None:
     time.sleep(msec / 1000)
 
 
+def smart_check_path(path: Union[str, Path]) -> bool:
+    p = Path(path) if type(path) is str else path
+    if p.drive == "C:":
+        return p.exists()
+    return os.path.exists(path)
+
+
 def configure(window: MainWindow) -> None:
     class ItemTimestamp:
         def __init__(self, item) -> None:
@@ -229,7 +236,10 @@ def configure(window: MainWindow) -> None:
 
         def overwrite(self) -> None:
             theme = self.to_string()
-            if not self._theme_path.exists() or self._theme_path.read_text() != theme:
+            if (
+                not smart_check_path(self._theme_path)
+                or self._theme_path.read_text() != theme
+            ):
                 self._theme_path.write_text(theme)
 
     def set_theme(theme_table: dict):
@@ -417,9 +427,8 @@ def configure(window: MainWindow) -> None:
             self._menu_table = {}
 
         def register(self, name: str, path: str) -> None:
-            p = Path(path)
             try:
-                if p.exists():
+                if smart_check_path(path):
                     self._menu_table[name] = path
                     self._list_items.append(ListItem(name, False))
             except Exception as e:
@@ -428,7 +437,9 @@ def configure(window: MainWindow) -> None:
         @property
         def bookmarks(self) -> List[str]:
             bookmark = [
-                path for path in self._window.bookmark.getItems() if Path(path).exists()
+                path
+                for path in self._window.bookmark.getItems()
+                if smart_check_path(path)
             ]
             return sorted(bookmark, key=lambda p: Path(p).name.lower())
 
@@ -742,7 +753,7 @@ def configure(window: MainWindow) -> None:
 
         def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
             target = Path(path)
-            if not target.exists():
+            if not smart_check_path(target):
                 Logger().log("invalid path: '{}'".format(path))
                 return
             if target.is_file():
@@ -756,7 +767,7 @@ def configure(window: MainWindow) -> None:
                 Logger().log("cannot make file here.")
                 return
             dp = Path(self.currentPath, name)
-            if dp.exists() and dp.is_file():
+            if smart_check_path(dp) and dp.is_file():
                 Logger().log("file '{}' already exists.".format(name))
                 return
             self._window.subThreadCall(self.lister.touch, (name,))
@@ -768,7 +779,7 @@ def configure(window: MainWindow) -> None:
                 Logger().log("cannot make directory here.")
                 return
             dp = Path(self.currentPath, name)
-            if dp.exists() and dp.is_dir():
+            if smart_check_path(dp) and dp.is_dir():
                 Logger().log("directory '{}' already exists.".format(name))
                 return
             self._window.subThreadCall(self.lister.mkdir, (name, None))
@@ -963,12 +974,12 @@ def configure(window: MainWindow) -> None:
         }
         names = []
         for name, path in editors.items():
-            if path.exists():
+            if smart_check_path(path):
                 names.append(name)
         if len(names) < 1:
             return
 
-        result, _ = invoke_listwindow(window, "edit by:", names)
+        result, _ = invoke_listwindow(window, "edit with:", names)
         if -1 < result:
             path = str(editors.get(names[result]))
             shell_exec(path, pane.focusedItemPath)
@@ -1037,7 +1048,7 @@ def configure(window: MainWindow) -> None:
 
         def __init__(self, window: MainWindow) -> None:
             self._bookmarks = [
-                path for path in window.bookmark.getItems() if Path(path).exists()
+                path for path in window.bookmark.getItems() if smart_check_path(path)
             ]
 
         @property
@@ -1096,7 +1107,8 @@ def configure(window: MainWindow) -> None:
         def read_src(self) -> str:
             p = Path(self._current_path)
             for path in p.parents:
-                if (f := Path(path, self._src_name)).exists():
+                f = Path(path, self._src_name)
+                if smart_check_path(f):
                     return f.read_text("utf-8")
             return ""
 
@@ -1180,7 +1192,7 @@ def configure(window: MainWindow) -> None:
             ]
 
         def check(self) -> bool:
-            return self._exe_path.exists() and self._src_path.exists()
+            return smart_check_path(self._exe_path) and smart_check_path(self._src_path)
 
         def invoke(self, search_all: bool = False) -> Callable:
             cmd = self._cmd + ["-all={}".format(search_all)]
@@ -1231,7 +1243,7 @@ def configure(window: MainWindow) -> None:
             ]
 
         def check(self) -> bool:
-            return self._exe_path.exists()
+            return smart_check_path(self._exe_path)
 
         def invoke(self, search_all: bool, offset: int) -> Callable:
 
@@ -1661,7 +1673,7 @@ def configure(window: MainWindow) -> None:
 
     def on_pdf_viewer(viewer_path: str) -> None:
         def _invoker() -> None:
-            if Path(viewer_path).exists():
+            if smart_check_path(viewer_path):
                 pane = CPane(window)
                 paths = pane.selectedItemPaths
                 if len(paths) < 1:
@@ -1683,7 +1695,7 @@ def configure(window: MainWindow) -> None:
 
     def on_vscode() -> None:
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
-        if vscode_path.exists():
+        if smart_check_path(vscode_path):
             pane = CPane(window)
             shell_exec(str(vscode_path), pane.currentPath)
 
@@ -1717,7 +1729,7 @@ def configure(window: MainWindow) -> None:
 
         def execute(self, org_path: Path, new_name: str, focus: bool = False) -> None:
             new_path = org_path.with_name(new_name)
-            if new_path.exists():
+            if smart_check_path(new_path):
                 print("'{}' already exists!".format(new_name))
                 return
             try:
@@ -1852,7 +1864,7 @@ def configure(window: MainWindow) -> None:
             if src_path.is_file() and "." not in result:
                 result = result + src_path.suffix
             new_path = src_path.with_name(result)
-            if new_path.exists():
+            if smart_check_path(new_path):
                 Logger().log("same item exists!")
                 return
 
@@ -1904,7 +1916,7 @@ def configure(window: MainWindow) -> None:
                 return
 
             dir_path = Path(pane.currentPath, result)
-            if not dir_path.exists():
+            if not smart_check_path(dir_path):
                 pane.mkdir(result)
             pane.copyToChild(result, items, remove_origin)
             if mod == ckit.MODKEY_SHIFT:
@@ -1952,7 +1964,7 @@ def configure(window: MainWindow) -> None:
                 if 0 < len(extension):
                     filename = filename + "." + extension
                 new_path = Path(pane.currentPath, filename)
-                if new_path.exists():
+                if smart_check_path(new_path):
                     Logger().log("'{}' already exists.".format(filename))
                     return
                 pane.touch(filename)
@@ -2053,10 +2065,10 @@ def configure(window: MainWindow) -> None:
 
     def edit_config() -> None:
         dir_path = Path(USER_PROFILE, r"Sync\develop\repo\cfiler")
-        if dir_path.exists():
+        if smart_check_path(dir_path):
             dp = str(dir_path)
             vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
-            if vscode_path.exists():
+            if smart_check_path(vscode_path):
                 vp = str(vscode_path)
                 shell_exec(vp, dp)
             else:
@@ -2216,7 +2228,7 @@ def configure(window: MainWindow) -> None:
 
     def diffinity() -> None:
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
-        if not exe_path.exists():
+        if not smart_check_path(exe_path):
             Logger().log("cannnot find diffinity.exe...")
             return
 
@@ -2460,7 +2472,7 @@ def configure(window: MainWindow) -> None:
         dest = inactive_pane.currentPath
         for src_path in active_pane.selectedItemPaths:
             junction_path = Path(dest, Path(src_path).name)
-            if junction_path.exists():
+            if smart_check_path(junction_path):
                 Logger().log("'{}' already exists.".format(junction_path))
                 return
             try:
