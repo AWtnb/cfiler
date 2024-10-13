@@ -97,6 +97,63 @@ def smart_check_path(path: Union[str, Path]) -> bool:
     return os.path.exists(path)
 
 
+class TextEditors:
+    editors = {
+        "notepad": r"C:\Windows\System32\notepad.exe",
+        "mery": os.path.join(USER_PROFILE, r"AppData\Local\Programs\Mery\Mery.exe"),
+        "vscode": os.path.join(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"),
+    }
+
+    def __init__(self) -> None:
+        pass
+
+    @property
+    def names(self) -> list:
+        names = []
+        for name, path in self.editors.items():
+            if smart_check_path(path):
+                names.append(name)
+        return names
+
+    def get_path(self, name: str) -> str:
+        return self.editors.get(name, "")
+
+
+def invoke_listwindow(
+    window: ckit.TextWindow, prompt: str, items, ini_pos: int = 0
+) -> Tuple[str, int]:
+    pos = (
+        window.main_window.centerOfWindowInPixel()
+        if hasattr(window, "main_window")
+        else window.centerOfFocusedPaneInPixel()
+    )
+    list_window = ListWindow(
+        x=pos[0],
+        y=pos[1],
+        min_width=40,
+        min_height=1,
+        max_width=window.width() - 5,
+        max_height=window.height() - 3,
+        parent_window=window,
+        ini=window.ini,
+        title=prompt,
+        items=items,
+        initial_select=ini_pos,
+        onekey_search=False,
+        onekey_decide=False,
+        return_modkey=True,
+        keydown_hook=None,
+        statusbar_handler=None,
+    )
+    window.enable(False)
+    list_window.messageLoop()
+    result, mod = list_window.getResult()
+    window.enable(True)
+    window.activate()
+    list_window.destroy()
+    return result, mod
+
+
 def configure(window: MainWindow) -> None:
     class ItemTimestamp:
         def __init__(self, item) -> None:
@@ -389,36 +446,6 @@ def configure(window: MainWindow) -> None:
             self._window.keymap[key] = self.wrap(func)
 
     KEYBINDER = Keybinder(window)
-
-    def invoke_listwindow(
-        window: MainWindow, prompt: str, items, ini_pos: int = 0
-    ) -> Tuple[str, int]:
-        pos = window.centerOfFocusedPaneInPixel()
-        list_window = ListWindow(
-            x=pos[0],
-            y=pos[1],
-            min_width=40,
-            min_height=1,
-            max_width=window.width() - 5,
-            max_height=window.height() - 3,
-            parent_window=window,
-            ini=window.ini,
-            title=prompt,
-            items=items,
-            initial_select=ini_pos,
-            onekey_search=False,
-            onekey_decide=False,
-            return_modkey=True,
-            keydown_hook=None,
-            statusbar_handler=None,
-        )
-        window.enable(False)
-        list_window.messageLoop()
-        result, mod = list_window.getResult()
-        window.enable(True)
-        window.activate()
-        list_window.destroy()
-        return result, mod
 
     class JumpList:
         def __init__(self, window: MainWindow) -> None:
@@ -967,21 +994,14 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank or pane.focusedItem.isdir():
             return
 
-        editors = {
-            "notepad": Path(r"C:\Windows\System32\notepad.exe"),
-            "mery": Path(USER_PROFILE, r"AppData\Local\Programs\Mery\Mery.exe"),
-            "vscode": Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"),
-        }
-        names = []
-        for name, path in editors.items():
-            if smart_check_path(path):
-                names.append(name)
+        te = TextEditors()
+        names = te.names
         if len(names) < 1:
             return
 
         result, _ = invoke_listwindow(window, "edit with:", names)
         if -1 < result:
-            path = str(editors.get(names[result]))
+            path = te.get_path(names[result])
             shell_exec(path, pane.focusedItemPath)
 
     KEYBINDER.bind("C-O", open_with_editor)
@@ -2588,6 +2608,22 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
 
     window.keymap["E"] = to_bottom
     window.keymap["End"] = to_bottom
+
+    def edit_by(_):
+        te = TextEditors()
+        names = te.names
+        if len(names) < 1:
+            return
+
+        result, _ = invoke_listwindow(window, "open with:", names)
+
+        if -1 < result:
+            editor_path = te.get_path(names[result])
+            pyauto.shellExecute(None, editor_path, window.item.getFullpath(), "")
+
+            window.command_Close(None)
+
+    window.keymap["C-E"] = edit_by
 
     def open_original(_) -> None:
         pane = window.main_window.activePane()
