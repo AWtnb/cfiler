@@ -55,6 +55,9 @@ from cfiler_filelist import (
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow, ListItem
 
+# https://github.com/crftwr/cfiler/blob/master/cfiler_textviewer.py
+from cfiler_textviewer import TextViewer
+
 from cfiler_misc import getFileSizeString
 
 
@@ -124,7 +127,7 @@ def invoke_listwindow(
 ) -> Tuple[str, int]:
     pos = (
         window.main_window.centerOfWindowInPixel()
-        if hasattr(window, "main_window")
+        if type(window) is TextViewer
         else window.centerOfFocusedPaneInPixel()
     )
     list_window = ListWindow(
@@ -2615,6 +2618,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         if len(names) < 1:
             return
 
+        delay()
         result, _ = invoke_listwindow(window, "open with:", names)
 
         if -1 < result:
