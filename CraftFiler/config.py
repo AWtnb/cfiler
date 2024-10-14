@@ -976,7 +976,17 @@ def configure(window: MainWindow) -> None:
             window.command_Execute(None)
             return True
 
-        if ext in [".m4a", ".pdf", ".xlsx", ".xls", ".docx", ".doc", ".pptx", ".ppt"]:
+        if ext[1:].lower() in [
+            "m4a",
+            "mp4",
+            "pdf",
+            "xlsx",
+            "xls",
+            "docx",
+            "doc",
+            "pptx",
+            "ppt",
+        ]:
             window.command_Execute(None)
             return True
 
