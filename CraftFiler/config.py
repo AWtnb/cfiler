@@ -2469,12 +2469,20 @@ def configure(window: MainWindow) -> None:
             org_path = Path(item.getFullpath())
             renamer.execute(org_path, new_name)
 
-    class custom_filter:
-        def __init__(self, patterns: List[str]) -> None:
-            self.patterns = patterns
+    class PathMatchFilter:
+        def __init__(self, root: str, names: List[str]) -> None:
+            self.root = root
+            self.names = names
 
         def __call__(self, item) -> bool:
-            return item.getName() in self.patterns
+            path = item.getFullpath()
+            if path.startswith(self.root) and len(self.root) < len(path):
+                for name in self.names:
+                    p = os.path.join(self.root, name)
+                    if path.startswith(p):
+                        return True
+                return False
+            return True
 
         def __str__(self) -> str:
             return "[FILTERING]"
@@ -2483,7 +2491,9 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         if pane.hasSelection:
             names = pane.selectedItemNames
-            window.subThreadCall(pane.fileList.setFilter, (custom_filter(names),))
+            window.subThreadCall(
+                pane.fileList.setFilter, (PathMatchFilter(pane.currentPath, names),)
+            )
             pane.refresh()
             pane.focus(0)
             pane.repaint(PO.Focused)
