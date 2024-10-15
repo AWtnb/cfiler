@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 import inspect
+import sys
 import os
 import re
 import shutil
@@ -1060,22 +1061,29 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S", swap_pane)
 
     class FzfResult(NamedTuple):
+        finisher: str
         text: str
-        modified: bool
 
     class FzfResultParser:
+        default_finisher = "enter"
+
         def __init__(self, expect: bool) -> None:
             self.expect = expect
 
         def parse(self, stdout: str) -> FzfResult:
             if len(stdout) < 1:
-                return FzfResult("", False)
+                return FzfResult(self.default_finisher, "")
+            if not self.expect:
+                return FzfResult(self.default_finisher, stdout)
             lines = stdout.splitlines()
-            if self.expect:
-                if len(lines) != 2:
-                    return FzfResult("", False)
-                return FzfResult(lines[1], 0 < len(lines[0]))
-            return FzfResult(lines[0], False)
+            try:
+                assert (
+                    len(lines) == 2
+                ), "with --expect option, 2 lines should be returned, but 3 or more lines are returned"
+            except AssertionError as err:
+                print(err, file=sys.stderr)
+                return FzfResult(self.default_finisher, "")
+            return FzfResult(*lines)
 
     class FuzzyBookmark:
 
@@ -1098,7 +1106,7 @@ def configure(window: MainWindow) -> None:
         def fzf(self) -> str:
             src = "\n".join(sorted(self.table.keys(), reverse=True))
             try:
-                cmd = ["fzf.exe"]
+                cmd = ["fzf.exe", "--expect", "ctrl-l"]
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
@@ -1111,7 +1119,7 @@ def configure(window: MainWindow) -> None:
 
         def get_path(self) -> str:
             result = self.fzf()
-            fr = FzfResultParser(False).parse(result)
+            fr = FzfResultParser(True).parse(result)
             sel = fr.text
             return self.table.get(sel, "")
 
@@ -1184,7 +1192,7 @@ def configure(window: MainWindow) -> None:
             result = self.fzf()
             fr = FzfResultParser(True).parse(result)
             result_name = fr.text
-            open_dir = fr.modified
+            open_dir = fr.finisher != FzfResultParser.default_finisher
             if -1 < (i := result_name.find("|")):
                 result_name = result_name[:i].strip()
             if result_name.startswith("#"):
