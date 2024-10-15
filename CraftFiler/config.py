@@ -1083,6 +1083,8 @@ def configure(window: MainWindow) -> None:
             except AssertionError as err:
                 print(err, file=sys.stderr)
                 return FzfResult(self.default_finisher, "")
+            if len(lines[0]) < 1:
+                return FzfResult(self.default_finisher, lines[1])
             return FzfResult(*lines)
 
     class FuzzyBookmark:
