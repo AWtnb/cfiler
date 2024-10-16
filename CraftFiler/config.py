@@ -1815,6 +1815,33 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-S", rename_substr)
 
+    def rename_extension() -> None:
+        pane = CPane(window)
+        renamer = Renamer(window)
+        item = pane.focusedItem
+        if not renamer.renamable(item) or pane.isBlank:
+            return
+        focus_path = Path(item.getFullpath())
+        org_ext = focus_path.suffix
+        new_ext, mod = window.commandLine(
+            title="New Extension", text=org_ext[1:], return_modkey=True
+        )
+        if not new_ext:
+            return
+        new_ext = new_ext.strip()
+        if len(new_ext) < 1:
+            return
+        if new_ext.startswith("."):
+            new_ext = new_ext[1:]
+        new_name = focus_path.stem + "." + new_ext
+
+        def _func() -> None:
+            renamer.execute(focus_path, new_name, mod == ckit.MODKEY_SHIFT)
+
+        Logger().wrap(_func)
+
+    KEYBINDER.bind("A-X", rename_extension)
+
     def rename_insert() -> None:
         renamer = Renamer(window)
 
