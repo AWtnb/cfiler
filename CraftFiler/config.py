@@ -1972,7 +1972,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("A-M", smart_move_to_dir(True))
     KEYBINDER.bind("A-C", smart_move_to_dir(False))
 
-    class TextFileMaker:
+    class Toucher:
         def __init__(self, window: MainWindow) -> None:
             self._window = window
 
@@ -1994,8 +1994,11 @@ def configure(window: MainWindow) -> None:
                     return found, 0
 
                 prompt = "NewFileName"
-                if 0 < len(extension):
-                    prompt = prompt + " (.{})".format(extension)
+                suffix = "." + extension if 0 < len(extension) else ""
+                if suffix:
+                    prompt += " ({})".format(suffix)
+                else:
+                    prompt += " (with extension)"
                 result, mod = window.commandLine(
                     prompt, candidate_handler=_listup_files, return_modkey=True
                 )
@@ -2004,8 +2007,9 @@ def configure(window: MainWindow) -> None:
                 filename = result.strip()
                 if len(filename) < 1:
                     return
-                if 0 < len(extension):
-                    filename = filename + "." + extension
+
+                if suffix and not filename.endswith(suffix):
+                    filename += suffix
                 new_path = Path(pane.currentPath, filename)
                 if smart_check_path(new_path):
                     Logger().log("'{}' already exists.".format(filename))
@@ -2016,11 +2020,11 @@ def configure(window: MainWindow) -> None:
 
             return _func
 
-    TEXT_FILE_MAKER = TextFileMaker(window)
+    TOUCHER = Toucher(window)
 
-    KEYBINDER.bind("T", TEXT_FILE_MAKER.invoke("txt"))
-    KEYBINDER.bind("A-T", TEXT_FILE_MAKER.invoke("md"))
-    KEYBINDER.bind("C-N", TEXT_FILE_MAKER.invoke(""))
+    KEYBINDER.bind("T", TOUCHER.invoke("txt"))
+    KEYBINDER.bind("A-T", TOUCHER.invoke("md"))
+    KEYBINDER.bind("C-N", TOUCHER.invoke(""))
 
     def to_obsolete_dir() -> None:
         pane = CPane(window)
