@@ -1880,17 +1880,17 @@ def configure(window: MainWindow) -> None:
         def __init__(self, window: MainWindow, include_ext: bool) -> None:
             pane = CPane(window)
             self.names = []
-            for path in pane.paths:
-                p = Path(path)
-                if self.sep not in p.name:
+            for name in pane.names:
+                if self.sep not in name:
                     continue
+                p = Path(pane.currentPath, name)
                 if include_ext:
                     self.names.append(p.name)
                 else:
                     self.names.append(p.stem)
 
         @property
-        def suffixes(self) -> list:
+        def possible_suffix(self) -> list:
             sufs = []
             for name in self.names:
                 ss = name.split(self.sep)
@@ -1901,30 +1901,22 @@ def configure(window: MainWindow) -> None:
                         sufs.append(suf)
             return sorted(sufs, key=len)
 
-        def suffixes_with(self, s: str) -> list:
-            return [s + suf for suf in self.suffixes]
-
-        def filter_with(self, s: str) -> list:
+        def candidates(self, s: str) -> list:
+            if self.sep not in s:
+                return [s + suf for suf in self.possible_suffix]
             found = []
             tail = self.sep.join(s.split(self.sep)[1:])
-            pattern = self.sep + tail
-            for suf in self.suffixes:
-                if suf.startswith(pattern):
-                    possible = s + suf[len(pattern) :]
-                    found.append(possible)
+            suffix_start = self.sep + tail
+            for suf in self.possible_suffix:
+                if suf.startswith(suffix_start):
+                    suffix_rest = suf[len(suffix_start) :]
+                    found.append(s + suffix_rest)
             return found
-
-        @staticmethod
-        def as_result(ss: list) -> tuple:
-            return ss, 0
 
         def __call__(
             self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
         ) -> tuple:
-            t = update_info.text
-            if self.sep not in t:
-                return self.as_result(self.suffixes_with(t))
-            return self.as_result(self.filter_with(t))
+            return self.candidates(update_info.text), 0
 
     def invoke_renamer(append: bool) -> Callable:
         def _renamer() -> None:
