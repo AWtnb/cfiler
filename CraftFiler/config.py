@@ -652,6 +652,10 @@ def configure(window: MainWindow) -> None:
             return names
 
         @property
+        def paths(self) -> list:
+            return [os.path.join(self.currentPath, name) for name in self.names]
+
+        @property
         def extensions(self) -> list:
             exts = []
             if self.isBlank:
@@ -1870,6 +1874,58 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-I", rename_insert)
 
+    class Suffixer:
+        sep = "_"
+
+        def __init__(self, window: MainWindow, include_ext: bool) -> None:
+            pane = CPane(window)
+            self.names = []
+            for path in pane.paths:
+                p = Path(path)
+                if self.sep not in p.name:
+                    continue
+                if include_ext:
+                    self.names.append(p.name)
+                else:
+                    self.names.append(p.stem)
+
+        @property
+        def suffixes(self) -> list:
+            sufs = []
+            for name in self.names:
+                ss = name.split(self.sep)
+                ss.pop(0)
+                for i in range(len(ss)):
+                    suf = self.sep + self.sep.join(ss[i:])
+                    if suf not in sufs:
+                        sufs.append(suf)
+            return sorted(sufs, key=len)
+
+        def suffixes_with(self, s: str) -> list:
+            return [s + suf for suf in self.suffixes]
+
+        def filter_with(self, s: str) -> list:
+            found = []
+            tail = self.sep.join(s.split(self.sep)[1:])
+            pattern = self.sep + tail
+            for suf in self.suffixes:
+                if suf.startswith(pattern):
+                    possible = s + suf[len(pattern) :]
+                    found.append(possible)
+            return found
+
+        @staticmethod
+        def as_result(ss: list) -> tuple:
+            return ss, 0
+
+        def __call__(
+            self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
+        ) -> tuple:
+            t = update_info.text
+            if self.sep not in t:
+                return self.as_result(self.suffixes_with(t))
+            return self.as_result(self.filter_with(t))
+
     def invoke_renamer(append: bool) -> Callable:
         def _renamer() -> None:
             pane = CPane(window)
@@ -1883,21 +1939,11 @@ def configure(window: MainWindow) -> None:
             o = offset if append else 0
             sel = [o, o]
 
-            def _listup_stems(
-                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-            ) -> tuple:
-                found = []
-                for name in pane.names:
-                    if name.startswith(update_info.text):
-                        stem = Path(pane.currentPath, name).stem
-                        found.append(stem)
-                return found, 0
-
             new_stem, mod = window.commandLine(
                 title="NewStem",
                 text=org_path.stem,
                 selection=sel,
-                candidate_handler=_listup_stems,
+                candidate_handler=Suffixer(window, False),
                 auto_complete=True,
                 return_modkey=True,
             )
@@ -2009,17 +2055,6 @@ def configure(window: MainWindow) -> None:
                 if not hasattr(pane.fileList.getLister(), "touch"):
                     return
 
-                basenames = []
-                if not pane.isBlank:
-                    for file in pane.files:
-                        basenames.append(Path(file.getName()).stem)
-
-                def _listup_files(
-                    update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-                ) -> tuple:
-                    found = [bn for bn in basenames if bn.startswith(update_info.text)]
-                    return found, 0
-
                 prompt = "NewFileName"
                 suffix = "." + extension if 0 < len(extension) else ""
                 if suffix:
@@ -2027,7 +2062,9 @@ def configure(window: MainWindow) -> None:
                 else:
                     prompt += " (with extension)"
                 result, mod = window.commandLine(
-                    prompt, candidate_handler=_listup_files, return_modkey=True
+                    prompt,
+                    candidate_handler=Suffixer(window, len(extension) < 1),
+                    return_modkey=True,
                 )
                 if not result:
                     return
