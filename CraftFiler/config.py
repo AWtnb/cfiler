@@ -1899,7 +1899,9 @@ def configure(window: MainWindow) -> None:
                     suf = self.sep + self.sep.join(ss[i:])
                     if suf not in sufs:
                         sufs.append(suf)
-            return sorted(sufs, key=len)
+            return [datetime.datetime.today().strftime("_%Y%m%d")] + sorted(
+                sufs, key=len
+            )
 
         def candidates(self, s: str) -> list:
             if self.sep not in s:
