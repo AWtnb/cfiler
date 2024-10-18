@@ -601,10 +601,12 @@ def configure(window: MainWindow) -> None:
             return self.byName(name) != -1
 
         def focusByName(self, name: str) -> None:
+            sep = "/"
+            if os.sep in name or sep in name:
+                name = name.replace(os.sep, sep).split(sep)[0]
             i = self.byName(name)
-            if i < 0:
-                return
-            self.focus(i)
+            if self.isValidIndex(i):
+                self.focus(i)
 
         def focusOther(self) -> None:
             self._window.command_FocusOther(None)
@@ -818,14 +820,12 @@ def configure(window: MainWindow) -> None:
             dp = Path(self.currentPath, name)
             if smart_check_path(dp) and dp.is_dir():
                 Logger().log("directory '{}' already exists.".format(name))
+                self.focusByName(name)
                 return
             self._window.subThreadCall(self.lister.mkdir, (name, None))
             self.refresh()
             if focus:
-                sep = "/"
-                if os.sep in name or sep in name:
-                    name = name.replace(os.sep, sep).split(sep)[0]
-                self.focus(self._window.cursorFromName(self.fileList, name))
+                self.focusByName(name)
 
         def copyToChild(
             self, dest_name: str, items: list, remove_origin: bool = False
