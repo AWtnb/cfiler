@@ -490,11 +490,11 @@ def configure(window: MainWindow) -> None:
 
         def jump(self) -> None:
             for name, path in {
-                "Desktop": str(Path(USER_PROFILE, "Desktop")),
+                "Desktop": os.path.join(USER_PROFILE, "Desktop"),
                 "Scan": r"X:\scan",
-                "Dropbox": str(Path(USER_PROFILE, "Dropbox")),
-                "Dropbox Share": str(
-                    Path(USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku")
+                "Dropbox": os.path.join(USER_PROFILE, "Dropbox"),
+                "Dropbox Share": os.path.join(
+                    USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku"
                 ),
             }.items():
                 self.register(name, path)
@@ -1390,7 +1390,7 @@ def configure(window: MainWindow) -> None:
             return
 
         active_pane.mkdir(result, False)
-        extract_path = str(Path(active_pane.currentPath, result))
+        extract_path = os.path.join(active_pane.currentPath, result)
 
         inactive_pane = CPane(window, False)
         inactive_pane.openPath(extract_path)
@@ -2088,13 +2088,13 @@ def configure(window: MainWindow) -> None:
 
                 if suffix and not filename.endswith(suffix):
                     filename += suffix
-                new_path = Path(pane.currentPath, filename)
+                new_path = os.path.join(pane.currentPath, filename)
                 if smart_check_path(new_path):
                     Logger().log("'{}' already exists.".format(filename))
                     return
                 pane.touch(filename)
                 if mod == ckit.MODKEY_SHIFT:
-                    shell_exec(str(new_path))
+                    shell_exec(new_path)
 
             return _func
 
@@ -2171,7 +2171,7 @@ def configure(window: MainWindow) -> None:
 
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
-        desktop_path = str(Path(USER_PROFILE, "Desktop"))
+        desktop_path = os.path.join(USER_PROFILE, "Desktop")
         pane = CPane(window, True)
         if pane.currentPath != desktop_path:
             pane.openPath(desktop_path)
@@ -2183,21 +2183,21 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S-0", lambda: starting_position(True))
 
     def open_doc() -> None:
-        help_path = str(Path(ckit.getAppExePath(), "doc", "index.html"))
+        help_path = os.path.join(ckit.getAppExePath(), "doc", "index.html")
         shell_exec(help_path)
 
     KEYBINDER.bind("A-H", open_doc)
 
     def edit_config() -> None:
-        dir_path = Path(USER_PROFILE, r"Sync\develop\repo\cfiler")
+        dir_path = os.path.join(USER_PROFILE, r"Sync\develop\repo\cfiler")
         if smart_check_path(dir_path):
-            dp = str(dir_path)
-            vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
+            vscode_path = os.path.join(
+                USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"
+            )
             if smart_check_path(vscode_path):
-                vp = str(vscode_path)
-                shell_exec(vp, dp)
+                shell_exec(vscode_path, dir_path)
             else:
-                shell_exec(dp)
+                shell_exec(dir_path)
         else:
             shell_exec(USER_PROFILE)
             Logger().log("cannot find repo dir. open user profile instead.")
