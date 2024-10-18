@@ -1337,6 +1337,12 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S-F", zyc().invoke(False, 0))
     KEYBINDER.bind("C-F", zyc().invoke(True, 0))
 
+    def to_cliped_path() -> None:
+        path = ckit.getClipboardText().strip()
+        CPane(window).openPath(path)
+
+    KEYBINDER.bind("C-V", to_cliped_path)
+
     def smart_jump_input() -> None:
         pane = CPane(window)
 
