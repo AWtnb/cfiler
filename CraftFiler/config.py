@@ -405,7 +405,6 @@ def configure(window: MainWindow) -> None:
             "Home": window.command_CursorTop,
             "End": window.command_CursorBottom,
             "C-S-P": window.command_CommandLine,
-            "C-S-N": window.command_Mkdir,
             "H": window.command_GotoParentDir,
             "Left": window.command_GotoParentDir,
             "S-F10": window.command_ContextMenu,
@@ -785,6 +784,9 @@ def configure(window: MainWindow) -> None:
 
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
+
+        def openChild(self, name: str) -> None:
+            self.openPath(os.path.join(self.currentPath, name))
 
         def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
             target = Path(path)
@@ -2038,6 +2040,24 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("A-M", smart_move_to_dir(True))
     KEYBINDER.bind("A-C", smart_move_to_dir(False))
+
+    def smart_mkdir() -> None:
+        pane = CPane(window)
+        result, mod = window.commandLine(
+            "DirName",
+            candidate_handler=Suffixer(window, False),
+            return_modkey=True,
+        )
+        if not result:
+            return
+        dirname = result.strip()
+        if len(dirname) < 1:
+            return
+        pane.mkdir(result)
+        if mod == ckit.MODKEY_SHIFT:
+            pane.openChild(dirname)
+
+    KEYBINDER.bind("C-S-N", smart_mkdir)
 
     class Toucher:
         def __init__(self, window: MainWindow) -> None:
