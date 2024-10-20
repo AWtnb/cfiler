@@ -1337,6 +1337,38 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S-F", zyc().invoke(False, 0))
     KEYBINDER.bind("C-F", zyc().invoke(True, 0))
 
+    def conc_pdf() -> None:
+        exe_path = Path(USER_PROFILE, r"Personal\tools\bin\go-pdfconc.exe")
+        if not exe_path.exists():
+            return
+        pane = CPane(window)
+        if not pane.hasSelection:
+            return
+        basename = "conc"
+        result = window.commandLine(
+            title="Outname", text=basename, selection=[0, len(basename)]
+        )
+        if not result:
+            return
+        basename = result.strip()
+        if len(basename) < 1:
+            return
+        src = "\n".join(pane.selectedItemPaths)
+
+        def _conc(s: str) -> int:
+            try:
+                cmd = [exe_path, "--outname", s]
+                proc = subprocess.run(cmd, input=src, capture_output=True, encoding="utf-8")
+                if proc.returncode != 0:
+                    Logger().log(proc.stdout)
+            except Exception as e:
+                print(e)
+
+        window.subThreadCall(_conc, (basename,))
+        pane.unSelectAll()
+        pane.refresh()
+        pane.focusByName(basename + ".pdf")
+
     def to_cliped_path() -> None:
         path = ckit.getClipboardText().strip()
         CPane(window).openPath(path)
@@ -2636,6 +2668,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "PdfConc": conc_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
             "ExtractZipSmart": smart_extract,
