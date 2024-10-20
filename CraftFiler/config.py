@@ -1358,7 +1358,9 @@ def configure(window: MainWindow) -> None:
         def _conc(s: str) -> int:
             try:
                 cmd = [exe_path, "--outname", s]
-                proc = subprocess.run(cmd, input=src, capture_output=True, encoding="utf-8")
+                proc = subprocess.run(
+                    cmd, input=src, capture_output=True, encoding="utf-8"
+                )
                 if proc.returncode != 0:
                     Logger().log(proc.stdout)
             except Exception as e:
