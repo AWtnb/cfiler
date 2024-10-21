@@ -1337,9 +1337,9 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S-F", zyc().invoke(False, 0))
     KEYBINDER.bind("C-F", zyc().invoke(True, 0))
 
-    def conc_pdf() -> None:
-        exe_path = Path(USER_PROFILE, r"Personal\tools\bin\go-pdfconc.exe")
-        if not exe_path.exists():
+    def concatenate_pdf() -> None:
+        exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\go-pdfconc.exe")
+        if not smart_check_path(exe_path):
             return
         pane = CPane(window)
         if not pane.hasSelection:
@@ -2670,7 +2670,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
-            "PdfConc": conc_pdf,
+            "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
             "ExtractZipSmart": smart_extract,
