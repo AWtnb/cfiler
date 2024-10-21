@@ -1344,6 +1344,10 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         if not pane.hasSelection:
             return
+        for path in pane.selectedItemPaths:
+            if Path(path).suffix != ".pdf":
+                Logger().log("non-pdf file found!")
+                return
         basename = "conc"
         result = window.commandLine(
             title="Outname", text=basename, selection=[0, len(basename)]
