@@ -1345,7 +1345,11 @@ def configure(window: MainWindow) -> None:
         if not pane.hasSelection:
             return
         for path in pane.selectedItemPaths:
-            if Path(path).suffix != ".pdf":
+            p = Path(path)
+            if p.is_dir():
+                Logger().log("dir item is selected!")
+                return
+            if p.suffix != ".pdf":
                 Logger().log("non-pdf file found!")
                 return
         basename = "conc"
@@ -1366,7 +1370,7 @@ def configure(window: MainWindow) -> None:
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
                 if proc.returncode != 0:
-                    Logger().log(proc.stdout)
+                    Logger().log("ERROR: {}".format(proc.stdout))
             except Exception as e:
                 print(e)
 
