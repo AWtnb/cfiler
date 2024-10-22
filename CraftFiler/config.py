@@ -409,6 +409,8 @@ def configure(window: MainWindow) -> None:
             "Left": window.command_GotoParentDir,
             "S-F10": window.command_ContextMenu,
             "A-S-F10": window.command_ContextMenuDir,
+            "Apps": window.command_ContextMenu,
+            "S-Apps": window.command_ContextMenuDir,
             "C-A-N": window.command_DuplicateCfiler,
             "C-Up": window.command_CursorUpSelectedOrBookmark,
             "C-K": window.command_CursorUpSelectedOrBookmark,
