@@ -1951,17 +1951,19 @@ def configure(window: MainWindow) -> None:
                     suf = self.sep + self.sep.join(ss[i:])
                     if suf not in sufs:
                         sufs.append(suf)
-            return [datetime.datetime.today().strftime("_%Y%m%d")] + sorted(
-                sufs, key=len
-            )
+            return sorted(sufs, key=len)
 
         def candidates(self, s: str) -> list:
+            ts = datetime.datetime.today().strftime("%Y%m%d")
+            sufs = [self.sep + ts] + self.possible_suffix
             if self.sep not in s:
-                return [s + suf for suf in self.possible_suffix]
+                return [s + suf for suf in sufs]
+            if s.endswith(self.sep):
+                return  [s + suf[1:] for suf in sufs]
             found = []
             tail = self.sep.join(s.split(self.sep)[1:])
             suffix_start = self.sep + tail
-            for suf in self.possible_suffix:
+            for suf in sufs:
                 if suf.startswith(suffix_start):
                     suffix_rest = suf[len(suffix_start) :]
                     found.append(s + suffix_rest)
