@@ -1992,7 +1992,6 @@ def configure(window: MainWindow) -> None:
                 text=org_path.stem,
                 selection=sel,
                 candidate_handler=Suffixer(window, False),
-                auto_complete=True,
                 return_modkey=True,
             )
 
