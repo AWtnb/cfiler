@@ -1397,7 +1397,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
 
         def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
-            found = [name for name in pane.names if name.startswith(update_info.text)]
+            found = [name for name in pane.names if name.lower().startswith(update_info.text.lower())]
             return found, 0
 
         result, mod = window.commandLine(
