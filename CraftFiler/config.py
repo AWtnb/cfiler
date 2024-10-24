@@ -412,10 +412,10 @@ def configure(window: MainWindow) -> None:
             "Apps": window.command_ContextMenu,
             "S-Apps": window.command_ContextMenuDir,
             "C-A-N": window.command_DuplicateCfiler,
-            "C-Up": window.command_CursorUpSelectedOrBookmark,
-            "C-K": window.command_CursorUpSelectedOrBookmark,
-            "C-Down": window.command_CursorDownSelectedOrBookmark,
-            "C-J": window.command_CursorDownSelectedOrBookmark,
+            # "C-Up": window.command_CursorUpSelectedOrBookmark,
+            # "C-K": window.command_CursorUpSelectedOrBookmark,
+            # "C-Down": window.command_CursorDownSelectedOrBookmark,
+            # "C-J": window.command_CursorDownSelectedOrBookmark,
             "OpenBracket": window.command_MoveSeparatorLeft,
             "CloseBracket": window.command_MoveSeparatorRight,
             "Yen": window.command_MoveSeparatorCenter,
@@ -589,12 +589,9 @@ def configure(window: MainWindow) -> None:
             return self._pane.cursor
 
         def focus(self, i: int) -> None:
-            if self.isBlank:
-                return
-            if i < 0 or self.count <= i:
-                return
-            self._pane.cursor = i
-            self.scrollToCursor()
+            if self.isValidIndex(i):
+                self._pane.cursor = i
+                self.scrollToCursor()
 
         def byName(self, name: str) -> int:
             return self.fileList.indexOf(name)
@@ -624,6 +621,13 @@ def configure(window: MainWindow) -> None:
         @property
         def hasSelection(self) -> bool:
             return self.fileList.selected()
+
+        @property
+        def hasBookmark(self) -> bool:
+            for item in self.items:
+                if item.bookmark():
+                    return True
+            return False
 
         @property
         def scrollInfo(self) -> ckit.ScrollInfo:
@@ -1636,107 +1640,46 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-U", unselect_panes)
 
-    class SelectionBlock:
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
-
-        @property
-        def pane(self) -> CPane:
-            return CPane(self._window)
-
-        def topOfCurrent(self) -> int:
-            pane = self.pane
-            if pane.cursor == 0 or not pane.focusedItem.selected():
-                return -1
-            for i in reversed(range(0, pane.cursor)):
-                if i == pane.selectionTop:
-                    return i
-                if not pane.byIndex(i).selected():
-                    return i + 1
-            return -1
-
-        def bottomOfCurrent(self) -> int:
-            pane = self.pane
-            if not pane.focusedItem.selected():
-                return -1
-            for i in range(pane.cursor + 1, pane.count):
-                if i == pane.selectionBottom:
-                    return i
-                if not pane.byIndex(i).selected():
-                    return i - 1
-            return -1
-
-        def topOfNext(self) -> int:
-            pane = self.pane
-            for i in range(pane.cursor + 1, pane.count):
-                if pane.byIndex(i).selected():
-                    return i
-            return -1
-
-        def bottomOfPrevious(self) -> int:
-            pane = self.pane
-            for i in reversed(range(0, pane.cursor)):
-                if pane.byIndex(i).selected():
-                    return i
-            return -1
-
-        def jumpDown(self) -> None:
-            pane = self.pane
-            if pane.cursor == pane.count - 1:
-                return
-            below = pane.byIndex(pane.cursor + 1)
-            dest = -1
-            if pane.focusedItem.selected():
-                if below.selected():
-                    dest = self.bottomOfCurrent()
-                else:
-                    dest = self.topOfNext()
-            else:
-                if below.selected():
-                    dest = pane.cursor + 1
-                else:
-                    dest = self.topOfNext()
-            if dest < 0:
-                return
-            pane.focus(dest)
-            pane.scrollToCursor()
-
-        def jumpUp(self) -> None:
-            pane = self.pane
-            if pane.cursor == 0:
-                return
-            above = pane.byIndex(pane.cursor - 1)
-            dest = -1
-            if pane.focusedItem.selected():
-                if above.selected():
-                    dest = self.topOfCurrent()
-                else:
-                    dest = self.bottomOfPrevious()
-            else:
-                if above.selected():
-                    dest = pane.cursor - 1
-                else:
-                    dest = self.bottomOfPrevious()
-            if dest < 0:
-                return
-            pane.focus(dest)
-            pane.scrollToCursor()
-
-    SELECTION_BLOCK = SelectionBlock(window)
-    KEYBINDER.bind("A-J", SELECTION_BLOCK.jumpDown)
-    KEYBINDER.bind("A-K", SELECTION_BLOCK.jumpUp)
-
-    def focus_bottom_of_dir() -> None:
+    def smart_jumpDown() -> None:
         pane = CPane(window)
-        idx = -1
-        for i in range(pane.count):
-            if pane.byIndex(i).isdir():
-                idx = i
-        if idx < 0:
+        if pane.isBlank:
             return
-        pane.focus(idx)
+        if pane.hasSelection or pane.hasBookmark:
+            window.command_CursorDownSelectedOrBookmark(None)
+            return
+        fi = pane.focusedItem
+        if 0 < len(pane.dirs) and 0 < len(pane.files) and fi.isdir():
+            idx = -1
+            for i in range(pane.count):
+                if not pane.byIndex(i).isdir():
+                    idx = i
+                    break
+            pane.focus(idx)
+        else:
+            window.command_CursorBottom(None)
 
-    KEYBINDER.bind("A-E", focus_bottom_of_dir)
+    KEYBINDER.bind("C-J", smart_jumpDown)
+    KEYBINDER.bind("C-Down", smart_jumpDown)
+
+    def smart_jumpUp() -> None:
+        pane = CPane(window)
+        if pane.isBlank:
+            return
+        if pane.hasSelection or pane.hasBookmark:
+            window.command_CursorUpSelectedOrBookmark(None)
+            return
+        fi = pane.focusedItem
+        if 0 < len(pane.dirs) and 0 < len(pane.files) and not fi.isdir():
+            idx = -1
+            for i in range(pane.count):
+                if pane.byIndex(i).isdir():
+                    idx = i
+            pane.focus(idx)
+        else:
+            window.command_CursorTop(None)
+
+    KEYBINDER.bind("C-K", smart_jumpUp)
+    KEYBINDER.bind("C-Up", smart_jumpUp)
 
     def duplicate_pane() -> None:
         window.command_ChdirInactivePaneToOther(None)
@@ -1959,7 +1902,7 @@ def configure(window: MainWindow) -> None:
             if self.sep not in s:
                 return [s + suf for suf in sufs]
             if s.endswith(self.sep):
-                return  [s + suf[1:] for suf in sufs]
+                return [s + suf[1:] for suf in sufs]
             found = []
             tail = self.sep.join(s.split(self.sep)[1:])
             suffix_start = self.sep + tail
