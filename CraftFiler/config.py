@@ -1651,9 +1651,8 @@ def configure(window: MainWindow) -> None:
         if 0 < len(pane.dirs) and 0 < len(pane.files) and fi.isdir():
             idx = -1
             for i in range(pane.count):
-                if not pane.byIndex(i).isdir():
+                if pane.byIndex(i).isdir():
                     idx = i
-                    break
             pane.focus(idx)
         else:
             window.command_CursorBottom(None)
@@ -1672,8 +1671,9 @@ def configure(window: MainWindow) -> None:
         if 0 < len(pane.dirs) and 0 < len(pane.files) and not fi.isdir():
             idx = -1
             for i in range(pane.count):
-                if pane.byIndex(i).isdir():
+                if not pane.byIndex(i).isdir():
                     idx = i
+                    break
             pane.focus(idx)
         else:
             window.command_CursorTop(None)
