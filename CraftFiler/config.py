@@ -2187,18 +2187,20 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("A-H", open_doc)
 
     def edit_config() -> None:
-        dir_path = os.path.join(USER_PROFILE, r"Sync\develop\repo\cfiler")
-        if smart_check_path(dir_path):
-            vscode_path = os.path.join(
-                USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"
-            )
-            if smart_check_path(vscode_path):
-                shell_exec(vscode_path, dir_path)
-            else:
-                shell_exec(dir_path)
+        config_dir = os.path.join(os.environ.get("APPDATA"), "CraftFiler")
+        if not smart_check_path(config_dir):
+            Logger().log("cannot find config dir: {}".format(config_dir))
+            return
+        dir_path = config_dir
+        if (real_path := os.path.realpath(config_dir)) != config_dir:
+            dir_path = os.path.dirname(real_path)
+        vscode_path = os.path.join(
+            USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"
+        )
+        if smart_check_path(vscode_path):
+            shell_exec(vscode_path, dir_path)
         else:
-            shell_exec(USER_PROFILE)
-            Logger().log("cannot find repo dir. open user profile instead.")
+            shell_exec(dir_path)
 
     KEYBINDER.bind("C-E", edit_config)
 
