@@ -95,14 +95,11 @@ def delay(msec: int = 50) -> None:
 
 
 def smart_check_path(path: Union[str, Path]) -> bool:
-    # case sensitive path check
+    # case insensitive path check
     p = Path(path) if type(path) is str else path
-    if len(p.parents) < 1:
-        return True
-    try:
-        return p.name in [c.name for c in p.parent.iterdir()]
-    except:
-        return False
+    if p.drive == "C:":
+        return p.exists()
+    return os.path.exists(path)
 
 
 class TextEditors:
@@ -1776,8 +1773,9 @@ def configure(window: MainWindow) -> None:
         def execute(self, org_path: Path, new_name: str, focus: bool = False) -> None:
             new_path = org_path.with_name(new_name)
             if smart_check_path(new_path):
-                print("'{}' already exists!".format(new_name))
-                return
+                if new_path.name in [c.name for c in new_path.parent.iterdir()]:
+                    print("'{}' already exists!".format(new_name))
+                    return
             try:
                 self._window.subThreadCall(org_path.rename, (str(new_path),))
                 print("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
