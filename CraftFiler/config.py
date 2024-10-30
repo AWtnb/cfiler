@@ -1396,7 +1396,11 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
 
         def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
-            found = [name for name in pane.names if name.lower().startswith(update_info.text.lower())]
+            found = [
+                name
+                for name in pane.names
+                if name.lower().startswith(update_info.text.lower())
+            ]
             return found, 0
 
         result, mod = window.commandLine(
@@ -1646,7 +1650,17 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return
         if pane.hasSelection or pane.hasBookmark:
-            window.command_CursorDownSelectedOrBookmark(None)
+            cur = pane.cursor
+            idx = -1
+            for i in range(cur + 1, pane.count):
+                item = pane.byIndex(i)
+                if item.bookmark() or item.selected():
+                    idx = i
+                    break
+            if idx < 0:
+                window.command_CursorBottom(None)
+            else:
+                pane.focus(idx)
             return
         fi = pane.focusedItem
         if 0 < len(pane.dirs) and 0 < len(pane.files) and fi.isdir():
@@ -1666,7 +1680,16 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return
         if pane.hasSelection or pane.hasBookmark:
-            window.command_CursorUpSelectedOrBookmark(None)
+            cur = pane.cursor
+            idx = -1
+            for i in range(0, cur):
+                item = pane.byIndex(i)
+                if item.bookmark() or item.selected():
+                    idx = i
+            if idx < 0:
+                window.command_CursorTop(None)
+            else:
+                pane.focus(idx)
             return
         fi = pane.focusedItem
         if 0 < len(pane.dirs) and 0 < len(pane.files) and not fi.isdir():
@@ -2192,9 +2215,7 @@ def configure(window: MainWindow) -> None:
         dir_path = config_dir
         if (real_path := os.path.realpath(config_dir)) != config_dir:
             dir_path = os.path.dirname(real_path)
-        vscode_path = os.path.join(
-            USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"
-        )
+        vscode_path = os.path.join(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
         if smart_check_path(vscode_path):
             shell_exec(vscode_path, dir_path)
         else:
