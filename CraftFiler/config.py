@@ -1645,62 +1645,50 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-U", unselect_panes)
 
-    def smart_jumpDown() -> None:
+    def get_jumpable() -> List[int]:
         pane = CPane(window)
         if pane.isBlank:
+            return []
+        idxs = [0, pane.count - 1]
+        for i in range(pane.count):
+            item = pane.byIndex(i)
+            if item.bookmark() or item.selected():
+                idxs.append(i)
+        if 0 < (nd := len(pane.dirs)):
+            idxs.append(nd - 1)
+            if 0 < len(pane.files):
+                idxs.append(nd)
+        return sorted(list(set(idxs)))
+
+    def smart_jumpDown() -> None:
+        targets = get_jumpable()
+        if len(targets) < 1:
             return
-        if pane.hasSelection or pane.hasBookmark:
-            cur = pane.cursor
-            idx = -1
-            for i in range(cur + 1, pane.count):
-                item = pane.byIndex(i)
-                if item.bookmark() or item.selected():
-                    idx = i
-                    break
-            if idx < 0:
-                window.command_CursorBottom(None)
-            else:
-                pane.focus(idx)
-            return
-        fi = pane.focusedItem
-        if 0 < len(pane.dirs) and 0 < len(pane.files) and fi.isdir():
-            idx = -1
-            for i in range(pane.count):
-                if pane.byIndex(i).isdir():
-                    idx = i
+        pane = CPane(window)
+        cur = pane.cursor
+        idx = -1
+        for t in targets:
+            if cur < t:
+                idx = t
+                break
+        if -1 < idx:
             pane.focus(idx)
-        else:
-            window.command_CursorBottom(None)
 
     KEYBINDER.bind("C-J", smart_jumpDown)
     KEYBINDER.bind("C-Down", smart_jumpDown)
 
     def smart_jumpUp() -> None:
+        targets = get_jumpable()
+        if len(targets) < 1:
+            return
         pane = CPane(window)
-        if pane.isBlank:
-            return
-        if pane.hasSelection or pane.hasBookmark:
-            cur = pane.cursor
-            idx = -1
-            for i in range(0, cur):
-                item = pane.byIndex(i)
-                if item.bookmark() or item.selected():
-                    idx = i
-            if idx < 0:
-                window.command_CursorTop(None)
-            else:
-                pane.focus(idx)
-            return
-        fi = pane.focusedItem
-        if 0 < len(pane.dirs) and 0 < len(pane.files) and not fi.isdir():
-            idx = -1
-            for i in range(pane.count):
-                if not pane.byIndex(i).isdir():
-                    idx = i
-                    break
+        cur = pane.cursor
+        idx = -1
+        for t in targets:
+            if t < cur:
+                idx = t
+        if -1 < idx:
             pane.focus(idx)
-        else:
-            window.command_CursorTop(None)
 
     KEYBINDER.bind("C-K", smart_jumpUp)
     KEYBINDER.bind("C-Up", smart_jumpUp)
