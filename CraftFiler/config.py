@@ -138,7 +138,7 @@ TEXT_EDITORS = LocalApps(
 
 def invoke_listwindow(
     window: ckit.TextWindow, prompt: str, items, ini_pos: int = 0
-) -> Tuple[str, int]:
+) -> Tuple[int, int]:
     pos = (
         window.main_window.centerOfWindowInPixel()
         if type(window) is TextViewer
@@ -1006,6 +1006,11 @@ def configure(window: MainWindow) -> None:
             "m4a",
             "mp4",
             "pdf",
+        ]:
+            window.command_Execute(None)
+            return True
+
+        if ext[1:].lower() in [
             "xlsx",
             "xls",
             "docx",
@@ -1013,8 +1018,14 @@ def configure(window: MainWindow) -> None:
             "pptx",
             "ppt",
         ]:
-            window.command_Execute(None)
-            return True
+            result, _ = invoke_listwindow(
+                window, "open with:", ["Binary editor", "Associated app"]
+            )
+            if result < 0:
+                return True
+            if result == 1:
+                window.command_Execute(None)
+                return True
 
         return False
 
