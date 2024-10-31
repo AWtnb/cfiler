@@ -516,15 +516,16 @@ def configure(window: MainWindow) -> None:
             self.register_bookmark()
 
             result, mod = invoke_listwindow(self._window, "Jump", self._list_items)
-            if -1 < result:
-                item = self._list_items[result]
-                dest = self._menu_table[item.name]
-                active = CPane(self._window, True)
-                other = CPane(self._window, False)
-                if mod == ckit.MODKEY_SHIFT:
-                    other.openPath(dest)
-                else:
-                    active.openPath(dest)
+            if result < 0:
+                return
+            item = self._list_items[result]
+            dest = self._menu_table[item.name]
+            active = CPane(self._window, True)
+            other = CPane(self._window, False)
+            if mod == ckit.MODKEY_SHIFT:
+                other.openPath(dest)
+            else:
+                active.openPath(dest)
 
     KEYBINDER.bind("C-Space", lambda: JumpList(window).jump())
 
@@ -1053,9 +1054,10 @@ def configure(window: MainWindow) -> None:
             return
 
         result, _ = invoke_listwindow(window, "open with:", names)
-        if -1 < result:
-            path = apps.get_path(names[result])
-            shell_exec(path, pane.focusedItemPath)
+        if result < 0:
+            return
+        path = apps.get_path(names[result])
+        shell_exec(path, pane.focusedItemPath)
 
     KEYBINDER.bind("C-O", open_with)
 
@@ -1697,8 +1699,9 @@ def configure(window: MainWindow) -> None:
             if cur < t:
                 idx = t
                 break
-        if -1 < idx:
-            pane.focus(idx)
+        if idx < 0:
+            return
+        pane.focus(idx)
 
     KEYBINDER.bind("C-J", smart_jumpDown)
     KEYBINDER.bind("C-Down", smart_jumpDown)
@@ -1713,8 +1716,9 @@ def configure(window: MainWindow) -> None:
         for t in targets:
             if t < cur:
                 idx = t
-        if -1 < idx:
-            pane.focus(idx)
+        if idx < 0:
+            return
+        pane.focus(idx)
 
     KEYBINDER.bind("C-K", smart_jumpUp)
     KEYBINDER.bind("C-Up", smart_jumpUp)
@@ -2718,7 +2722,6 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["H"] = window.command_PageUp
     window.keymap["Right"] = window.command_PageDown
     window.keymap["Left"] = window.command_PageUp
-    window.keymap["C-Comma"] = window.command_ConfigMenu
     window.keymap["F3"] = window.command_SearchNext
     window.keymap["S-F3"] = window.command_SearchPrev
 
@@ -2745,11 +2748,12 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         delay()
         result, _ = invoke_listwindow(window, "open with:", names)
 
-        if -1 < result:
-            editor_path = te.get_path(names[result])
-            pyauto.shellExecute(None, editor_path, window.item.getFullpath(), "")
+        if result < 0:
+            return
 
-            window.command_Close(None)
+        editor_path = te.get_path(names[result])
+        pyauto.shellExecute(None, editor_path, window.item.getFullpath(), "")
+        window.command_Close(None)
 
     window.keymap["C-E"] = edit_by
 
@@ -2774,12 +2778,44 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
             ckit.setClipboardText(content)
             msg = "copied content of '{}' as {} encoding.".format(path.name, enc)
         else:
-            msg = "copied nothing: previewing '{}' as binary mode.".format(path.name)
+            msg = "nothing was copied: '{}' is not text file.".format(path.name)
         print("\n{}\n".format(msg))
         delay(200)
         window.command_Close(None)
 
     window.keymap["C-C"] = copy_content
+
+    def reload_with_encoding(_) -> None:
+
+        def _auto_detect() -> None:
+            window.load(auto=True)
+
+        def _invoke_encoder(enc: Union[str, None]) -> Callable:
+            def _encoder() -> None:
+                window.load(auto=False, encoding=ckit.TextEncoding(enc))
+
+            return _encoder
+
+        encodes = {
+            "(Auto)": _auto_detect,
+            "S-JIS": _invoke_encoder("cp932"),
+            "EUC-JP": _invoke_encoder("euc-jp"),
+            "JIS": _invoke_encoder("iso-2022-jp"),
+            "UTF-8": _invoke_encoder("utf-8"),
+            "UTF-16LE": _invoke_encoder("utf-16-le"),
+            "UTF-16BE": _invoke_encoder("utf-16-be"),
+            "binary": _invoke_encoder(None),
+        }
+        names = list(encodes.keys())
+        result, _ = invoke_listwindow(window, "encoding", names)
+        if result < 0:
+            return
+
+        encodes[names[result]]()
+        window.scroll_info.makeVisible(0, window.height() - 1)
+
+    window.keymap["C-Comma"] = reload_with_encoding
+    window.keymap["Z"] = reload_with_encoding
 
 
 def configure_ImageViewer(window: ckit.TextWindow) -> None:
