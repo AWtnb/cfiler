@@ -2793,7 +2793,6 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["Minus"] = window.command_ZoomOut
     window.keymap["S-Z"] = window.command_ZoomOut
     window.keymap["S-Minus"] = window.command_ZoomPolicyOriginal
-    window.keymap["O"] = window.command_ZoomPolicyOriginal
     window.keymap["Left"] = window.command_CursorUp
     window.keymap["Right"] = window.command_CursorDown
     window.keymap["Down"] = window.command_CursorDown
@@ -2806,7 +2805,6 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["S-L"] = window.command_ScrollRight
     window.keymap["S-J"] = window.command_ScrollDown
     window.keymap["S-K"] = window.command_ScrollUp
-    window.keymap["F"] = window.command_ZoomPolicyFit
     window.keymap["Q"] = window.command_Close
 
     def to_top(_) -> None:
@@ -2835,6 +2833,15 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
 
     window.keymap["E"] = to_last
     window.keymap["End"] = to_last
+
+    def toggle_zoom(_) -> None:
+        if window.zoom_policy == "original":
+            window.command_ZoomPolicyFit(None)
+        else:
+            window.command_ZoomPolicyOriginal(None)
+
+    window.keymap["O"] = toggle_zoom
+    window.keymap["F"] = toggle_zoom
 
     def open_original(_) -> None:
         item = window.items[window.cursor]
