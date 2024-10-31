@@ -508,9 +508,7 @@ def configure(window: MainWindow) -> None:
                 "Desktop": os.path.join(USER_PROFILE, "Desktop"),
                 "Scan": r"X:\scan",
                 "Dropbox": os.path.join(USER_PROFILE, "Dropbox"),
-                "Dropbox Share": os.path.join(
-                    USER_PROFILE, "Dropbox", "_sharing", "_yuhikaku"
-                ),
+                "Dropbox Share": os.path.join(USER_PROFILE, "Dropbox", "_sharing"),
             }.items():
                 self.register(name, path)
             self.register_bookmark()
@@ -2492,7 +2490,7 @@ def configure(window: MainWindow) -> None:
         if result:
             Selector(window).stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    KEYBINDER.bind("4", select_stem_endswith)
+    KEYBINDER.bind("S-4", select_stem_endswith)
 
     def select_stem_contains() -> None:
         result, mod = window.commandLine("Contains", return_modkey=True)
