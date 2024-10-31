@@ -102,26 +102,38 @@ def smart_check_path(path: Union[str, Path]) -> bool:
     return os.path.exists(path)
 
 
-class TextEditors:
-    editors = {
-        "notepad": r"C:\Windows\System32\notepad.exe",
-        "mery": os.path.join(USER_PROFILE, r"AppData\Local\Programs\Mery\Mery.exe"),
-        "vscode": os.path.join(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"),
-    }
+class LocalApps:
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, app_dict: dict) -> None:
+        self.dict = app_dict
 
     @property
     def names(self) -> list:
         names = []
-        for name, path in self.editors.items():
+        for name, path in self.dict.items():
             if smart_check_path(path):
                 names.append(name)
         return names
 
     def get_path(self, name: str) -> str:
-        return self.editors.get(name, "")
+        return self.dict.get(name, "")
+
+
+PDF_VIEWERS = LocalApps(
+    {
+        "sumatra": r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
+        "adobe": r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe",
+        "xchange editor": r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe",
+    }
+)
+
+TEXT_EDITORS = LocalApps(
+    {
+        "notepad": r"C:\Windows\System32\notepad.exe",
+        "mery": os.path.join(USER_PROFILE, r"AppData\Local\Programs\Mery\Mery.exe"),
+        "vscode": os.path.join(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"),
+    }
+)
 
 
 def invoke_listwindow(
@@ -1016,22 +1028,25 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-S-H", toggle_hidden)
 
-    def open_with_editor() -> None:
+    def open_with() -> None:
         pane = CPane(window)
         if pane.isBlank or pane.focusedItem.isdir():
             return
 
-        te = TextEditors()
-        names = te.names
+        apps = (
+            PDF_VIEWERS if Path(pane.focusedItemPath).suffix == ".pdf" else TEXT_EDITORS
+        )
+
+        names = apps.names
         if len(names) < 1:
             return
 
-        result, _ = invoke_listwindow(window, "edit with:", names)
+        result, _ = invoke_listwindow(window, "open with:", names)
         if -1 < result:
-            path = te.get_path(names[result])
+            path = apps.get_path(names[result])
             shell_exec(path, pane.focusedItemPath)
 
-    KEYBINDER.bind("C-O", open_with_editor)
+    KEYBINDER.bind("C-O", open_with)
 
     def quick_move() -> None:
         pane = CPane(window)
@@ -1724,28 +1739,6 @@ def configure(window: MainWindow) -> None:
         active_pane.focusOther()
 
     KEYBINDER.bind("S-U", open_parent_to_other)
-
-    def on_pdf_viewer(viewer_path: str) -> None:
-        def _invoker() -> None:
-            if smart_check_path(viewer_path):
-                pane = CPane(window)
-                paths = pane.selectedItemPaths
-                if len(paths) < 1:
-                    paths.append(pane.focusedItemPath)
-                for path in paths:
-                    if Path(path).suffix == ".pdf":
-                        shell_exec(viewer_path, path)
-
-        return _invoker
-
-    KEYBINDER.bind(
-        "A-P",
-        on_pdf_viewer(r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"),
-    )
-    KEYBINDER.bind(
-        "C-P",
-        on_pdf_viewer(r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"),
-    )
 
     def on_vscode() -> None:
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
@@ -2733,7 +2726,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["End"] = to_bottom
 
     def edit_by(_):
-        te = TextEditors()
+        te = TEXT_EDITORS
         names = te.names
         if len(names) < 1:
             return
