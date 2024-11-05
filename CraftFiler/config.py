@@ -1043,9 +1043,21 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank or pane.focusedItem.isdir():
             return
 
-        apps = (
-            PDF_VIEWERS if Path(pane.focusedItemPath).suffix == ".pdf" else TEXT_EDITORS
-        )
+        paths = pane.selectedItemPaths
+        if len(paths) < 1:
+            paths.append(pane.focusedItemPath)
+
+        def _is_all_pdf() -> bool:
+            for path in paths:
+                if Path(path).suffix != ".pdf":
+                    return False
+            return True
+
+        for_pdfs = _is_all_pdf()
+        apps = PDF_VIEWERS if for_pdfs else TEXT_EDITORS
+
+        if not for_pdfs and 1 < len(paths):
+            return
 
         names = apps.names
         if len(names) < 1:
@@ -1054,8 +1066,10 @@ def configure(window: MainWindow) -> None:
         result, _ = invoke_listwindow(window, "open with:", names)
         if result < 0:
             return
-        path = apps.get_path(names[result])
-        shell_exec(path, pane.focusedItemPath)
+
+        exe_path = apps.get_path(names[result])
+        for path in paths:
+            shell_exec(exe_path, path)
 
     KEYBINDER.bind("C-O", open_with)
 
