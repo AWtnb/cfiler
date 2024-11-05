@@ -1645,6 +1645,14 @@ def configure(window: MainWindow) -> None:
 
             self.byFunction(_checkPath, negative)
 
+        def stemMatches(self, s: str, case: bool, negative: bool = False) -> None:
+            reg = re.compile(s) if case else re.compile(s, re.IGNORECASE)
+
+            def _checkPath(path: str) -> bool:
+                return reg.search(Path(path).stem) is not None
+
+            self.byFunction(_checkPath, negative)
+
         def apply(self) -> None:
             for k, v in {
                 "C-A": self.allItems,
@@ -2413,6 +2421,17 @@ def configure(window: MainWindow) -> None:
             if name in active_names:
                 inactive.selectByName(name)
 
+    def invoke_regex_selector(case: bool) -> Callable:
+        def _selector() -> None:
+            result, mod = window.commandLine("Regexp", return_modkey=True)
+
+            if result:
+                Selector(window).stemMatches(result, case, mod == ckit.MODKEY_SHIFT)
+
+        return _selector
+
+    KEYBINDER.bind("S-Colon", invoke_regex_selector(True))
+
     def select_name_common() -> None:
         pane = CPane(window)
         pane.unSelectAll()
@@ -2656,6 +2675,8 @@ def configure(window: MainWindow) -> None:
             "FromActiveNames": from_active_names,
             "SelectNameUnique": select_name_unique,
             "SelectNameCommon": select_name_common,
+            "SelectStemMatchCase": invoke_regex_selector(True),
+            "SelectStemMatch": invoke_regex_selector(False),
             "SelectStemStartsWith": select_stem_startswith,
             "SelectStemEndsWith": select_stem_endswith,
             "SelectStemContains": select_stem_contains,
