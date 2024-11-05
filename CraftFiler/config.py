@@ -2525,7 +2525,6 @@ def configure(window: MainWindow) -> None:
     def select_stem_endswith() -> None:
         result, mod = window.commandLine(
             "EndsWith",
-            text="_",
             return_modkey=True,
             candidate_handler=Suffixer(window, False),
             auto_complete=True,
