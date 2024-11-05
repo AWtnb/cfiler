@@ -1924,8 +1924,7 @@ def configure(window: MainWindow) -> None:
             return sorted(sufs, key=len)
 
         def candidates(self, s: str) -> list:
-            ts = datetime.datetime.today().strftime("%Y%m%d")
-            sufs = [self.sep + ts] + self.possible_suffix
+            sufs = self.possible_suffix
             if self.sep not in s:
                 return [s + suf for suf in sufs]
             if s.endswith(self.sep):
@@ -2487,24 +2486,12 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("Caret", select_stem_startswith)
 
     def select_stem_endswith() -> None:
-        pane = CPane(window)
-        stems = pane.stems
-        stem = Path(pane.focusedItemPath).stem
-        offset = 0
-        ss = stem.split("_")
-        while 1 < len(ss):
-            ss.pop(0)
-            tail = ("_").join(ss)
-            found = [s for s in stems if s.endswith(tail)]
-            if 1 < len(found):
-                offset = len(stem) - len(tail)
-                break
-
-        t = stem[offset:] if 0 < offset else stem
-        cur = [0] * 2
-
         result, mod = window.commandLine(
-            "EndsWith", return_modkey=True, text=t, selection=cur
+            "EndsWith",
+            text = "_",
+            return_modkey=True,
+            candidate_handler=Suffixer(window, False),
+            auto_complete=True,
         )
         if result:
             Selector(window).stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
