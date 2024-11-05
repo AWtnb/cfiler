@@ -1875,22 +1875,46 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        result, mod = window.commandLine("Append (Shift to head)", return_modkey=True)
+        result, mod = window.commandLine(
+            "Text[;position] (Shift-Reversable)", return_modkey=True
+        )
 
         if not result:
             return
+        sep = ";"
 
-        to_head = mod == ckit.MODKEY_SHIFT
+        pos = None
+        ins = result
+        if sep in result:
+            ss = result.split(sep)
+            if 1 < len(ss):
+                arg = ss[-1]
+                if len(arg) < 1:
+                    ins = ins[:-1]
+                else:
+                    pos = int(arg)
+                    ins = sep.join(ss[:-1])
+        reverse = mod == ckit.MODKEY_SHIFT
 
         def _func() -> None:
             for item in targets:
                 org_path = Path(item.getFullpath())
-                if to_head:
-                    new_name = result + org_path.name
+                if pos is None:
+                    new_name = org_path.stem + ins + org_path.suffix
                 else:
-                    new_name = org_path.stem + result + org_path.suffix
+                    stem = org_path.stem
+                    if reverse:
+                        new_name = (
+                            stem[: len(stem) - pos]
+                            + ins
+                            + stem[len(stem) - pos :]
+                            + org_path.suffix
+                        )
+                    else:
+                        new_name = stem[:pos] + ins + stem[pos:] + org_path.suffix
 
-                renamer.execute(org_path, new_name)
+                print(new_name, "desu")
+                # renamer.execute(org_path, new_name)
 
         Logger().wrap(_func)
 
@@ -2488,7 +2512,7 @@ def configure(window: MainWindow) -> None:
     def select_stem_endswith() -> None:
         result, mod = window.commandLine(
             "EndsWith",
-            text = "_",
+            text="_",
             return_modkey=True,
             candidate_handler=Suffixer(window, False),
             auto_complete=True,
