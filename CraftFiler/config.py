@@ -1913,8 +1913,7 @@ def configure(window: MainWindow) -> None:
                     else:
                         new_name = stem[:pos] + ins + stem[pos:] + org_path.suffix
 
-                print(new_name, "desu")
-                # renamer.execute(org_path, new_name)
+                renamer.execute(org_path, new_name)
 
         Logger().wrap(_func)
 
