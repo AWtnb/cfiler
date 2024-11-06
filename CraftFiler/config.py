@@ -1831,23 +1831,33 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        result, mod = window.commandLine(
-            "Substr length (Shift from tail)", return_modkey=True
-        )
+        result = window.commandLine("Offset[;Length]")
 
         if not result:
             return
 
-        from_tail = mod == ckit.MODKEY_SHIFT
+        sep = ";"
+        offset = 0
+        length = 0
+
+        if sep in result:
+            args = result.split(sep)
+            if 0 < len(o := args[0]):
+                offset = int(o)
+            if 1 < len(args):
+                if 0 < len(l := args[-1]):
+                    length = int(l)
+        else:
+            offset = int(result)
 
         def _func() -> None:
             for item in targets:
                 org_path = Path(item.getFullpath())
-                if from_tail:
-                    stem = org_path.stem
-                    new_name = stem[: len(stem) - int(result)] + org_path.suffix
-                else:
-                    new_name = org_path.name[int(result) :]
+                stem = org_path.stem
+                new_name = stem[:offset]
+                if 0 < length:
+                    new_name += stem[offset + length :]
+                new_name += org_path.suffix
 
                 renamer.execute(org_path, new_name)
 
