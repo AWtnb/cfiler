@@ -1936,8 +1936,13 @@ def configure(window: MainWindow) -> None:
     class Suffixer:
         sep = "_"
 
-        def __init__(self, window: MainWindow, include_ext: bool) -> None:
+        def __init__(
+            self, window: MainWindow, include_ext: bool, with_timestamp: bool = False
+        ) -> None:
             pane = CPane(window)
+            self.timestamp = ""
+            if with_timestamp:
+                self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
             self.names = []
             for name in pane.names:
                 if self.sep not in name:
@@ -1962,6 +1967,8 @@ def configure(window: MainWindow) -> None:
 
         def candidates(self, s: str) -> list:
             sufs = self.possible_suffix
+            if self.timestamp:
+                sufs = [self.sep + self.timestamp] + sufs
             if self.sep not in s:
                 return [s + suf for suf in sufs]
             if s.endswith(self.sep):
@@ -1997,7 +2004,7 @@ def configure(window: MainWindow) -> None:
                 title="NewStem",
                 text=org_path.stem,
                 selection=sel,
-                candidate_handler=Suffixer(window, False),
+                candidate_handler=Suffixer(window, False, True),
                 return_modkey=True,
             )
 
@@ -2102,7 +2109,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         result, mod = window.commandLine(
             "DirName",
-            candidate_handler=Suffixer(window, False),
+            candidate_handler=Suffixer(window, False, True),
             return_modkey=True,
         )
         if not result:
@@ -2134,7 +2141,7 @@ def configure(window: MainWindow) -> None:
                     prompt += " (with extension)"
                 result, mod = window.commandLine(
                     prompt,
-                    candidate_handler=Suffixer(window, len(extension) < 1),
+                    candidate_handler=Suffixer(window, len(extension) < 1, True),
                     return_modkey=True,
                 )
                 if not result:
