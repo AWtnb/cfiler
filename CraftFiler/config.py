@@ -1890,12 +1890,12 @@ def configure(window: MainWindow) -> None:
             return
 
         result, mod = window.commandLine(
-            "Text[;position] (Shift-Reversable)", return_modkey=True
+            "Text[@position] (Shift-Reversable)", return_modkey=True
         )
 
         if not result:
             return
-        sep = ";"
+        sep = "@"
 
         pos = None
         ins = result
