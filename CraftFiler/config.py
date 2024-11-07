@@ -1195,6 +1195,46 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("B", fuzzy_bookmark)
 
+    def read_docx(path: str) -> str:
+        exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\docxr.exe")
+        if not smart_check_path(exe_path):
+            Logger().log("'{}' not found...".format(exe_path))
+            return ""
+        try:
+            cmd = [
+                exe_path,
+                "-src={}".format(path),
+            ]
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                encoding="utf-8",
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            result = proc.stdout
+            if proc.returncode == 0:
+                return result
+        except Exception as e:
+            print(e)
+        return ""
+
+    def preview_docx() -> None:
+        pane = CPane(window)
+        path = pane.focusedItemPath
+        if not path.endswith(".docx"):
+            return
+
+        def _read(job_item: ckit.JobItem) -> None:
+            job_item.result = read_docx(path)
+
+        def _view(job_item: ckit.JobItem) -> None:
+            Logger().log(job_item.result)
+
+        job = ckit.JobItem(_read, _view)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    KEYBINDER.bind("R", preview_docx)
+
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
             self._current_path = current_path
@@ -1414,7 +1454,11 @@ def configure(window: MainWindow) -> None:
             try:
                 cmd = [exe_path, "--outname", s]
                 proc = subprocess.run(
-                    cmd, input=src, capture_output=True, encoding="utf-8"
+                    cmd,
+                    input=src,
+                    capture_output=True,
+                    encoding="utf-8",
+                    creationflags=subprocess.CREATE_NO_WINDOW,
                 )
                 if proc.returncode != 0:
                     Logger().log("ERROR: {}".format(proc.stdout))
