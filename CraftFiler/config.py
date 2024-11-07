@@ -971,6 +971,21 @@ def configure(window: MainWindow) -> None:
 
     EXTENSION_CHECKER = ExtensionChecker(window)
 
+    def preview_docx(path) -> None:
+        if not path.endswith(".docx"):
+            return
+
+        def _read(job_item: ckit.JobItem) -> None:
+            job_item.result = read_docx(path)
+
+        def _view(job_item: ckit.JobItem) -> None:
+            lines = job_item.result.splitlines()
+            height = max(window.log_window_height - 4, 2)
+            Logger().log(LINE_BREAK.join(lines[:height]))
+
+        job = ckit.JobItem(_read, _view)
+        window.taskEnqueue(job, create_new_queue=False)
+
     def hook_enter() -> bool:
         # returning `True` skips default action.
 
@@ -1017,12 +1032,17 @@ def configure(window: MainWindow) -> None:
             "pptx",
             "ppt",
         ]:
-            result, _ = invoke_listwindow(
-                window, "open with:", ["Binary editor", "Associated app"]
-            )
+            menu = ["Binary editor", "Associated app"]
+            previewable = ext[1:] == "docx"
+            if previewable:
+                menu = ["Preview"] + menu
+            result, _ = invoke_listwindow(window, "open with:", menu)
             if result < 0:
                 return True
-            if result == 1:
+            if previewable and result == 0:
+                preview_docx(focus_path)
+                return True
+            if result == len(menu) - 1:
                 window.command_Execute(None)
                 return True
 
@@ -1217,23 +1237,6 @@ def configure(window: MainWindow) -> None:
         except Exception as e:
             print(e)
         return ""
-
-    def preview_docx() -> None:
-        pane = CPane(window)
-        path = pane.focusedItemPath
-        if not path.endswith(".docx"):
-            return
-
-        def _read(job_item: ckit.JobItem) -> None:
-            job_item.result = read_docx(path)
-
-        def _view(job_item: ckit.JobItem) -> None:
-            Logger().log(job_item.result)
-
-        job = ckit.JobItem(_read, _view)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    KEYBINDER.bind("R", preview_docx)
 
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
