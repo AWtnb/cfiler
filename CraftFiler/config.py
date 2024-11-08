@@ -1736,67 +1736,84 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-U", unselect_panes)
 
-    def get_jumpable() -> List[int]:
-        pane = CPane(window)
-        if pane.isBlank:
-            return []
-        stack = [0, pane.count - 1]
-        for i in range(pane.count):
-            item = pane.byIndex(i)
-            if item.bookmark() or item.selected():
-                stack.append(i)
-        if 0 < (nd := len(pane.dirs)):
-            stack.append(nd - 1)
-            if 0 < len(pane.files):
-                stack.append(nd)
-        return sorted(list(set(stack)))
+    class SmartJumper:
+        def __init__(self, window: MainWindow) -> None:
+            self._pane = CPane(window)
 
-    def smart_jumpDown(selecting: bool = False) -> None:
-        targets = get_jumpable()
-        if len(targets) < 1:
-            return
-        pane = CPane(window)
-        cur = pane.cursor
-        idx = -1
-        for t in targets:
-            if cur < t:
-                idx = t
-                break
-        if idx < 0:
-            return
-        if selecting:
+        @property
+        def jumpable(self) -> List[int]:
+            pane = self._pane
+            if pane.isBlank:
+                return []
+            stack = [0, pane.count - 1]
             for i in range(pane.count):
-                if cur <= i and i <= idx:
-                    pane.select(i)
-        pane.focus(idx)
+                item = pane.byIndex(i)
+                if item.bookmark() or item.selected():
+                    stack.append(i)
+            if 0 < (nd := len(pane.dirs)):
+                stack.append(nd - 1)
+                if 0 < len(pane.files):
+                    stack.append(nd)
+            return sorted(list(set(stack)))
 
-    KEYBINDER.bind("C-J", lambda: smart_jumpDown(False))
-    KEYBINDER.bind("C-Down", lambda: smart_jumpDown(False))
-    KEYBINDER.bind("S-C-J", lambda: smart_jumpDown(True))
-    KEYBINDER.bind("S-C-Down", lambda: smart_jumpDown(True))
+        def down(self, selecting: bool) -> None:
+            targets = self.jumpable
+            if len(targets) < 1:
+                return
+            pane = self._pane
+            cur = pane.cursor
+            idx = -1
+            for t in targets:
+                if cur < t:
+                    idx = t
+                    break
+            if idx < 0:
+                return
+            if selecting:
+                for i in range(pane.count):
+                    if cur <= i and i <= idx:
+                        pane.select(i)
+            pane.focus(idx)
+
+        def up(self, selecting: bool) -> None:
+            targets = self.jumpable
+            if len(targets) < 1:
+                return
+            pane = self._pane
+            cur = pane.cursor
+            idx = -1
+            for t in targets:
+                if t < cur:
+                    idx = t
+            if idx < 0:
+                return
+            if selecting:
+                for i in range(pane.count):
+                    if idx <= i and i <= cur:
+                        pane.select(i)
+            pane.focus(idx)
+
+    def smart_jumpDown(selecting: bool = False) -> Callable:
+        def _jumper() -> None:
+            SmartJumper(window).down(selecting)
+
+        return _jumper
+
+    KEYBINDER.bind("C-J", smart_jumpDown(False))
+    KEYBINDER.bind("C-Down", smart_jumpDown(False))
+    KEYBINDER.bind("S-C-J", smart_jumpDown(True))
+    KEYBINDER.bind("S-C-Down", smart_jumpDown(True))
 
     def smart_jumpUp(selecting: bool = False) -> None:
-        targets = get_jumpable()
-        if len(targets) < 1:
-            return
-        pane = CPane(window)
-        cur = pane.cursor
-        idx = -1
-        for t in targets:
-            if t < cur:
-                idx = t
-        if idx < 0:
-            return
-        if selecting:
-            for i in range(pane.count):
-                if idx <= i and i <= cur:
-                    pane.select(i)
-        pane.focus(idx)
+        def _jumper() -> None:
+            SmartJumper(window).up(selecting)
 
-    KEYBINDER.bind("C-K", lambda: smart_jumpUp(False))
-    KEYBINDER.bind("C-Up", lambda: smart_jumpUp(False))
-    KEYBINDER.bind("S-C-K", lambda: smart_jumpUp(True))
-    KEYBINDER.bind("S-C-Up", lambda: smart_jumpUp(True))
+        return _jumper
+
+    KEYBINDER.bind("C-K", smart_jumpUp(False))
+    KEYBINDER.bind("C-Up", smart_jumpUp(False))
+    KEYBINDER.bind("S-C-K", smart_jumpUp(True))
+    KEYBINDER.bind("S-C-Up", smart_jumpUp(True))
 
     def duplicate_pane() -> None:
         window.command_ChdirInactivePaneToOther(None)
