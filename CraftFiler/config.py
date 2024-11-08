@@ -1740,16 +1740,41 @@ def configure(window: MainWindow) -> None:
         def __init__(self, window: MainWindow) -> None:
             self._pane = CPane(window)
 
+        @staticmethod
+        def getEdges(idxs: List[int]) -> List[int]:
+            ret = []
+            if len(idxs) < 1:
+                return ret
+            stack = []
+            for idx in idxs:
+                if len(stack) < 1:
+                    stack.append(idx)
+                    continue
+                if stack[-1] + 1 == idx:
+                    stack.append(idx)
+                else:
+                    ret.append(stack[0])
+                    if 1 < len(stack):
+                        ret.append(stack[-1])
+                    stack = [idx]
+            return ret
+
+        def isBookmarkOrSelected(self, idx: int) -> bool:
+            item = self._pane.byIndex(idx)
+            return item.bookmark() or item.selected()
+
         @property
         def jumpable(self) -> List[int]:
             pane = self._pane
             if pane.isBlank:
                 return []
-            stack = [0, pane.count - 1]
+            stack = []
             for i in range(pane.count):
-                item = pane.byIndex(i)
-                if item.bookmark() or item.selected():
+                if self.isBookmarkOrSelected(i):
                     stack.append(i)
+            stack = self.getEdges(stack)
+            stack.append(0)
+            stack.append(pane.count - 1)
             if 0 < (nd := len(pane.dirs)):
                 stack.append(nd - 1)
                 if 0 < len(pane.files):
