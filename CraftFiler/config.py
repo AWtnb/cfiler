@@ -1741,27 +1741,27 @@ def configure(window: MainWindow) -> None:
             self._pane = CPane(window)
 
         @staticmethod
-        def getEdges(idxs: List[int]) -> List[int]:
-            ret = []
+        def getBlockEdges(idxs: List[int]) -> List[int]:
             if len(idxs) < 1:
-                return ret
-            stack = []
-            for idx in idxs:
-                if len(stack) < 1:
-                    stack.append(idx)
-                    continue
-                if stack[-1] + 1 == idx:
-                    stack.append(idx)
-                else:
-                    ret.append(stack[0])
-                    if 1 < len(stack):
-                        ret.append(stack[-1])
-                    stack = [idx]
-            return ret
+                return []
 
-        def isBookmarkOrSelected(self, idx: int) -> bool:
-            item = self._pane.byIndex(idx)
-            return item.bookmark() or item.selected()
+            edges = []
+            start = idxs[0]
+            end = start
+
+            for idx in idxs[1:]:
+                if idx == end + 1:
+                    end = idx
+                else:
+                    edges.append(start)
+                    edges.append(end)
+                    start = idx
+                    end = idx
+
+            edges.append(start)
+            if 0 < len(edges) and edges[-1] != end:
+                edges.append(end)
+            return edges
 
         @property
         def jumpable(self) -> List[int]:
@@ -1770,9 +1770,10 @@ def configure(window: MainWindow) -> None:
                 return []
             stack = []
             for i in range(pane.count):
-                if self.isBookmarkOrSelected(i):
+                item = self._pane.byIndex(i)
+                if item.bookmark() or item.selected():
                     stack.append(i)
-            stack = self.getEdges(stack)
+            stack = self.getBlockEdges(stack)
             stack.append(0)
             stack.append(pane.count - 1)
             if 0 < (nd := len(pane.dirs)):
