@@ -2217,6 +2217,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         result, mod = window.commandLine(
             "DirName",
+            text = datetime.datetime.today().strftime("%Y%m%d"),
             candidate_handler=Suffixer(window, False, True),
             return_modkey=True,
         )
