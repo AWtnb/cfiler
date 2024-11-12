@@ -2135,13 +2135,9 @@ def configure(window: MainWindow) -> None:
         def _duplicator() -> None:
             pane = CPane(window)
             src_path = Path(pane.focusedItemPath)
-            sel_start = src_path.stem.rfind("_")
-            if sel_start < 0:
-                sel_start = 0
-            sel_end = len(src_path.name)
-            if only_stem:
-                sel_end = len(src_path.stem)
 
+            sel_start = src_path.stem.rfind("_") + 1
+            sel_end = len(src_path.stem) if only_stem else len(src_path.name)
             prompt = "NewStem" if only_stem else "NewName"
             placeholder = src_path.stem if only_stem else src_path.name
             result = window.commandLine(
