@@ -2136,14 +2136,17 @@ def configure(window: MainWindow) -> None:
             pane = CPane(window)
             src_path = Path(pane.focusedItemPath)
 
-            sel_start = src_path.stem.rfind("_") + 1
             sel_end = len(src_path.stem) if only_stem else len(src_path.name)
+            sel_start = src_path.stem.rfind("_")
+            if sel_start < 0:
+                sel_start = sel_end
             prompt = "NewStem" if only_stem else "NewName"
             placeholder = src_path.stem if only_stem else src_path.name
             result = window.commandLine(
                 title=prompt,
                 text=placeholder,
                 candidate_handler=Suffixer(window, (not only_stem), True),
+                auto_complete=True,
                 selection=[sel_start, sel_end],
             )
 
