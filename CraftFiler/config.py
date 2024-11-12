@@ -2131,38 +2131,52 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("N", invoke_renamer(True))
     KEYBINDER.bind("S-N", invoke_renamer(False))
 
-    def duplicate_file() -> None:
-        pane = CPane(window)
-        src_path = Path(pane.focusedItemPath)
-        offset = len(src_path.stem)
-        result = window.commandLine(
-            title="NewName",
-            text=src_path.name,
-            selection=[offset, offset],
-        )
+    def duplicate_file(only_stem: bool) -> None:
+        def _duplicator() -> None:
+            pane = CPane(window)
+            src_path = Path(pane.focusedItemPath)
+            sel_start = src_path.stem.rfind("_")
+            if sel_start < 0:
+                sel_start = 0
+            sel_end = len(src_path.name)
+            if only_stem:
+                sel_end = len(src_path.stem)
 
-        if result:
-            result = result.strip()
-            if len(result) < 1:
-                return
-            if src_path.is_file() and "." not in result:
-                result = result + src_path.suffix
-            new_path = src_path.with_name(result)
-            if smart_check_path(new_path):
-                Logger().log("same item exists!")
-                return
+            prompt = "NewStem" if only_stem else "NewName"
+            placeholder = src_path.stem if only_stem else src_path.name
+            result = window.commandLine(
+                title=prompt,
+                text=placeholder,
+                candidate_handler=Suffixer(window, (not only_stem), True),
+                selection=[sel_start, sel_end],
+            )
 
-            def _copy_as(new_path: str) -> None:
-                if Path(src_path).is_dir():
-                    shutil.copytree(src_path, new_path)
-                else:
-                    shutil.copy(src_path, new_path)
+            if result:
+                result = result.strip()
+                if len(result) < 1:
+                    return
+                if src_path.is_file() and only_stem:
+                    result = result + src_path.suffix
+                new_path = src_path.with_name(result)
 
-            window.subThreadCall(_copy_as, (new_path,))
-            pane.refresh()
-            pane.focusByName(Path(new_path).name)
+                if smart_check_path(new_path):
+                    Logger().log("same item exists!")
+                    return
 
-    KEYBINDER.bind("S-D", duplicate_file)
+                def _copy_as(new_path: str) -> None:
+                    if Path(src_path).is_dir():
+                        shutil.copytree(src_path, new_path)
+                    else:
+                        shutil.copy(src_path, new_path)
+
+                window.subThreadCall(_copy_as, (new_path,))
+                pane.refresh()
+                pane.focusByName(Path(new_path).name)
+
+        return _duplicator
+
+    KEYBINDER.bind("S-D", duplicate_file(True))
+    KEYBINDER.bind("A-S-D", duplicate_file(False))
 
     def smart_move_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
@@ -2217,7 +2231,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
         result, mod = window.commandLine(
             "DirName",
-            text = datetime.datetime.today().strftime("%Y%m%d"),
+            text=datetime.datetime.today().strftime("%Y%m%d"),
             candidate_handler=Suffixer(window, False, True),
             return_modkey=True,
         )
