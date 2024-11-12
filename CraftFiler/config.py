@@ -2083,7 +2083,7 @@ def configure(window: MainWindow) -> None:
             if s.endswith(self.sep):
                 return [s + suf[1:] for suf in sufs]
             found = []
-            suffix_from_command = s[s.find(self.sep):]
+            suffix_from_command = s[s.find(self.sep) :]
             for suf in sufs:
                 if suf.startswith(suffix_from_command):
                     suffix_rest = suf[len(suffix_from_command) :]
@@ -2228,10 +2228,12 @@ def configure(window: MainWindow) -> None:
 
     def smart_mkdir() -> None:
         pane = CPane(window)
+        ts = datetime.datetime.today().strftime("%Y%m%d")
         result, mod = window.commandLine(
             "DirName",
-            text=datetime.datetime.today().strftime("%Y%m%d"),
-            candidate_handler=Suffixer(window, False, True),
+            text=ts,
+            selection=[0, len(ts)],
+            candidate_handler=Suffixer(window, False, False),
             return_modkey=True,
         )
         if not result:
