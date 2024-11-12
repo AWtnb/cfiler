@@ -2082,11 +2082,10 @@ def configure(window: MainWindow) -> None:
             if s.endswith(self.sep):
                 return [s + suf[1:] for suf in sufs]
             found = []
-            tail = self.sep.join(s.split(self.sep)[1:])
-            suffix_start = self.sep + tail
+            suffix_from_command = s[s.find(self.sep):]
             for suf in sufs:
-                if suf.startswith(suffix_start):
-                    suffix_rest = suf[len(suffix_start) :]
+                if suf.startswith(suffix_from_command):
+                    suffix_rest = suf[len(suffix_from_command) :]
                     found.append(s + suffix_rest)
             return found
 
