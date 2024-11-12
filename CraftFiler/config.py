@@ -2071,12 +2071,13 @@ def configure(window: MainWindow) -> None:
                     suf = self.sep + self.sep.join(ss[i:])
                     if suf not in sufs:
                         sufs.append(suf)
-            return sorted(sufs, key=len)
+            sufs = sorted(sufs, key=len)
+            if self.timestamp:
+                sufs = [self.sep + self.timestamp] + sufs
+            return sufs
 
         def candidates(self, s: str) -> list:
             sufs = self.possible_suffix
-            if self.timestamp:
-                sufs = [self.sep + self.timestamp] + sufs
             if self.sep not in s:
                 return [s + suf for suf in sufs]
             if s.endswith(self.sep):
