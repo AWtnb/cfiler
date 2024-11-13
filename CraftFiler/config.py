@@ -2065,12 +2065,9 @@ def configure(window: MainWindow) -> None:
         def possible_suffix(self) -> list:
             sufs = []
             for name in self.names:
-                ss = name.split(self.sep)
-                ss.pop(0)
-                for i in range(len(ss)):
-                    suf = self.sep + self.sep.join(ss[i:])
-                    if suf not in sufs:
-                        sufs.append(suf)
+                for i, c in enumerate(name):
+                    if c == self.sep:
+                        sufs.append(name[i:])
             sufs = sorted(sufs, key=len)
             if self.timestamp:
                 sufs = [self.sep + self.timestamp] + sufs
