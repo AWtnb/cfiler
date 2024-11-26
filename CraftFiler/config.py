@@ -2068,7 +2068,7 @@ def configure(window: MainWindow) -> None:
                 for i, c in enumerate(name):
                     if c == self.sep:
                         sufs.append(name[i:])
-            sufs = sorted(sufs, key=len)
+            sufs = sorted(list(set(sufs)), key=len)
             if self.timestamp:
                 sufs = [self.sep + self.timestamp] + sufs
             return sufs
