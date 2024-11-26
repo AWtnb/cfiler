@@ -1470,7 +1470,7 @@ def configure(window: MainWindow) -> None:
         pane.focusByName(basename + ".pdf")
 
     def to_cliped_path() -> None:
-        path = ckit.getClipboardText().strip()
+        path = ckit.getClipboardText().strip().replace("\"", "")
         CPane(window).openPath(path)
 
     KEYBINDER.bind("C-V", to_cliped_path)
