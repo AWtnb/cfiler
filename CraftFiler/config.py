@@ -1500,9 +1500,9 @@ def configure(window: MainWindow) -> None:
         open_path = Path(pane.currentPath, result)
         if open_path.is_dir():
             if mod == ckit.MODKEY_SHIFT:
-                pane.openPath(str(open_path))
-            else:
                 pane.openPath(str(open_path.parent), str(open_path.name))
+            else:
+                pane.openPath(str(open_path))
         else:
             pane.openPath(str(open_path))
             if mod == ckit.MODKEY_SHIFT:
