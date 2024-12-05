@@ -2143,7 +2143,6 @@ def configure(window: MainWindow) -> None:
                 title=prompt,
                 text=placeholder,
                 candidate_handler=Suffixer(window, (not only_stem), True),
-                auto_complete=True,
                 selection=[sel_start, sel_end],
             )
 
