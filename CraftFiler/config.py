@@ -86,7 +86,7 @@ class PaintOption:
 
 
 PO = PaintOption()
-USER_PROFILE = os.environ.get("USERPROFILE") or ""
+USER_PROFILE = os.environ.get("USERPROFILE", "")
 LINE_BREAK = os.linesep
 
 
@@ -1145,16 +1145,19 @@ def configure(window: MainWindow) -> None:
             if not self.expect:
                 return FzfResult(self.default_finisher, stdout)
             lines = stdout.splitlines()
-            try:
-                assert (
-                    len(lines) == 2
-                ), "with --expect option, 2 lines should be returned, but 3 or more lines are returned"
-            except AssertionError as err:
-                print(err, file=sys.stderr)
+            if len(lines) != 2:
+                print("with --expect option, 2 lines should be returned, but 3 or more lines are returned")
                 return FzfResult(self.default_finisher, "")
             if len(lines[0]) < 1:
                 return FzfResult(self.default_finisher, lines[1])
             return FzfResult(*lines)
+
+    def check_fzf() -> bool:
+        paths = os.environ.get("PATH", "").split(os.pathsep)
+        for path in paths:
+            if Path(path, "fzf.exe").exists():
+                return True
+        return False
 
     class FuzzyBookmark:
 
@@ -1195,6 +1198,10 @@ def configure(window: MainWindow) -> None:
             return self.table.get(sel, "")
 
     def fuzzy_bookmark() -> None:
+        if not check_fzf():
+            Logger().log("fzf.exe not found.")
+            return
+
         pane = CPane(window)
 
         def _get_path(job_item: ckit.JobItem) -> None:
@@ -1279,8 +1286,7 @@ def configure(window: MainWindow) -> None:
             if len(idxs) < 1:
                 return "0"
             idxs.sort()
-            fmt = "{:0" + str(width) + "}"
-            return fmt.format(idxs[-1] + 1)
+            return ("0" * (width - 1)) + str(idxs[-1] + 1)
 
         def get_name(self) -> Tuple[str, bool]:
             result = self.fzf()
@@ -1295,6 +1301,10 @@ def configure(window: MainWindow) -> None:
             return result_name, open_dir
 
     def ruled_mkdir() -> None:
+        if not check_fzf():
+            Logger().log("fzf.exe not found.")
+            return
+
         pane = CPane(window)
 
         def _get_name(job_item: ckit.JobItem) -> None:
