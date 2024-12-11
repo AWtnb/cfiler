@@ -856,6 +856,19 @@ def configure(window: MainWindow) -> None:
             )
             child_lister.destroy()
 
+        def traverse(self) -> List[str]:
+            paths = []
+            for item in self.items:
+                if item.isdir():
+                    if item.getName().startswith("."):
+                        continue
+                    for _, _, files in item.walk():
+                        for file in files:
+                            paths.append(file.getFullpath())
+                else:
+                    paths.append(item.getFullpath())
+            return paths
+
     class LeftPane(CPane):
         def __init__(self, window: MainWindow) -> None:
             super().__init__(window, (window.focus == MainWindow.FOCUS_LEFT))
@@ -1146,7 +1159,9 @@ def configure(window: MainWindow) -> None:
                 return FzfResult(self.default_finisher, stdout)
             lines = stdout.splitlines()
             if len(lines) != 2:
-                print("with --expect option, 2 lines should be returned, but 3 or more lines are returned")
+                print(
+                    "with --expect option, 2 lines should be returned, but 3 or more lines are returned"
+                )
                 return FzfResult(self.default_finisher, "")
             if len(lines[0]) < 1:
                 return FzfResult(self.default_finisher, lines[1])
@@ -1480,7 +1495,7 @@ def configure(window: MainWindow) -> None:
         pane.focusByName(basename + ".pdf")
 
     def to_cliped_path() -> None:
-        path = ckit.getClipboardText().strip().replace("\"", "")
+        path = ckit.getClipboardText().strip().replace('"', "")
         CPane(window).openPath(path)
 
     KEYBINDER.bind("C-V", to_cliped_path)
@@ -2446,7 +2461,7 @@ def configure(window: MainWindow) -> None:
                         filler = " " * w + "=" * (buffer_width - w)
                         print("", filler, n)
 
-    class PaneDiff:
+    class ItemsDiff:
         _active_pane: CPane
         _inactive_pane: CPane
 
@@ -2476,19 +2491,6 @@ def configure(window: MainWindow) -> None:
             for i in range(self._inactive_pane.count):
                 self._inactive_pane.unSelect(i)
 
-        def traverse_inactive_pane(self) -> list:
-            paths = []
-            for item in self._inactive_pane.items:
-                if item.isdir():
-                    if item.getName().startswith("."):
-                        continue
-                    for _, _, files in item.walk():
-                        for file in files:
-                            paths.append(file.getFullpath())
-                else:
-                    paths.append(item.getFullpath())
-            return paths
-
         def compare(self) -> None:
             def _scan(job_item: ckit.JobItem) -> None:
                 targets = self.targets
@@ -2502,7 +2504,7 @@ def configure(window: MainWindow) -> None:
                 window.setProgressValue(None)
 
                 table = {}
-                for path in self.traverse_inactive_pane():
+                for path in self._inactive_pane.traverse():
                     if job_item.isCanceled():
                         return
                     rel = Path(path).relative_to(self._inactive_pane.currentPath)
@@ -2542,8 +2544,7 @@ def configure(window: MainWindow) -> None:
             window.taskEnqueue(job, create_new_queue=False)
 
     def find_same_file() -> None:
-        pd = PaneDiff()
-        pd.compare()
+        ItemsDiff().compare()
 
     def diffinity() -> None:
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
