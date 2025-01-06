@@ -1,7 +1,6 @@
 import datetime
 import hashlib
 import inspect
-import sys
 import os
 import re
 import shutil
@@ -2030,17 +2029,22 @@ def configure(window: MainWindow) -> None:
             return
         sep = "@"
 
-        pos = None
-        ins = result
-        if sep in result:
-            ss = result.split(sep)
-            if 1 < len(ss):
-                arg = ss[-1]
-                if len(arg) < 1:
-                    ins = ins[:-1]
-                else:
-                    pos = int(arg)
-                    ins = sep.join(ss[:-1])
+        def _get_insert_text() -> str:
+            if sep in result:
+                if result.endswith(sep):
+                    return result[:-1]
+                return result[: result.rfind(sep)]
+            return result
+
+        def _get_insert_pos() -> Union[int, None]:
+            if sep in result:
+                if result.endswith(sep):
+                    return None
+                return int(result[result.rfind(sep) + 1 :])
+            return None
+
+        ins = _get_insert_text()
+        pos = _get_insert_pos()
         reverse = mod == ckit.MODKEY_SHIFT
 
         def _func() -> None:
@@ -2050,15 +2054,8 @@ def configure(window: MainWindow) -> None:
                     new_name = org_path.stem + ins + org_path.suffix
                 else:
                     stem = org_path.stem
-                    if reverse:
-                        new_name = (
-                            stem[: len(stem) - pos]
-                            + ins
-                            + stem[len(stem) - pos :]
-                            + org_path.suffix
-                        )
-                    else:
-                        new_name = stem[:pos] + ins + stem[pos:] + org_path.suffix
+                    i = pos * -1 if reverse else pos
+                    new_name = stem[:i] + ins + stem[i:] + org_path.suffix
 
                 renamer.execute(org_path, new_name)
 
