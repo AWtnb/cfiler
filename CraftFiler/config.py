@@ -2638,22 +2638,13 @@ def configure(window: MainWindow) -> None:
 
     def select_stem_startswith() -> None:
         pane = CPane(window)
-        stems = pane.stems
         stem = Path(pane.focusedItemPath).stem
-        offset = 0
-        ss = stem.split("_")
-        while 1 < len(ss):
-            ss.pop()
-            head = "_".join(ss)
-            found = [s for s in stems if s.startswith(head)]
-            if 1 < len(found):
-                offset = len(head)
-                break
+        last_sep = stem.rfind("_")
+        t = stem[: last_sep + 1]
 
-        t = stem[:offset] if 0 < offset else stem
-        cur = [len(stem)] * 2
+        c = [len(t)] * 2
         result, mod = window.commandLine(
-            "StartsWith", return_modkey=True, text=t, selection=cur
+            "StartsWith", return_modkey=True, text=t, selection=c
         )
         if result:
             Selector(window).stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
@@ -2661,11 +2652,13 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("Caret", select_stem_startswith)
 
     def select_stem_endswith() -> None:
+        pane = CPane(window)
+        stem = Path(pane.focusedItemPath).stem
+        first_sep = stem.find("_")
+        t = stem[first_sep:]
+
         result, mod = window.commandLine(
-            "EndsWith",
-            return_modkey=True,
-            candidate_handler=Suffixer(window, False),
-            auto_complete=True,
+            "EndsWith", return_modkey=True, text=t, selection=[0, 0]
         )
         if result:
             Selector(window).stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
