@@ -1959,18 +1959,23 @@ def configure(window: MainWindow) -> None:
             return
 
         sep = ";"
-        offset = 0
-        length = 0
 
-        if sep in result:
-            args = result.split(sep)
-            if 0 < len(o := args[0]):
-                offset = int(o)
-            if 1 < len(args):
-                if 0 < len(l := args[-1]):
-                    length = int(l)
-        else:
-            offset = int(result)
+        def _get_offset() -> int:
+            if sep in result:
+                if result.startswith(sep):
+                    return 0
+                return int(result[: result.find(sep)])
+            return int(result)
+
+        def _get_length() -> int:
+            if sep in result:
+                if result.endswith(sep):
+                    return 0
+                return int(result[result.rfind(sep) + 1 :])
+            return 0
+
+        offset = _get_offset()
+        length = _get_length()
 
         def _func() -> None:
             for item in targets:
