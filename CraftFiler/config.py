@@ -94,7 +94,7 @@ def delay(msec: int = 50) -> None:
 
 
 def smart_check_path(path: Union[str, Path]) -> bool:
-    # case insensitive path check
+    """CASE-INSENSITIVE path check"""
     p = Path(path) if type(path) is str else path
     if p.drive == "C:":
         return p.exists()
