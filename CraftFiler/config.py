@@ -1999,7 +1999,9 @@ def configure(window: MainWindow) -> None:
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}".format(org_path.name, new_name))
 
-            if not popResultWindow(window, "Preview (Enter/Esc)", "\n".join(lines)):
+            lines.append("\noffset: {}\nlength: {}\nOK? (Enter / Esc)".format(offset, length))
+
+            if not popResultWindow(window, "Preview", "\n".join(lines)):
                 return []
             return infos
 
