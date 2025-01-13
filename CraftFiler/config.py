@@ -1981,7 +1981,12 @@ def configure(window: MainWindow) -> None:
         offset = _get_offset()
         length = _get_length()
 
-        def _confirm() -> bool:
+        class RenameInfo(NamedTuple):
+            orgPath: Path
+            newName: str
+
+        def _confirm() -> List[RenameInfo]:
+            infos = []
             lines = []
             for item in targets:
                 org_path = Path(item.getFullpath())
@@ -1990,24 +1995,21 @@ def configure(window: MainWindow) -> None:
                 if 0 < length:
                     new_name += stem[offset + length :]
                 new_name += org_path.suffix
-                lines.append("Rename: {}".format(org_path.name))
-                lines.append("    ==> {}".format(new_name))
 
-            return popResultWindow(window, "Preview (Enter/Esc)", "\n".join(lines))
+                infos.append(RenameInfo(org_path, new_name))
+                lines.append("Rename: {}\n    ==> {}".format(org_path.name, new_name))
 
-        if not _confirm():
+            if not popResultWindow(window, "Preview (Enter/Esc)", "\n".join(lines)):
+                return []
+            return infos
+
+        infos = _confirm()
+        if len(infos) < 1:
             return
 
         def _func() -> None:
-            for item in targets:
-                org_path = Path(item.getFullpath())
-                stem = org_path.stem
-                new_name = stem[:offset]
-                if 0 < length:
-                    new_name += stem[offset + length :]
-                new_name += org_path.suffix
-
-                renamer.execute(org_path, new_name)
+            for info in infos:
+                renamer.execute(info.orgPath, info.newName)
 
         Logger().wrap(_func)
 
