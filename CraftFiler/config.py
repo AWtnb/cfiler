@@ -58,6 +58,10 @@ from cfiler_listwindow import ListWindow, ListItem
 # https://github.com/crftwr/cfiler/blob/master/cfiler_textviewer.py
 from cfiler_textviewer import TextViewer
 
+# https://github.com/crftwr/cfiler/blob/master/cfiler_renamewindow.py
+from cfiler_resultwindow import popResultWindow
+
+# https://github.com/crftwr/cfiler/blob/master/cfiler_misc.py
 from cfiler_misc import getFileSizeString
 
 
@@ -1976,6 +1980,23 @@ def configure(window: MainWindow) -> None:
 
         offset = _get_offset()
         length = _get_length()
+
+        def _confirm() -> bool:
+            lines = []
+            for item in targets:
+                org_path = Path(item.getFullpath())
+                stem = org_path.stem
+                new_name = stem[:offset]
+                if 0 < length:
+                    new_name += stem[offset + length :]
+                new_name += org_path.suffix
+                lines.append("Rename: {}".format(org_path.name))
+                lines.append("    ==> {}".format(new_name))
+
+            return popResultWindow(window, "Preview (Enter/Esc)", "\n".join(lines))
+
+        if not _confirm():
+            return
 
         def _func() -> None:
             for item in targets:
