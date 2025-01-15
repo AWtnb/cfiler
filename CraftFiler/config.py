@@ -100,9 +100,10 @@ def delay(msec: int = 50) -> None:
 def smart_check_path(path: Union[str, Path]) -> bool:
     """CASE-INSENSITIVE path check"""
     p = Path(path) if type(path) is str else path
-    if p.drive == "C:":
+    try:
         return p.exists()
-    return os.path.exists(path)
+    except:
+        return False
 
 
 class LocalApps:
@@ -1999,7 +2000,9 @@ def configure(window: MainWindow) -> None:
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}".format(org_path.name, new_name))
 
-            lines.append("\noffset: {}\nlength: {}\nOK? (Enter / Esc)".format(offset, length))
+            lines.append(
+                "\noffset: {}\nlength: {}\nOK? (Enter / Esc)".format(offset, length)
+            )
 
             if not popResultWindow(window, "Preview", "\n".join(lines)):
                 return []
