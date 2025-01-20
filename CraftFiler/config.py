@@ -1359,7 +1359,10 @@ def configure(window: MainWindow) -> None:
             ]
 
         def check(self) -> bool:
-            return smart_check_path(self._exe_path) and smart_check_path(self._src_path)
+            for p in [self._exe_path, self._src_path]:
+                if not smart_check_path(p):
+                    return False
+            return True
 
         def invoke(self, search_all: bool = False) -> Callable:
             cmd = self._cmd + ["-all={}".format(search_all)]
