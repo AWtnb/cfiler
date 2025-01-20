@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import time
 import unicodedata
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from concurrent.futures import ThreadPoolExecutor
 
 from pathlib import Path
 from typing import List, Tuple, Callable, Union, NamedTuple
@@ -106,7 +106,7 @@ def smart_check_path(
     try:
         future = ThreadPoolExecutor(max_workers=1).submit(p.exists)
         return future.result(timeout_sec)
-    except TimeoutError:
+    except:
         return False
 
 
