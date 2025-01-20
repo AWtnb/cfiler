@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import time
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 from pathlib import Path
 from typing import List, Tuple, Callable, Union, NamedTuple
@@ -97,14 +98,15 @@ def delay(msec: int = 50) -> None:
     time.sleep(msec / 1000)
 
 
-def smart_check_path(path: Union[str, Path]) -> bool:
-    """CASE-INSENSITIVE path check"""
-    p = Path(path) if type(path) is str else path
+def smart_check_path(
+    path: Union[str, Path], timeout_sec: Union[int, float, None] = None
+) -> bool:
+    """CASE-INSENSITIVE path check with timeout"""
+    p = path if type(path) is Path else Path(path)
     try:
-        if p.drive == "C:":
-            return p.exists()
-        return os.path.exists(p)
-    except:
+        future = ThreadPoolExecutor(max_workers=1).submit(p.exists)
+        return future.result(timeout_sec)
+    except TimeoutError:
         return False
 
 
@@ -812,7 +814,7 @@ def configure(window: MainWindow) -> None:
 
         def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
             target = Path(path)
-            if not smart_check_path(target):
+            if not smart_check_path(target, 2.0):
                 Logger().log("invalid path: '{}'".format(path))
                 return
             if target.is_file():
@@ -1184,9 +1186,7 @@ def configure(window: MainWindow) -> None:
     class FuzzyBookmark:
 
         def __init__(self, window: MainWindow) -> None:
-            self._bookmarks = [
-                path for path in window.bookmark.getItems() if smart_check_path(path)
-            ]
+            self._bookmarks = [path for path in window.bookmark.getItems()]
 
         @property
         def table(self) -> dict:
