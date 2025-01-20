@@ -101,7 +101,9 @@ def smart_check_path(path: Union[str, Path]) -> bool:
     """CASE-INSENSITIVE path check"""
     p = Path(path) if type(path) is str else path
     try:
-        return p.exists()
+        if p.drive == "C:":
+            return p.exists()
+        return os.path.exists(p)
     except:
         return False
 
@@ -1174,7 +1176,8 @@ def configure(window: MainWindow) -> None:
     def check_fzf() -> bool:
         paths = os.environ.get("PATH", "").split(os.pathsep)
         for path in paths:
-            if Path(path, "fzf.exe").exists():
+            p = Path(path, "fzf.exe")
+            if smart_check_path(p):
                 return True
         return False
 
