@@ -1004,7 +1004,7 @@ def configure(window: MainWindow) -> None:
         window.taskEnqueue(job, create_new_queue=False)
 
     def hook_enter() -> bool:
-        # returning `True` skips default action.
+        # returning `True` hooks (skips) default action.
 
         pane = CPane(window)
         if pane.isBlank:
@@ -1016,7 +1016,7 @@ def configure(window: MainWindow) -> None:
         if p.is_dir():
             return False
 
-        if os.path.getsize(focus_path) == 0:
+        if pane.focusedItem.size() == 0:
             window.command_Execute(None)
             return True
 
