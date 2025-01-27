@@ -1206,12 +1206,16 @@ def configure(window: MainWindow) -> None:
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
-                result = proc.stdout
-                if proc.returncode == 0:
-                    return result
+                if proc.returncode != 0:
+                    if o := proc.stdout:
+                        print(o)
+                    if e := proc.stderr:
+                        print(e)
+                    return ""
+                return proc.stdout
             except Exception as e:
                 print(e)
-            return ""
+                return ""
 
         def get_path(self) -> str:
             result = self.fzf()
@@ -1256,12 +1260,42 @@ def configure(window: MainWindow) -> None:
                 encoding="utf-8",
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
-            result = proc.stdout
-            if proc.returncode == 0:
-                return result
+            if proc.returncode != 0:
+                if o := proc.stdout:
+                    print(o)
+                if e := proc.stderr:
+                    print(e)
+                return ""
+            return proc.stdout
         except Exception as e:
             print(e)
-        return ""
+            return ""
+
+    def docx_to_txt() -> None:
+        def _convert(path: str) -> None:
+            if not path.endswith(".docx"):
+                return
+
+            def __read(job_item: ckit.JobItem) -> None:
+                job_item.result = read_docx(path)
+
+            def __write(job_item: ckit.JobItem) -> None:
+                new_path = Path(path).with_suffix(".txt")
+                if smart_check_path(new_path):
+                    Logger().log("Path duplicates: '{}'".format(new_path))
+                else:
+                    new_path.write_text(job_item.result)
+
+            job = ckit.JobItem(__read, __write)
+            window.taskEnqueue(job, create_new_queue=False)
+
+        pane = CPane(window)
+        paths = pane.selectedItemPaths
+        if len(paths) < 1:
+            paths = [pane.focusedItemPath]
+
+        for path in paths:
+            _convert(path)
 
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
@@ -1287,12 +1321,16 @@ def configure(window: MainWindow) -> None:
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
-                result = proc.stdout
-                if proc.returncode == 0:
-                    return result
+                if proc.returncode != 0:
+                    if o := proc.stdout:
+                        print(o)
+                    if e := proc.stderr:
+                        print(e)
+                    return ""
+                return proc.stdout
             except Exception as e:
                 print(e)
-            return ""
+                return ""
 
         def get_index(self) -> str:
             idxs = []
@@ -2852,6 +2890,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "DocxToTxt": docx_to_txt,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
