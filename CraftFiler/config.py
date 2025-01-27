@@ -1284,7 +1284,7 @@ def configure(window: MainWindow) -> None:
                 if smart_check_path(new_path):
                     Logger().log("Path duplicates: '{}'".format(new_path))
                 else:
-                    new_path.write_text(job_item.result)
+                    new_path.write_text(job_item.result, encoding="utf-8")
 
             job = ckit.JobItem(__read, __write)
             window.taskEnqueue(job, create_new_queue=False)
