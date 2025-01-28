@@ -307,7 +307,7 @@ def configure(window: MainWindow) -> None:
                     rgb = tuple(int(c, 16) for c in [r, g, b])
                     self._data[key] = rgb
                 except Exception as e:
-                    print(e)
+                    Logger().log(e)
 
         def to_string(self) -> str:
             lines = ["[COLOR]"]
@@ -1502,7 +1502,7 @@ def configure(window: MainWindow) -> None:
                 if proc.returncode != 0:
                     Logger().log("ERROR: {}".format(proc.stdout))
             except Exception as e:
-                print(e)
+                Logger().log(e)
 
         window.subThreadCall(_conc, (basename,))
         pane.unSelectAll()
@@ -2843,8 +2843,7 @@ def configure(window: MainWindow) -> None:
                 result = proc.stdout.strip()
                 Logger().log(result)
             except Exception as e:
-                print(e)
-                Logger().log("(canceled)")
+                Logger().log(e)
                 return
 
     def reset_hotkey() -> None:
