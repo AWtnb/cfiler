@@ -1150,31 +1150,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S", swap_pane)
 
-    class FzfResult(NamedTuple):
-        finisher: str
-        text: str
-
-    class FzfResultParser:
-        default_finisher = "enter"
-
-        def __init__(self, expect: bool) -> None:
-            self.expect = expect
-
-        def parse(self, stdout: str) -> FzfResult:
-            if len(stdout) < 1:
-                return FzfResult(self.default_finisher, "")
-            if not self.expect:
-                return FzfResult(self.default_finisher, stdout)
-            lines = stdout.splitlines()
-            if len(lines) != 2:
-                print(
-                    "with --expect option, 2 lines should be returned, but 3 or more lines are returned"
-                )
-                return FzfResult(self.default_finisher, "")
-            if len(lines[0]) < 1:
-                return FzfResult(self.default_finisher, lines[1])
-            return FzfResult(*lines)
-
     def check_fzf() -> bool:
         paths = os.environ.get("PATH", "").split(os.pathsep)
         for path in paths:
@@ -1202,26 +1177,24 @@ def configure(window: MainWindow) -> None:
         def fzf(self) -> str:
             src = "\n".join(sorted(self.table.keys(), reverse=True))
             try:
-                cmd = ["fzf.exe", "--expect", "ctrl-l"]
+                cmd = ["fzf.exe"]
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
                 if proc.returncode != 0:
                     if o := proc.stdout:
-                        print(o)
+                        Logger().log(o)
                     if e := proc.stderr:
-                        print(e)
+                        Logger().log(e)
                     return ""
                 return proc.stdout
             except Exception as e:
-                print(e)
+                Logger().log(e)
                 return ""
 
         def get_path(self) -> str:
             result = self.fzf()
-            fr = FzfResultParser(True).parse(result)
-            sel = fr.text
-            return self.table.get(sel, "")
+            return self.table.get(result.strip(), "")
 
     def fuzzy_bookmark() -> None:
         if not check_fzf():
@@ -1262,13 +1235,13 @@ def configure(window: MainWindow) -> None:
             )
             if proc.returncode != 0:
                 if o := proc.stdout:
-                    print(o)
+                    Logger().log(o)
                 if e := proc.stderr:
-                    print(e)
+                    Logger().log(e)
                 return ""
             return proc.stdout
         except Exception as e:
-            print(e)
+            Logger().log(e)
             return ""
 
     def docx_to_txt() -> None:
@@ -1317,19 +1290,19 @@ def configure(window: MainWindow) -> None:
                 return ""
             src = "\n".join(sorted(sorted(src.splitlines()), key=len))
             try:
-                cmd = ["fzf.exe", "--no-sort", "--expect", "ctrl-space"]
+                cmd = ["fzf.exe", "--no-sort"]
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
                 if proc.returncode != 0:
                     if o := proc.stdout:
-                        print(o)
+                        Logger().log(o)
                     if e := proc.stderr:
-                        print(e)
+                        Logger().log(e)
                     return ""
                 return proc.stdout
             except Exception as e:
-                print(e)
+                Logger().log(e)
                 return ""
 
         def get_index(self) -> str:
@@ -1346,19 +1319,16 @@ def configure(window: MainWindow) -> None:
             if len(idxs) < 1:
                 return "0"
             idxs.sort()
-            return ("0" * (width - 1)) + str(idxs[-1] + 1)
+            return str(idxs[-1] + 1).rjust(width, "0")
 
-        def get_name(self) -> Tuple[str, bool]:
-            result = self.fzf()
-            fr = FzfResultParser(True).parse(result)
-            result_name = fr.text
-            open_dir = fr.finisher != FzfResultParser.default_finisher
-            if -1 < (i := result_name.find("|")):
-                result_name = result_name[:i].strip()
-            if result_name.startswith("#"):
+        def get_name(self) -> str:
+            result = self.fzf().strip()
+            if -1 < (i := result.find("|")):
+                result = result[:i].strip()
+            if result.startswith("#"):
                 idx = self.get_index()
-                return (idx + result_name[1:]), open_dir
-            return result_name, open_dir
+                return idx + result[1:]
+            return result
 
     def ruled_mkdir() -> None:
         if not check_fzf():
@@ -1370,15 +1340,12 @@ def configure(window: MainWindow) -> None:
         def _get_name(job_item: ckit.JobItem) -> None:
             job_item.name = ""
             dr = DirRule(pane.currentPath)
-            job_item.name, job_item.open = dr.get_name()
+            job_item.name = dr.get_name()
 
         def _mkdir(job_item: ckit.JobItem) -> None:
             name = job_item.name
             if 0 < len(name):
                 pane.mkdir(name)
-                if job_item.open:
-                    p = str(Path(pane.currentPath, job_item.name))
-                    pane.openPath(p)
 
         job = ckit.JobItem(_get_name, _mkdir)
         window.taskEnqueue(job, create_new_queue=False)
