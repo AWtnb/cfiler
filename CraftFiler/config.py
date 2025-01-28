@@ -307,7 +307,7 @@ def configure(window: MainWindow) -> None:
                     rgb = tuple(int(c, 16) for c in [r, g, b])
                     self._data[key] = rgb
                 except Exception as e:
-                    Logger().log(e)
+                    Kiritori.log(e)
 
         def to_string(self) -> str:
             lines = ["[COLOR]"]
@@ -358,32 +358,35 @@ def configure(window: MainWindow) -> None:
     }
     set_theme(CUSTOM_THEME)
 
-    class Logger:
+    class Kiritori:
         sep = "-"
 
-        def __init__(self) -> None:
-            self._width = window.width()
+        @staticmethod
+        def get_width() -> int:
+            return window.width()
 
-        @property
-        def header(self) -> str:
+        @classmethod
+        def _draw_header(cls) -> None:
             ts = datetime.datetime.today().strftime(
-                " %Y-%m-%d %H:%M:%S.%f {}".format(self.sep * 2)
+                " %Y-%m-%d %H:%M:%S.%f {}".format(cls.sep * 2)
             )
-            return "\n{}".format(ts.rjust(self._width, self.sep))
+            print("\n{}".format(ts.rjust(cls.get_width(), cls.sep)))
 
-        @property
-        def footer(self) -> str:
-            return "{}\n".format(self.sep * self._width)
+        @classmethod
+        def _draw_footer(cls) -> None:
+            print("{}\n".format(cls.sep * cls.get_width()))
 
-        def log(self, s) -> None:
-            print(self.header)
+        @classmethod
+        def log(cls, s) -> None:
+            cls._draw_header()
             print(s)
-            print(self.footer)
+            cls._draw_footer()
 
-        def wrap(self, func: Callable) -> None:
-            print(self.header)
+        @classmethod
+        def wrap(cls, func: Callable) -> None:
+            cls._draw_header()
             func()
-            print(self.footer)
+            cls._draw_footer()
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -481,7 +484,7 @@ def configure(window: MainWindow) -> None:
                     self._menu_table[name] = path
                     self._list_items.append(ListItem(name, False))
             except Exception as e:
-                Logger().log(e)
+                Kiritori.log(e)
 
         @property
         def bookmarks(self) -> List[str]:
@@ -815,7 +818,7 @@ def configure(window: MainWindow) -> None:
         def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
             target = Path(path)
             if not smart_check_path(target, 2.0):
-                Logger().log("invalid path: '{}'".format(path))
+                Kiritori.log("invalid path: '{}'".format(path))
                 return
             if target.is_file():
                 path = str(target.parent)
@@ -825,11 +828,11 @@ def configure(window: MainWindow) -> None:
 
         def touch(self, name: str) -> None:
             if not hasattr(self.lister, "touch"):
-                Logger().log("cannot make file here.")
+                Kiritori.log("cannot make file here.")
                 return
             dp = Path(self.currentPath, name)
             if smart_check_path(dp) and dp.is_file():
-                Logger().log("file '{}' already exists.".format(name))
+                Kiritori.log("file '{}' already exists.".format(name))
                 return
             self._window.subThreadCall(self.lister.touch, (name,))
             self.refresh()
@@ -837,11 +840,11 @@ def configure(window: MainWindow) -> None:
 
         def mkdir(self, name: str, focus: bool = True) -> None:
             if not hasattr(self.lister, "mkdir"):
-                Logger().log("cannot make directory here.")
+                Kiritori.log("cannot make directory here.")
                 return
             dp = Path(self.currentPath, name)
             if smart_check_path(dp) and dp.is_dir():
-                Logger().log("directory '{}' already exists.".format(name))
+                Kiritori.log("directory '{}' already exists.".format(name))
                 self.focusByName(name)
                 return
             self._window.subThreadCall(self.lister.mkdir, (name, None))
@@ -934,7 +937,7 @@ def configure(window: MainWindow) -> None:
         try:
             pyauto.shellExecute(None, path, " ".join(params), "")
         except:
-            Logger().log("invalid path: '{}'".format(path))
+            Kiritori.log("invalid path: '{}'".format(path))
 
     def toggle_pane_width() -> None:
         half = (window.width() - 1) // 2
@@ -998,7 +1001,7 @@ def configure(window: MainWindow) -> None:
         def _view(job_item: ckit.JobItem) -> None:
             lines = job_item.result.splitlines()
             height = max(window.log_window_height - 4, 2)
-            Logger().log(LINE_BREAK.join(lines[:height]))
+            Kiritori.log(LINE_BREAK.join(lines[:height]))
 
         job = ckit.JobItem(_read, _view)
         window.taskEnqueue(job, create_new_queue=False)
@@ -1183,13 +1186,13 @@ def configure(window: MainWindow) -> None:
                 )
                 if proc.returncode != 0:
                     if o := proc.stdout:
-                        Logger().log(o)
+                        Kiritori.log(o)
                     if e := proc.stderr:
-                        Logger().log(e)
+                        Kiritori.log(e)
                     return ""
                 return proc.stdout
             except Exception as e:
-                Logger().log(e)
+                Kiritori.log(e)
                 return ""
 
         def get_path(self) -> str:
@@ -1198,7 +1201,7 @@ def configure(window: MainWindow) -> None:
 
     def fuzzy_bookmark() -> None:
         if not check_fzf():
-            Logger().log("fzf.exe not found.")
+            Kiritori.log("fzf.exe not found.")
             return
 
         pane = CPane(window)
@@ -1220,7 +1223,7 @@ def configure(window: MainWindow) -> None:
     def read_docx(path: str) -> str:
         exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\docxr.exe")
         if not smart_check_path(exe_path):
-            Logger().log("'{}' not found...".format(exe_path))
+            Kiritori.log("'{}' not found...".format(exe_path))
             return ""
         try:
             cmd = [
@@ -1235,13 +1238,13 @@ def configure(window: MainWindow) -> None:
             )
             if proc.returncode != 0:
                 if o := proc.stdout:
-                    Logger().log(o)
+                    Kiritori.log(o)
                 if e := proc.stderr:
-                    Logger().log(e)
+                    Kiritori.log(e)
                 return ""
             return proc.stdout
         except Exception as e:
-            Logger().log(e)
+            Kiritori.log(e)
             return ""
 
     def docx_to_txt() -> None:
@@ -1255,7 +1258,7 @@ def configure(window: MainWindow) -> None:
             def __write(job_item: ckit.JobItem) -> None:
                 new_path = Path(path).with_suffix(".txt")
                 if smart_check_path(new_path):
-                    Logger().log("Path duplicates: '{}'".format(new_path))
+                    Kiritori.log("Path duplicates: '{}'".format(new_path))
                 else:
                     new_path.write_text(job_item.result, encoding="utf-8")
 
@@ -1286,7 +1289,7 @@ def configure(window: MainWindow) -> None:
         def fzf(self) -> str:
             src = self.read_src().strip()
             if len(src) < 1:
-                Logger().log("src file '{}' not found...".format(self._src_name))
+                Kiritori.log("src file '{}' not found...".format(self._src_name))
                 return ""
             src = "\n".join(sorted(sorted(src.splitlines()), key=len))
             try:
@@ -1296,13 +1299,13 @@ def configure(window: MainWindow) -> None:
                 )
                 if proc.returncode != 0:
                     if o := proc.stdout:
-                        Logger().log(o)
+                        Kiritori.log(o)
                     if e := proc.stderr:
-                        Logger().log(e)
+                        Kiritori.log(e)
                     return ""
                 return proc.stdout
             except Exception as e:
-                Logger().log(e)
+                Kiritori.log(e)
                 return ""
 
         def get_index(self) -> str:
@@ -1332,7 +1335,7 @@ def configure(window: MainWindow) -> None:
 
     def ruled_mkdir() -> None:
         if not check_fzf():
-            Logger().log("fzf.exe not found.")
+            Kiritori.log("fzf.exe not found.")
             return
 
         pane = CPane(window)
@@ -1382,7 +1385,7 @@ def configure(window: MainWindow) -> None:
                 if result:
                     if proc.returncode != 0:
                         if result:
-                            Logger().log(result)
+                            Kiritori.log(result)
                         return
                     job_item.result = result
 
@@ -1438,7 +1441,7 @@ def configure(window: MainWindow) -> None:
                 if result:
                     if proc.returncode != 0:
                         if result:
-                            Logger().log(result)
+                            Kiritori.log(result)
                         return
                     job_item.result = result
 
@@ -1473,10 +1476,10 @@ def configure(window: MainWindow) -> None:
         for path in pane.selectedItemPaths:
             p = Path(path)
             if p.is_dir():
-                Logger().log("dir item is selected!")
+                Kiritori.log("dir item is selected!")
                 return
             if p.suffix != ".pdf":
-                Logger().log("non-pdf file found!")
+                Kiritori.log("non-pdf file found!")
                 return
         basename = "conc"
         result = window.commandLine(
@@ -1500,9 +1503,9 @@ def configure(window: MainWindow) -> None:
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
                 if proc.returncode != 0:
-                    Logger().log("ERROR: {}".format(proc.stdout))
+                    Kiritori.log("ERROR: {}".format(proc.stdout))
             except Exception as e:
-                Logger().log(e)
+                Kiritori.log(e)
 
         window.subThreadCall(_conc, (basename,))
         pane.unSelectAll()
@@ -1568,7 +1571,7 @@ def configure(window: MainWindow) -> None:
             return
 
         if active_pane.byName(result) != -1:
-            Logger().log("'{}' already exists.".format(result))
+            Kiritori.log("'{}' already exists.".format(result))
             return
 
         active_pane.mkdir(result, False)
@@ -1628,7 +1631,7 @@ def configure(window: MainWindow) -> None:
                     for s in ss:
                         print("- '{}'".format(s))
 
-                Logger().wrap(_func)
+                Kiritori.wrap(_func)
 
         @classmethod
         def paths(cls) -> None:
@@ -2027,7 +2030,7 @@ def configure(window: MainWindow) -> None:
             for info in infos:
                 renamer.execute(info.orgPath, info.newName)
 
-        Logger().wrap(_func)
+        Kiritori.wrap(_func)
 
     KEYBINDER.bind("S-S", rename_substr)
 
@@ -2054,7 +2057,7 @@ def configure(window: MainWindow) -> None:
         def _func() -> None:
             renamer.execute(focus_path, new_name, mod == ckit.MODKEY_SHIFT)
 
-        Logger().wrap(_func)
+        Kiritori.wrap(_func)
 
     KEYBINDER.bind("A-X", rename_extension)
 
@@ -2103,7 +2106,7 @@ def configure(window: MainWindow) -> None:
 
                 renamer.execute(org_path, new_name)
 
-        Logger().wrap(_func)
+        Kiritori.wrap(_func)
 
     KEYBINDER.bind("S-I", rename_insert)
 
@@ -2187,7 +2190,7 @@ def configure(window: MainWindow) -> None:
             def _func() -> None:
                 renamer.execute(org_path, new_name, mod == ckit.MODKEY_SHIFT)
 
-            Logger().wrap(_func)
+            Kiritori.wrap(_func)
 
         return _renamer
 
@@ -2221,7 +2224,7 @@ def configure(window: MainWindow) -> None:
                 new_path = src_path.with_name(result)
 
                 if smart_check_path(new_path):
-                    Logger().log("same item exists!")
+                    Kiritori.log("same item exists!")
                     return
 
                 def _copy_as(new_path: str) -> None:
@@ -2340,7 +2343,7 @@ def configure(window: MainWindow) -> None:
                     filename += suffix
                 new_path = os.path.join(pane.currentPath, filename)
                 if smart_check_path(new_path):
-                    Logger().log("'{}' already exists.".format(filename))
+                    Kiritori.log("'{}' already exists.".format(filename))
                     return
                 pane.touch(filename)
                 if mod == ckit.MODKEY_SHIFT:
@@ -2375,7 +2378,7 @@ def configure(window: MainWindow) -> None:
         if 1 < count:
             msg += "s"
         msg += " to '{}'".format(dest_name)
-        Logger().log(msg)
+        Kiritori.log(msg)
 
     KEYBINDER.bind("A-O", to_obsolete_dir)
 
@@ -2441,7 +2444,7 @@ def configure(window: MainWindow) -> None:
     def edit_config() -> None:
         config_dir = os.path.join(os.environ.get("APPDATA"), "CraftFiler")
         if not smart_check_path(config_dir):
-            Logger().log("cannot find config dir: {}".format(config_dir))
+            Kiritori.log("cannot find config dir: {}".format(config_dir))
             return
         dir_path = config_dir
         if (real_path := os.path.realpath(config_dir)) != config_dir:
@@ -2540,7 +2543,7 @@ def configure(window: MainWindow) -> None:
                 if not job_item.comparable:
                     return
 
-                Logger().log("comparing md5 hash")
+                Kiritori.log("comparing md5 hash")
 
                 window.setProgressValue(None)
 
@@ -2575,11 +2578,11 @@ def configure(window: MainWindow) -> None:
                 window.clearProgress()
                 if job_item.comparable:
                     if job_item.isCanceled():
-                        Logger().log("canceled")
+                        Kiritori.log("canceled")
                     else:
-                        Logger().log("finished")
+                        Kiritori.log("finished")
                 else:
-                    Logger().log("finished (nothing to compare)")
+                    Kiritori.log("finished (nothing to compare)")
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
@@ -2590,28 +2593,28 @@ def configure(window: MainWindow) -> None:
     def diffinity() -> None:
         exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
         if not smart_check_path(exe_path):
-            Logger().log("cannnot find diffinity.exe...")
+            Kiritori.log("cannnot find diffinity.exe...")
             return
 
         left_pane = LeftPane(window)
         left_selcted = left_pane.selectedItemPaths
         if len(left_selcted) != 1:
-            Logger().log("select just 1 file on left pane.")
+            Kiritori.log("select just 1 file on left pane.")
             return
         left_path = Path(left_selcted[0])
         if not left_path.is_file():
-            Logger().log("selected item on left pane is not comparable.")
+            Kiritori.log("selected item on left pane is not comparable.")
             return
         left_pane = LeftPane(window)
 
         right_pane = RightPane(window)
         right_selcted = right_pane.selectedItemPaths
         if len(right_selcted) != 1:
-            Logger().log("select just 1 file on right pane.")
+            Kiritori.log("select just 1 file on right pane.")
             return
         right_path = Path(right_selcted[0])
         if not right_path.is_file():
-            Logger().log("selected item on right pane is not comparable.")
+            Kiritori.log("selected item on right pane is not comparable.")
             return
 
         shell_exec(exe_path, str(left_path), str(right_path))
@@ -2835,15 +2838,15 @@ def configure(window: MainWindow) -> None:
         for src_path in active_pane.selectedItemPaths:
             junction_path = Path(dest, Path(src_path).name)
             if smart_check_path(junction_path):
-                Logger().log("'{}' already exists.".format(junction_path))
+                Kiritori.log("'{}' already exists.".format(junction_path))
                 return
             try:
                 cmd = ["cmd", "/c", "mklink", "/J", str(junction_path), src_path]
                 proc = subprocess.run(cmd, capture_output=True, encoding="cp932")
                 result = proc.stdout.strip()
-                Logger().log(result)
+                Kiritori.log(result)
             except Exception as e:
-                Logger().log(e)
+                Kiritori.log(e)
                 return
 
     def reset_hotkey() -> None:
