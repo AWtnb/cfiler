@@ -2650,6 +2650,18 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-Colon", invoke_regex_selector(True))
 
+    def select_same_name() -> None:
+        pane = CPane(window)
+        active_names = pane.selectedItemNames
+        if len(active_names) < 1:
+            active_names = [pane.focusedItem.getName()]
+        inactive = CPane(window, False)
+        inactive.unSelectAll()
+
+        for name in inactive.names:
+            if name in active_names:
+                inactive.selectByName(name)
+
     def select_name_common() -> None:
         pane = CPane(window)
         pane.unSelectAll()
@@ -2871,6 +2883,7 @@ def configure(window: MainWindow) -> None:
             "FindSameFile": find_same_file,
             "FromInactiveNames": from_inactive_names,
             "FromActiveNames": from_active_names,
+            "SelectSameName": select_same_name,
             "SelectNameUnique": select_name_unique,
             "SelectNameCommon": select_name_common,
             "SelectStemMatchCase": invoke_regex_selector(True),
