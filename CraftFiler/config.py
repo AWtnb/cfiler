@@ -2024,6 +2024,7 @@ def configure(window: MainWindow) -> None:
 
         infos = _confirm()
         if len(infos) < 1:
+            print("Canceled.\n")
             return
 
         def _func() -> None:
@@ -2095,17 +2096,41 @@ def configure(window: MainWindow) -> None:
         pos = _get_insert_pos()
         reverse = mod == ckit.MODKEY_SHIFT
 
-        def _func() -> None:
+        class RenameInfo(NamedTuple):
+            orgPath: Path
+            newName: str
+
+        def _confirm() -> List[RenameInfo]:
+            infos = []
+            lines = []
             for item in targets:
                 org_path = Path(item.getFullpath())
-                if pos is None:
-                    new_name = org_path.stem + ins + org_path.suffix
-                else:
+
+                def _get_new_name() -> str:
+                    if pos is None:
+                        return org_path.stem + ins + org_path.suffix
                     stem = org_path.stem
                     i = pos * -1 if reverse else pos
-                    new_name = stem[:i] + ins + stem[i:] + org_path.suffix
+                    return stem[:i] + ins + stem[i:] + org_path.suffix
 
-                renamer.execute(org_path, new_name)
+                new_name = _get_new_name()
+                infos.append(RenameInfo(org_path, new_name))
+                lines.append("Rename: {}\n    ==> {}".format(org_path.name, new_name))
+
+            lines.append("\ninsert: {}\nat: {}\nOK? (Enter / Esc)".format(ins, pos))
+
+            if not popResultWindow(window, "Preview", "\n".join(lines)):
+                return []
+            return infos
+
+        infos = _confirm()
+        if len(infos) < 1:
+            print("Canceled.\n")
+            return
+
+        def _func() -> None:
+            for info in infos:
+                renamer.execute(info.orgPath, info.newName)
 
         Kiritori.wrap(_func)
 
