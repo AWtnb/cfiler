@@ -2157,7 +2157,7 @@ def configure(window: MainWindow) -> None:
                     self.names.append(p.stem)
 
         @property
-        def possible_suffix(self) -> list:
+        def possible_suffix(self) -> List[str]:
             sufs = []
             for name in self.names:
                 for i, c in enumerate(name):
@@ -2168,7 +2168,7 @@ def configure(window: MainWindow) -> None:
                 sufs = [self.sep + self.timestamp] + sufs
             return sufs
 
-        def candidates(self, s: str) -> list:
+        def candidates(self, s: str) -> List[str]:
             sufs = self.possible_suffix
             if self.sep not in s:
                 return [s + suf for suf in sufs]
@@ -2184,7 +2184,7 @@ def configure(window: MainWindow) -> None:
 
         def __call__(
             self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
-        ) -> tuple:
+        ) -> Tuple[List[str], int]:
             return self.candidates(update_info.text), 0
 
     def invoke_renamer(append: bool) -> Callable:
