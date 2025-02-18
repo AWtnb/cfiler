@@ -1970,9 +1970,11 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
+        print("Rename substring:")
         result = window.commandLine("Offset[;Length]")
 
         if not result:
+            print("Canceled.\n")
             return
 
         sep = ";"
@@ -2066,12 +2068,13 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        result, mod = window.commandLine(
-            "Text[@position] (Shift-Reversable)", return_modkey=True
-        )
+        print("Rename insert (reversable with shift-enter):")
+        result, mod = window.commandLine("Text[@position]", return_modkey=True)
 
         if not result:
+            print("Canceled.\n")
             return
+
         sep = "@"
 
         def _get_insert_text() -> str:
