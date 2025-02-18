@@ -1087,16 +1087,14 @@ def configure(window: MainWindow) -> None:
         if len(paths) < 1:
             paths.append(pane.focusedItemPath)
 
-        def _is_all_pdf() -> bool:
-            for path in paths:
-                if Path(path).suffix != ".pdf":
-                    return False
-            return True
+        with_pdf_viewer = True
+        for path in paths:
+            if Path(path).suffix != ".pdf":
+                with_pdf_viewer = False
 
-        for_pdfs = _is_all_pdf()
-        apps = PDF_VIEWERS if for_pdfs else TEXT_EDITORS
+        apps = PDF_VIEWERS if with_pdf_viewer else TEXT_EDITORS
 
-        if not for_pdfs and 1 < len(paths):
+        if not with_pdf_viewer and 1 < len(paths):
             return
 
         names = apps.names
