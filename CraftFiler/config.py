@@ -1510,9 +1510,30 @@ def configure(window: MainWindow) -> None:
         pane.refresh()
         pane.focusByName(basename + ".pdf")
 
+    def make_internet_shortcut(src: str = "") -> None:
+        lines = ["[InternetShortcut]"]
+        url = window.commandLine("URL", text=src)
+        if not url:
+            return
+        if not url.startswith("http"):
+            Kiritori.log("invalid url: '{}'".format(url))
+            return
+        lines.append("URL={}".format(url))
+        title = window.commandLine("Shortcut title")
+        if not title:
+            return
+        if not title.endswith(".url"):
+            title = title + ".url"
+        Path(CPane(window).currentPath, title).write_text(
+            "\n".join(lines), encoding="utf-8"
+        )
+
     def to_cliped_path() -> None:
         path = ckit.getClipboardText().strip().replace('"', "")
-        CPane(window).openPath(path)
+        if path.startswith("http"):
+            make_internet_shortcut(path)
+        else:
+            CPane(window).openPath(path)
 
     KEYBINDER.bind("C-V", to_cliped_path)
 
@@ -2905,6 +2926,9 @@ def configure(window: MainWindow) -> None:
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
             "Diffinity": diffinity,
+            "MakeInternetShortcut": lambda: make_internet_shortcut(
+                ckit.getClipboardText().strip()
+            ),
             "RenamePseudoVoicing": rename_pseudo_voicing,
             "FindSameFile": find_same_file,
             "FromInactiveNames": from_inactive_names,
