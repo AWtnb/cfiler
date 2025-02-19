@@ -1167,8 +1167,9 @@ def configure(window: MainWindow) -> None:
         @staticmethod
         def get_alias(s: str) -> str:
             width = 6
-            hashed = hashlib.md5(s.encode()).hexdigest()
-            return re.sub(r"\d", "", hashed)[:width].ljust(width, "-")
+            hashed = hashlib.md5(s.encode()).hexdigest().upper()
+            camel = re.sub(r"[AIUEO]", lambda mo: mo.group(0).lower(), hashed)
+            return re.sub(r"\d", "", camel)[:width].ljust(width, "-")
 
         @property
         def table(self) -> dict:
