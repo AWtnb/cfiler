@@ -1164,6 +1164,12 @@ def configure(window: MainWindow) -> None:
         def __init__(self, window: MainWindow) -> None:
             self._bookmarks = [path for path in window.bookmark.getItems()]
 
+        @staticmethod
+        def get_alias(s: str) -> str:
+            width = 6
+            hashed = hashlib.md5(s.encode()).hexdigest()
+            return re.sub(r"\d", "", hashed)[:width].ljust(width, "-")
+
         @property
         def table(self) -> dict:
             d = {}
@@ -1172,6 +1178,9 @@ def configure(window: MainWindow) -> None:
                 name = p.name
                 if name in d.keys():
                     name = "{}({})".format(name, p.parent)
+                if not re.search(r"[a-zA-Z]", name):
+                    a = self.get_alias(name)
+                    name = ":{}:{}".format(a, name)
                 d[name] = path
             return d
 
