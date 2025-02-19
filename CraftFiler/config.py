@@ -1166,10 +1166,20 @@ def configure(window: MainWindow) -> None:
 
         @staticmethod
         def get_alias(s: str) -> str:
+            alias = ""
+            stack = ""
+            hashed = hashlib.md5(s.encode()).hexdigest()
+            for c in hashed:
+                if c in "0123456789":
+                    stack += c
+                else:
+                    alias += c
+                    if 0 < len(stack):
+                        o = ord("g") + (int(stack) % 20)
+                        alias += chr(o)
+                        stack = ""
             width = 6
-            hashed = hashlib.md5(s.encode()).hexdigest().upper()
-            camel = re.sub(r"[AIUEO]", lambda mo: mo.group(0).lower(), hashed)
-            return re.sub(r"\d", "", camel)[:width].ljust(width, "-")
+            return re.sub(r"[aiueo]", "", alias)[:width].ljust(width, "-").upper()
 
         @property
         def table(self) -> dict:
