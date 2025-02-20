@@ -1186,8 +1186,8 @@ def configure(window: MainWindow) -> None:
                         o = ord("g") + (int(stack) % 20)
                         alias += chr(o)
                         stack = ""
-            width = 6
-            return re.sub(r"[aiueo]", "", alias)[:width].ljust(width, "-").upper()
+            width = 3
+            return re.sub(r"[aiueo]", "", alias)[:width].upper()
 
         @property
         def table(self) -> dict:
