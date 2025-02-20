@@ -1496,6 +1496,7 @@ def configure(window: MainWindow) -> None:
         exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\go-pdfconc.exe")
         if not smart_check_path(exe_path):
             return
+
         pane = CPane(window)
         if not pane.hasSelection:
             return
@@ -1507,6 +1508,7 @@ def configure(window: MainWindow) -> None:
             if p.suffix != ".pdf":
                 Kiritori.log("non-pdf file found!")
                 return
+
         basename = "conc"
         result = window.commandLine(
             title="Outname", text=basename, selection=[0, len(basename)]
@@ -1516,11 +1518,13 @@ def configure(window: MainWindow) -> None:
         basename = result.strip()
         if len(basename) < 1:
             return
+
         src = "\n".join(pane.selectedItemPaths)
 
-        def _conc(s: str) -> int:
+        def _conc(_) -> None:
+            window.setProgressValue(None)
             try:
-                cmd = [exe_path, "--outname", s]
+                cmd = [exe_path, "--outname", basename]
                 proc = subprocess.run(
                     cmd,
                     input=src,
@@ -1533,10 +1537,19 @@ def configure(window: MainWindow) -> None:
             except Exception as e:
                 Kiritori.log(e)
 
-        window.subThreadCall(_conc, (basename,))
-        pane.unSelectAll()
-        pane.refresh()
-        pane.focusByName(basename + ".pdf")
+        def _finish(job_item: ckit.JobItem) -> None:
+            window.clearProgress()
+            if job_item.isCanceled():
+                Kiritori.log("Canceled.")
+            else:
+                pane.unSelectAll()
+                pane.refresh()
+                name = basename + ".pdf"
+                pane.focusByName(name)
+                Kiritori.log("Concatenated as '{}':\n\n{}".format(name, src))
+
+        job = ckit.JobItem(_conc, _finish)
+        window.taskEnqueue(job, create_new_queue=False)
 
     def make_internet_shortcut(src: str = "") -> None:
         lines = ["[InternetShortcut]"]
@@ -2653,7 +2666,7 @@ def configure(window: MainWindow) -> None:
                 window.clearProgress()
                 if job_item.comparable:
                     if job_item.isCanceled():
-                        Kiritori.log("canceled")
+                        Kiritori.log("Canceled.")
                     else:
                         Kiritori.log("finished")
                 else:
