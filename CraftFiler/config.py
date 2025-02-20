@@ -1165,6 +1165,14 @@ def configure(window: MainWindow) -> None:
             self._bookmarks = [path for path in window.bookmark.getItems()]
 
         @staticmethod
+        def has_alphabet(s: str) -> bool:
+            for c in s:
+                i = ord(c.lower())
+                if ord("a") <= i and i <= ord("z"):
+                    return True
+            return False
+
+        @staticmethod
         def get_alias(s: str) -> str:
             alias = ""
             stack = ""
@@ -1189,9 +1197,9 @@ def configure(window: MainWindow) -> None:
                 name = p.name
                 if name in d.keys():
                     name = "{}({})".format(name, p.parent)
-                if not re.search(r"[a-zA-Z]", name):
+                if not self.has_alphabet(name):
                     a = self.get_alias(name)
-                    name = ":{}:{}".format(a, name)
+                    name = "{}::{}".format(name, a)
                 d[name] = path
             return d
 
