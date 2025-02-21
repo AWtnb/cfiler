@@ -9,6 +9,8 @@ import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 
+from PIL import ImageGrab
+
 from pathlib import Path
 from typing import List, Tuple, Callable, Union, NamedTuple
 
@@ -2890,6 +2892,31 @@ def configure(window: MainWindow) -> None:
             new_name = pv.formatted
             org_path = Path(item.getFullpath())
             renamer.execute(org_path, new_name)
+
+    def save_clipboard_image_as_file() -> None:
+        pane = CPane(window)
+
+        def _save(job_item: ckit.JobItem) -> None:
+            job_item.file_name = ""
+            img = ImageGrab.grabclipboard()
+            if not img:
+                Kiritori.log("Canceled: No image in clipboard.")
+                return
+            job_item.file_name = (
+                datetime.datetime.today().strftime("%Y%m%d-%H%M%S") + ".png"
+            )
+            save_path = os.path.join(pane.currentPath, job_item.file_name)
+            img.save(save_path)
+
+        def _finish(job_item: ckit.JobItem) -> None:
+            if job_item.file_name:
+                pane.refresh()
+                pane.focusByName(job_item.file_name)
+
+        job = ckit.JobItem(_save, _finish)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    KEYBINDER.bind("C-S-I", save_clipboard_image_as_file)
 
     class PathMatchFilter:
         def __init__(self, root: str, names: List[str]) -> None:
