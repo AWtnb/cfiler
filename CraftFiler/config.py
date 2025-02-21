@@ -1101,33 +1101,20 @@ def configure(window: MainWindow) -> None:
 
     class FuzzyBookmark:
 
-        def __init__(self, window: MainWindow) -> None:
+        def __init__(self, window: MainWindow, config_path: str = "") -> None:
             self._bookmarks = [path for path in window.bookmark.getItems()]
+            self._config_path = config_path
 
-        @staticmethod
-        def has_alphabet(s: str) -> bool:
-            for c in s:
-                i = ord(c.lower())
-                if ord("a") <= i and i <= ord("z"):
-                    return True
-            return False
-
-        @staticmethod
-        def get_alias(s: str) -> str:
-            alias = ""
-            stack = ""
-            hashed = hashlib.md5(s.encode()).hexdigest()
-            for c in hashed:
-                if c in "0123456789":
-                    stack += c
-                else:
-                    alias += c
-                    if 0 < len(stack):
-                        o = ord("g") + (int(stack) % 20)
-                        alias += chr(o)
-                        stack = ""
-            width = 3
-            return re.sub(r"[aiueo]", "", alias)[:width].upper()
+        def load_config(self) -> dict:
+            d = {}
+            if not smart_check_path(self._config_path):
+                Kiritori.log("Alias config not found: '{}'".format(self._config_path))
+                return d
+            lines = Path(self._config_path).read_text("utf-8").splitlines()
+            for line in lines:
+                pair = [s.strip() for s in line.split("=")]
+                d[pair[1]] = pair[0]
+            return d
 
         @property
         def table(self) -> dict:
@@ -1135,11 +1122,11 @@ def configure(window: MainWindow) -> None:
             for bookmark_path in self._bookmarks:
                 p = Path(bookmark_path)
                 name = p.name
+                alias_mapping = self.load_config()
+                if 0 < len(alias := alias_mapping.get(bookmark_path, "")):
+                    name = "{}::{}".format(alias, name)
                 if name in d.keys():
                     name = "{}({})".format(name, p.parent)
-                if not self.has_alphabet(name):
-                    a = self.get_alias(name)
-                    name = "{}::{}".format(name, a)
                 d[name] = bookmark_path
             return d
 
@@ -1171,9 +1158,10 @@ def configure(window: MainWindow) -> None:
             return
 
         pane = CPane(window)
+        config_path = os.path.join(USER_PROFILE, r"Personal\alias.txt")
 
         def _get_path(job_item: ckit.JobItem) -> None:
-            fb = FuzzyBookmark(window)
+            fb = FuzzyBookmark(window, config_path)
             job_item.path = fb.get_path()
 
         def _open(job_item: ckit.JobItem) -> None:
