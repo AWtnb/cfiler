@@ -474,68 +474,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER = Keybinder(window)
 
-    class JumpList:
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
-            self._list_items = []
-            self._menu_table = {}
-
-        def register(self, name: str, path: str) -> None:
-            try:
-                if smart_check_path(path):
-                    self._menu_table[name] = path
-                    self._list_items.append(ListItem(name, False))
-            except Exception as e:
-                Kiritori.log(e)
-
-        @property
-        def bookmarks(self) -> List[str]:
-            bookmark = [
-                path
-                for path in self._window.bookmark.getItems()
-                if smart_check_path(path)
-            ]
-            return sorted(bookmark, key=lambda p: Path(p).name.lower())
-
-        def to_menu_name(self, path: str) -> str:
-            p = Path(path)
-            names = [item.name for item in self._list_items]
-            if p.name in names:
-                return "{} ({})".format(p.name, p.parent)
-            return p.name
-
-        def register_bookmark(self) -> None:
-            for path in self.bookmarks:
-                if path not in self._menu_table.values():
-                    name = self.to_menu_name(path)
-                    self._menu_table[name] = path
-                    item = ListItem(name, True)
-                    self._list_items.append(item)
-
-        def jump(self) -> None:
-            for name, path in {
-                "Desktop": os.path.join(USER_PROFILE, "Desktop"),
-                "Scan": r"X:\scan",
-                "Dropbox": os.path.join(USER_PROFILE, "Dropbox"),
-                "Dropbox Share": os.path.join(USER_PROFILE, "Dropbox", "_sharing"),
-            }.items():
-                self.register(name, path)
-            self.register_bookmark()
-
-            result, mod = invoke_listwindow(self._window, "Jump", self._list_items)
-            if result < 0:
-                return
-            item = self._list_items[result]
-            dest = self._menu_table[item.name]
-            active = CPane(self._window, True)
-            other = CPane(self._window, False)
-            if mod == ckit.MODKEY_SHIFT:
-                other.openPath(dest)
-            else:
-                active.openPath(dest)
-
-    KEYBINDER.bind("C-Space", lambda: JumpList(window).jump())
-
     def check_log_selected() -> bool:
         selection_left, selection_right = window.log_pane.selection
         return selection_left != selection_right
@@ -1194,15 +1132,15 @@ def configure(window: MainWindow) -> None:
         @property
         def table(self) -> dict:
             d = {}
-            for path in self._bookmarks:
-                p = Path(path)
+            for bookmark_path in self._bookmarks:
+                p = Path(bookmark_path)
                 name = p.name
                 if name in d.keys():
                     name = "{}({})".format(name, p.parent)
                 if not self.has_alphabet(name):
                     a = self.get_alias(name)
                     name = "{}::{}".format(name, a)
-                d[name] = path
+                d[name] = bookmark_path
             return d
 
         def fzf(self) -> str:
@@ -1428,16 +1366,8 @@ def configure(window: MainWindow) -> None:
 
             return _wrapper
 
-        def apply(self, key: str) -> None:
-            mapping = {
-                "": False,
-                "A-": True,
-            }
-            for mod, search_all in mapping.items():
-                KEYBINDER.bind(mod + key, self.invoke(search_all))
-
-    zyl().apply("C-S-Space")
-    zyl().apply("C-S-Z")
+    KEYBINDER.bind("C-Space", zyl().invoke())
+    KEYBINDER.bind("C-S-Space", zyl().invoke(True))
 
     class zyc:
         def __init__(self) -> None:
