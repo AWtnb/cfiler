@@ -3208,3 +3208,26 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
 
     window.keymap["C-Enter"] = open_original
     window.keymap["C-L"] = open_original
+
+    def copy_image_to_clioboard(_) -> None:
+        def _copy(_) -> None:
+            item = window.items[window.cursor]
+            path = item.getFullpath()
+            cmd = [
+                "PowerShell",
+                "-Command",
+                "Add-Type",
+                "-AssemblyName",
+                "System.Windows.Forms;[Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('{}'));".format(
+                    path
+                ),
+            ]
+            subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+
+        def _finished(_) -> None:
+            pass
+
+        job = ckit.JobItem(_copy, _finished)
+        window.job_queue.enqueue(job)
+
+    window.keymap["C-C"] = copy_image_to_clioboard
