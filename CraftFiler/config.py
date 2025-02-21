@@ -1108,7 +1108,6 @@ def configure(window: MainWindow) -> None:
         def load_config(self) -> dict:
             d = {}
             if not smart_check_path(self._config_path):
-                Kiritori.log("Alias config not found: '{}'".format(self._config_path))
                 return d
             lines = Path(self._config_path).read_text("utf-8").splitlines()
             for line in lines:
