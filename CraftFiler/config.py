@@ -2893,6 +2893,16 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log(e)
                 return
 
+    def bookmatk_current_location() -> None:
+        path = CPane(window).currentPath
+        bookmarks = [p for p in window.bookmark.getItems()]
+        if path in bookmarks:
+            window.bookmark.remove(path)
+            Kiritori.log("Removed from bookmark: '{}'".format(path))
+        else:
+            window.bookmark.append(path)
+            Kiritori.log("Bookmarked: '{}'".format(path))
+
     def reset_hotkey() -> None:
         window.ini.set("HOTKEY", "activate_vk", "0")
         window.ini.set("HOTKEY", "activate_mod", "0")
@@ -2903,6 +2913,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "BookmarkCurrentLocation": bookmatk_current_location,
             "DocxToTxt": docx_to_txt,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
