@@ -1331,8 +1331,9 @@ def configure(window: MainWindow) -> None:
             def _find(job_item: ckit.JobItem) -> None:
                 job_item.result = None
                 if not self.check():
+                    Kiritori.log("Exe not found: '{}'".format(self._exe_path))
                     return
-                delay(100)
+                delay()
                 proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
                 result = proc.stdout.strip()
                 if result:
@@ -1372,6 +1373,7 @@ def configure(window: MainWindow) -> None:
             def _find(job_item: ckit.JobItem) -> None:
                 job_item.result = None
                 if not self.check():
+                    Kiritori.log("Exe not found: '{}'".format(self._exe_path))
                     return
                 pane = CPane(window)
                 cmd = self._cmd + [
@@ -1379,7 +1381,7 @@ def configure(window: MainWindow) -> None:
                     "-offset={}".format(offset),
                     "-src={}".format(pane.currentPath),
                 ]
-                delay(100)
+                delay()
                 proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
                 result = proc.stdout.strip()
                 if result:
