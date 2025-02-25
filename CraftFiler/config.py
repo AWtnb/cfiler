@@ -1356,13 +1356,12 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-Space", zyl().invoke())
     KEYBINDER.bind("C-S-Space", zyl().invoke(True))
 
-    class zyc:
+    class zyw:
         def __init__(self) -> None:
-            self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyc.exe")
+            self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyw.exe")
             self._cmd = [
                 str(self._exe_path),
                 "-exclude=_obsolete,node_modules",
-                "-stdout=True",
             ]
 
         def check(self) -> bool:
@@ -1407,9 +1406,9 @@ def configure(window: MainWindow) -> None:
                 for shift, offset in {"": -1, "S-": 1}.items():
                     KEYBINDER.bind(alt + shift + key, self.invoke(search_all, offset))
 
-    zyc().apply("Z")
-    KEYBINDER.bind("S-F", zyc().invoke(False, 0))
-    KEYBINDER.bind("C-F", zyc().invoke(True, 0))
+    zyw().apply("Z")
+    KEYBINDER.bind("S-F", zyw().invoke(False, 0))
+    KEYBINDER.bind("C-F", zyw().invoke(True, 0))
 
     def concatenate_pdf() -> None:
         exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\go-pdfconc.exe")
