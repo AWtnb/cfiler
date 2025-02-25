@@ -1377,7 +1377,7 @@ def configure(window: MainWindow) -> None:
                 cmd = self._cmd + [
                     "-all={}".format(search_all),
                     "-offset={}".format(offset),
-                    "-cur={}".format(pane.currentPath),
+                    "-src={}".format(pane.currentPath),
                 ]
                 delay(100)
                 proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
