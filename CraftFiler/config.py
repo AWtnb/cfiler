@@ -1120,7 +1120,7 @@ def configure(window: MainWindow) -> None:
             d = {}
             for bookmark_path in self._bookmarks:
                 p = Path(bookmark_path)
-                name = p.name
+                name = p.name if 0 < len(p.name) else bookmark_path.split("\\")[-1]
                 alias_mapping = self.load_config()
                 if 0 < len(alias := alias_mapping.get(bookmark_path, "")):
                     name = "{}::{}".format(alias, name)
