@@ -2894,7 +2894,7 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log(e)
                 return
 
-    def bookmatk_current_location() -> None:
+    def bookmark_current_location() -> None:
         path = CPane(window).currentPath
         bookmarks = [p for p in window.bookmark.getItems()]
         if path in bookmarks:
@@ -2914,7 +2914,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
-            "BookmarkCurrentLocation": bookmatk_current_location,
+            "BookmarkCurrentLocation": bookmark_current_location,
             "DocxToTxt": docx_to_txt,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
