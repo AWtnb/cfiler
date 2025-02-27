@@ -1494,14 +1494,17 @@ def configure(window: MainWindow) -> None:
             "\n".join(lines), encoding="utf-8"
         )
 
-    def to_cliped_path() -> None:
+    def on_paste() -> None:
         path = ckit.getClipboardText().strip().replace('"', "")
-        if path.startswith("http"):
-            make_internet_shortcut(path)
+        if 0 < len(path):
+            if path.startswith("http"):
+                make_internet_shortcut(path)
+            else:
+                CPane(window).openPath(path)
         else:
-            CPane(window).openPath(path)
+            save_clipboard_image_as_file()
 
-    KEYBINDER.bind("C-V", to_cliped_path)
+    KEYBINDER.bind("C-V", on_paste)
 
     def smart_jump_input() -> None:
         pane = CPane(window)
