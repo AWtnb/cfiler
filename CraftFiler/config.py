@@ -1115,17 +1115,22 @@ def configure(window: MainWindow) -> None:
                 d[pair[1]] = pair[0]
             return d
 
+        @staticmethod
+        def get_name(path: str) -> str:
+            path = path.rstrip(os.sep)
+            p = Path(path)
+            if 0 < len(p.name):
+                return p.name
+            return path.split(os.sep)[-1]
+
         @property
         def table(self) -> dict:
             d = {}
             for bookmark_path in self._bookmarks:
-                p = Path(bookmark_path)
-                name = p.name if 0 < len(p.name) else bookmark_path.split("\\")[-1]
+                name = self.get_name(bookmark_path)
                 alias_mapping = self.load_config()
                 if 0 < len(alias := alias_mapping.get(bookmark_path, "")):
                     name = "{}::{}".format(alias, name)
-                if name in d.keys():
-                    name = "{}({})".format(name, p.parent)
                 d[name] = bookmark_path
             return d
 
