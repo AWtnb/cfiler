@@ -1959,7 +1959,7 @@ def configure(window: MainWindow) -> None:
                     return
             try:
                 self._window.subThreadCall(org_path.rename, (str(new_path),))
-                print("Renamed: {}\n     ==> {}".format(org_path.name, new_name))
+                print("Renamed: {}\n     ==> {}\n".format(org_path.name, new_name))
                 self._pane.refresh()
                 if focus:
                     self._pane.focusByName(new_name)
@@ -2015,7 +2015,7 @@ def configure(window: MainWindow) -> None:
                 new_name += org_path.suffix
 
                 infos.append(RenameInfo(org_path, new_name))
-                lines.append("Rename: {}\n    ==> {}".format(org_path.name, new_name))
+                lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
 
             lines.append(
                 "\noffset: {}\nlength: {}\nOK? (Enter / Esc)".format(offset, length)
@@ -2118,7 +2118,7 @@ def configure(window: MainWindow) -> None:
 
                 new_name = _get_new_name()
                 infos.append(RenameInfo(org_path, new_name))
-                lines.append("Rename: {}\n    ==> {}".format(org_path.name, new_name))
+                lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
 
             lines.append("\ninsert: {}\nat: {}\nOK? (Enter / Esc)".format(ins, pos))
 
