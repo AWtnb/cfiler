@@ -1175,7 +1175,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("B", fuzzy_bookmark)
 
     def set_bookmark_alias() -> None:
-        result = window.commandLine("Alias for current location")
+        result = window.commandLine("Bookmark alias")
         if not result:
             return
         alias = result.strip()
