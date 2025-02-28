@@ -1110,7 +1110,7 @@ def configure(window: MainWindow) -> None:
                 return d
             lines = Path(self.alias_config).read_text("utf-8").splitlines()
             for line in lines:
-                if 0 < len(line.strip()):
+                if 0 < len(line.strip()) and "=" in line:
                     pair = [s.strip() for s in line.split("=")]
                     d[pair[0]] = pair[1]
             return d
