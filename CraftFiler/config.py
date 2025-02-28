@@ -93,7 +93,6 @@ class PaintOption:
 
 PO = PaintOption()
 USER_PROFILE = os.environ.get("USERPROFILE", "")
-LINE_BREAK = os.linesep
 
 
 def delay(msec: int = 50) -> None:
@@ -941,7 +940,7 @@ def configure(window: MainWindow) -> None:
         def _view(job_item: ckit.JobItem) -> None:
             lines = job_item.result.splitlines()
             height = max(window.log_window_height - 4, 2)
-            Kiritori.log(LINE_BREAK.join(lines[:height]))
+            Kiritori.log("\n".join(lines[:height]))
 
         job = ckit.JobItem(_read, _view)
         window.taskEnqueue(job, create_new_queue=False)
@@ -1100,19 +1099,20 @@ def configure(window: MainWindow) -> None:
         return False
 
     class FuzzyBookmark:
+        alias_config = os.path.join(USER_PROFILE, r"Personal\alias.txt")
 
-        def __init__(self, window: MainWindow, config_path: str = "") -> None:
+        def __init__(self, window: MainWindow) -> None:
             self._bookmarks = [path for path in window.bookmark.getItems()]
-            self._config_path = config_path
 
         def load_config(self) -> dict:
             d = {}
-            if not smart_check_path(self._config_path):
+            if not smart_check_path(self.alias_config):
                 return d
-            lines = Path(self._config_path).read_text("utf-8").splitlines()
+            lines = Path(self.alias_config).read_text("utf-8").splitlines()
             for line in lines:
-                pair = [s.strip() for s in line.split("=")]
-                d[pair[1]] = pair[0]
+                if 0 < len(line.strip()):
+                    pair = [s.strip() for s in line.split("=")]
+                    d[pair[0]] = pair[1]
             return d
 
         @staticmethod
@@ -1124,18 +1124,19 @@ def configure(window: MainWindow) -> None:
             return path.split(os.sep)[-1]
 
         @property
-        def table(self) -> dict:
+        def name_path_table(self) -> dict:
+            alias_mapping = self.load_config()
             d = {}
             for bookmark_path in self._bookmarks:
                 name = self.get_name(bookmark_path)
-                alias_mapping = self.load_config()
                 if 0 < len(alias := alias_mapping.get(bookmark_path, "")):
                     name = "{}::{}".format(alias, name)
                 d[name] = bookmark_path
             return d
 
         def fzf(self) -> str:
-            src = "\n".join(sorted(self.table.keys(), reverse=True))
+            table = self.name_path_table
+            src = "\n".join(sorted(table.keys(), reverse=True))
             try:
                 cmd = ["fzf.exe"]
                 proc = subprocess.run(
@@ -1147,14 +1148,10 @@ def configure(window: MainWindow) -> None:
                     if e := proc.stderr:
                         Kiritori.log(e)
                     return ""
-                return proc.stdout
+                return table.get(proc.stdout.strip(), "")
             except Exception as e:
                 Kiritori.log(e)
                 return ""
-
-        def get_path(self) -> str:
-            result = self.fzf()
-            return self.table.get(result.strip(), "")
 
     def fuzzy_bookmark() -> None:
         if not check_fzf():
@@ -1162,11 +1159,10 @@ def configure(window: MainWindow) -> None:
             return
 
         pane = CPane(window)
-        config_path = os.path.join(USER_PROFILE, r"Personal\alias.txt")
 
         def _get_path(job_item: ckit.JobItem) -> None:
-            fb = FuzzyBookmark(window, config_path)
-            job_item.path = fb.get_path()
+            fb = FuzzyBookmark(window)
+            job_item.path = fb.fzf()
 
         def _open(job_item: ckit.JobItem) -> None:
             path = job_item.path
@@ -1177,6 +1173,23 @@ def configure(window: MainWindow) -> None:
         window.taskEnqueue(job, create_new_queue=False)
 
     KEYBINDER.bind("B", fuzzy_bookmark)
+
+    def set_bookmark_alias() -> None:
+        result = window.commandLine("Alias for current location")
+        if not result:
+            return
+        alias = result.strip()
+        if len(alias) < 1:
+            return
+
+        loc = CPane(window).currentPath
+        entries = []
+        p = FuzzyBookmark.alias_config
+        if smart_check_path(p):
+            entries = Path(p).read_text("utf-8").splitlines()
+        entries.append("{}={}".format(loc, alias))
+
+        Path(p).write_text("\n".join(entries), "utf-8")
 
     def read_docx(path: str) -> str:
         exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\docxr.exe")
@@ -1609,7 +1622,7 @@ def configure(window: MainWindow) -> None:
                 window.command_SetClipboard_LogSelected(None)
                 return
             if 0 < len(ss):
-                ckit.setClipboardText(LINE_BREAK.join(ss))
+                ckit.setClipboardText("\n".join(ss))
                 if len(ss) == 1:
                     window.setStatusMessage("Copied: '{}'".format(ss[0]), 2000)
                     return
@@ -2922,6 +2935,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "SetBookmarkAliasForCurrentLocation": set_bookmark_alias,
             "BookmarkCurrentLocation": bookmark_current_location,
             "DocxToTxt": docx_to_txt,
             "ConcPdfGo": concatenate_pdf,
