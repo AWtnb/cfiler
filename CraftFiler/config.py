@@ -1203,7 +1203,8 @@ def configure(window: MainWindow) -> None:
 
         if target not in window.bookmark.getItems():
             window.bookmark.append(target)
-            pane.refresh()
+            if target != pane.currentPath:
+                pane.refresh()
         Kiritori.log("Registered '{}' as alias for '{}'".format(alias, target))
 
     def read_docx(path: str) -> str:
