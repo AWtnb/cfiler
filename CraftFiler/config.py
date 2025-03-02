@@ -1175,6 +1175,17 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("B", fuzzy_bookmark)
 
     def set_bookmark_alias() -> None:
+        pane = CPane(window)
+        target = pane.currentPath
+        if pane.hasSelection:
+            if 1 < len(pane.selectedItems):
+                Kiritori.log(
+                    "Canceled. Select just 1 item (or nothing to bookmark current location)."
+                )
+                return
+            else:
+                target = pane.selectedItemPaths[0]
+
         result = window.commandLine("Bookmark alias")
         if not result:
             return
@@ -1182,14 +1193,18 @@ def configure(window: MainWindow) -> None:
         if len(alias) < 1:
             return
 
-        loc = CPane(window).currentPath
         entries = []
         p = FuzzyBookmark.alias_config
         if smart_check_path(p):
             entries = Path(p).read_text("utf-8").splitlines()
-        entries.append("{}={}".format(loc, alias))
+        entries.append("{}={}".format(target, alias))
 
         Path(p).write_text("\n".join(entries), "utf-8")
+
+        if target not in window.bookmark.getItems():
+            window.bookmark.append(target)
+            pane.refresh()
+        Kiritori.log("Registered '{}' as alias for '{}'".format(alias, target))
 
     def read_docx(path: str) -> str:
         exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\docxr.exe")
@@ -2915,7 +2930,7 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log(e)
                 return
 
-    def bookmark_current_location() -> None:
+    def bookmark_here() -> None:
         path = CPane(window).currentPath
         bookmarks = [p for p in window.bookmark.getItems()]
         if path in bookmarks:
@@ -2935,8 +2950,8 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
-            "SetBookmarkAliasForCurrentLocation": set_bookmark_alias,
-            "BookmarkCurrentLocation": bookmark_current_location,
+            "SetBookmarkAlias": set_bookmark_alias,
+            "BookmarkHere": bookmark_here,
             "DocxToTxt": docx_to_txt,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
