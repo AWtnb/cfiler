@@ -67,6 +67,8 @@ from cfiler_resultwindow import popResultWindow
 # https://github.com/crftwr/cfiler/blob/master/cfiler_misc.py
 from cfiler_misc import getFileSizeString
 
+import cfiler_resource
+
 
 class PaintOption:
     LeftLocation = PAINT_LEFT_LOCATION
@@ -3219,7 +3221,11 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
             subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
 
         def _finished(_) -> None:
-            pass
+            window.setTitle(
+                "{} - [ {} ] copied!".format(
+                    cfiler_resource.cfiler_appname, window.items[window.cursor].name
+                )
+            )
 
         job = ckit.JobItem(_copy, _finished)
         window.job_queue.enqueue(job)
