@@ -412,6 +412,8 @@ def configure(window: MainWindow) -> None:
 
     apply_cfiler_command(
         {
+            "C": window.command_Copy,
+            "M": window.command_Move,
             "S-Enter": window.command_View,
             "C-S-Q": window.command_CancelTask,
             "C-Q": window.command_Quit,
@@ -1052,22 +1054,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-O", open_with)
 
-    def quick_move() -> None:
-        pane = CPane(window)
-        if not pane.fileList.selected():
-            window.command_Select(None)
-        window.command_Move(None)
-
-    KEYBINDER.bind("M", quick_move)
-
-    def quick_copy() -> None:
-        pane = CPane(window)
-        if not pane.fileList.selected():
-            window.command_Select(None)
-        window.command_Copy(None)
-
-    KEYBINDER.bind("C", quick_copy)
-
     def swap_pane() -> None:
         active = CPane(window, True)
         active_selects = active.selectedItemNames
@@ -1261,6 +1247,7 @@ def configure(window: MainWindow) -> None:
 
         for path in paths:
             _convert(path)
+            Kiritori.log("Convert to txt: '{}'".format(path))
 
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
