@@ -733,6 +733,8 @@ def configure(window: MainWindow) -> None:
 
         @property
         def selectionTop(self) -> int:
+            if not self.hasSelection:
+                return -1
             for i in range(self.count):
                 if self.byIndex(i).selected():
                     return i
@@ -740,6 +742,8 @@ def configure(window: MainWindow) -> None:
 
         @property
         def selectionBottom(self) -> int:
+            if not self.hasSelection:
+                return -1
             idxs = []
             for i in range(self.count):
                 if self.byIndex(i).selected():
@@ -1683,9 +1687,15 @@ def configure(window: MainWindow) -> None:
 
         def toTop(self) -> None:
             pane = self.pane
-            for i in range(pane.count):
-                if i <= pane.cursor:
-                    pane.select(i)
+            if pane.cursor < pane.selectionTop:
+                for i in range(pane.count):
+                    if i <= pane.cursor:
+                        pane.select(i)
+            else:
+                for item in pane.selectedOrAllItems:
+                    i = pane.byName(item.getName())
+                    if i <= pane.cursor:
+                        pane.toggleSelection(i)
 
         def clearToTop(self) -> None:
             pane = self.pane
@@ -1695,9 +1705,15 @@ def configure(window: MainWindow) -> None:
 
         def toBottom(self) -> None:
             pane = self.pane
-            for i in range(pane.count):
-                if pane.cursor <= i:
-                    pane.select(i)
+            if pane.selectionBottom < pane.cursor:
+                for i in range(pane.count):
+                    if pane.cursor <= i:
+                        pane.select(i)
+            else:
+                for item in pane.selectedOrAllItems:
+                    i = pane.byName(item.getName())
+                    if pane.cursor <= i:
+                        pane.toggleSelection(i)
 
         def clearToBottom(self) -> None:
             pane = self.pane
@@ -1766,19 +1782,13 @@ def configure(window: MainWindow) -> None:
         def apply(self) -> None:
             for k, v in {
                 "C-A": self.allItems,
-                "C-S-A": self.toggleAll,
                 "U": self.clearAll,
-                "Esc": self.clear,
                 "A-F": self.files,
                 "A-D": self.dirs,
                 "S-Home": self.toTop,
                 "S-A": self.toTop,
-                "A-S-Home": self.clearToTop,
-                "A-S-A": self.clearToTop,
                 "S-End": self.toBottom,
                 "S-E": self.toBottom,
-                "A-S-End": self.clearToBottom,
-                "A-S-E": self.clearToBottom,
             }.items():
                 KEYBINDER.bind(k, v)
 
