@@ -1672,6 +1672,10 @@ def configure(window: MainWindow) -> None:
             pane = self.pane
             pane.selectAll()
 
+        def clear(self) -> None:
+            pane = self.pane
+            pane.unSelect(pane.cursor)
+
         def toggleAll(self) -> None:
             pane = self.pane
             for i in range(pane.count):
@@ -1764,6 +1768,7 @@ def configure(window: MainWindow) -> None:
                 "C-A": self.allItems,
                 "C-S-A": self.toggleAll,
                 "U": self.clearAll,
+                "Esc": self.clear,
                 "A-F": self.files,
                 "A-D": self.dirs,
                 "S-Home": self.toTop,
