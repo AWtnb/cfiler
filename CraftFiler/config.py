@@ -2247,49 +2247,52 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S-N", invoke_renamer(False))
 
     def duplicate_file(only_stem: bool) -> None:
-        def _duplicator() -> None:
-            pane = CPane(window)
-            src_path = Path(pane.focusedItemPath)
+        pane = CPane(window)
 
-            sel_end = len(src_path.stem) if only_stem else len(src_path.name)
-            sel_start = src_path.stem.rfind("_")
-            if sel_start < 0:
-                sel_start = sel_end
-            prompt = "NewStem" if only_stem else "NewName"
-            placeholder = src_path.stem if only_stem else src_path.name
-            result = window.commandLine(
-                title=prompt,
-                text=placeholder,
-                candidate_handler=Suffixer(window, (not only_stem), True),
-                selection=[sel_start, sel_end],
-            )
+        src_path = Path(pane.focusedItemPath)
+        if pane.hasSelection:
+            if 1 < len(pane.selectedItems):
+                Kiritori.log("Caneled. (Select nothing or just 1 item)")
+                return
+            src_path = Path(pane.selectedItemPaths[0])
 
-            if result:
-                result = result.strip()
-                if len(result) < 1:
-                    return
-                if src_path.is_file() and only_stem:
-                    result = result + src_path.suffix
-                new_path = src_path.with_name(result)
+        sel_end = len(src_path.stem) if only_stem else len(src_path.name)
+        sel_start = src_path.stem.rfind("_")
+        if sel_start < 0:
+            sel_start = sel_end
+        prompt = "NewStem" if only_stem else "NewName"
+        placeholder = src_path.stem if only_stem else src_path.name
+        result = window.commandLine(
+            title=prompt,
+            text=placeholder,
+            candidate_handler=Suffixer(window, (not only_stem), True),
+            selection=[sel_start, sel_end],
+        )
 
-                if smart_check_path(new_path):
-                    Kiritori.log("same item exists!")
-                    return
+        if result:
+            result = result.strip()
+            if len(result) < 1:
+                return
+            if src_path.is_file() and only_stem:
+                result = result + src_path.suffix
+            new_path = src_path.with_name(result)
 
-                def _copy_as(new_path: str) -> None:
-                    if Path(src_path).is_dir():
-                        shutil.copytree(src_path, new_path)
-                    else:
-                        shutil.copy(src_path, new_path)
+            if smart_check_path(new_path):
+                Kiritori.log("Canceled. (Same item exists)")
+                return
 
-                window.subThreadCall(_copy_as, (new_path,))
-                pane.refresh()
-                pane.focusByName(Path(new_path).name)
+            def _copy_as(new_path: str) -> None:
+                if Path(src_path).is_dir():
+                    shutil.copytree(src_path, new_path)
+                else:
+                    shutil.copy(src_path, new_path)
 
-        return _duplicator
+            window.subThreadCall(_copy_as, (new_path,))
+            pane.refresh()
+            pane.focusByName(Path(new_path).name)
 
-    KEYBINDER.bind("S-D", duplicate_file(True))
-    KEYBINDER.bind("A-S-D", duplicate_file(False))
+    KEYBINDER.bind("S-D", lambda: duplicate_file(True))
+    KEYBINDER.bind("A-S-D", lambda: duplicate_file(False))
 
     def smart_move_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
