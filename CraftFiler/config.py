@@ -1058,21 +1058,19 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-O", open_with)
 
-    def cautious_move() -> None:
-        if CPane(window).hasSelection:
-            window.command_Move(None)
-        else:
+    def quick_move() -> None:
+        if not CPane(window).hasSelection:
             window.command_Select(None)
+        window.command_Move(None)
 
-    KEYBINDER.bind("M", cautious_move)
+    KEYBINDER.bind("M", quick_move)
 
-    def cautious_copy() -> None:
-        if CPane(window).hasSelection:
-            window.command_Copy(None)
-        else:
+    def quick_copy() -> None:
+        if not CPane(window).hasSelection:
             window.command_Select(None)
+        window.command_Copy(None)
 
-    KEYBINDER.bind("C", cautious_copy)
+    KEYBINDER.bind("C", quick_copy)
 
     def swap_pane() -> None:
         active = CPane(window, True)
