@@ -938,7 +938,7 @@ def configure(window: MainWindow) -> None:
 
     EXTENSION_CHECKER = ExtensionChecker(window)
 
-    def preview_docx(path) -> None:
+    def copy_docx_content(path) -> None:
         if not path.endswith(".docx"):
             return
 
@@ -946,9 +946,8 @@ def configure(window: MainWindow) -> None:
             job_item.result = read_docx(path)
 
         def _view(job_item: ckit.JobItem) -> None:
-            lines = job_item.result.splitlines()
-            height = max(window.log_window_height - 4, 2)
-            Kiritori.log("\n".join(lines[:height]))
+            ckit.setClipboardText(job_item.result)
+            Kiritori.log("Copied content: '{}'".format(path))
 
         job = ckit.JobItem(_read, _view)
         window.taskEnqueue(job, create_new_queue=False)
@@ -1000,14 +999,14 @@ def configure(window: MainWindow) -> None:
             "ppt",
         ]:
             menu = ["Binary editor", "Associated app"]
-            previewable = ext[1:] == "docx"
-            if previewable:
-                menu = ["Preview"] + menu
+            readable = ext[1:] == "docx"
+            if readable:
+                menu = ["(copy text)"] + menu
             result, _ = invoke_listwindow(window, "open with:", menu)
             if result < 0:
                 return True
-            if previewable and result == 0:
-                preview_docx(focus_path)
+            if readable and result == 0:
+                copy_docx_content(focus_path)
                 return True
             if result == len(menu) - 1:
                 window.command_Execute(None)
