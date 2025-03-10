@@ -1264,7 +1264,6 @@ def configure(window: MainWindow) -> None:
 
         for path in paths:
             _convert(path)
-            Kiritori.log("Convert to txt: '{}'".format(path))
 
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
