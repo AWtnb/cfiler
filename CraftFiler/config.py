@@ -1001,14 +1001,19 @@ def configure(window: MainWindow) -> None:
             menu = ["Binary editor", "Associated app"]
             readable = ext[1:] == "docx"
             if readable:
-                menu = ["(copy text)"] + menu
+                menu.append("(copy text)")
             result, _ = invoke_listwindow(window, "open with:", menu)
             if result < 0:
                 return True
-            if readable and result == 0:
+            if readable:
+                if result == 0:
+                    return False
+                if result == 1:
+                    window.command_Execute(None)
+                    return True
                 copy_docx_content(focus_path)
                 return True
-            if result == len(menu) - 1:
+            if result == 1:
                 window.command_Execute(None)
                 return True
 
