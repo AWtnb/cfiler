@@ -1534,14 +1534,14 @@ def configure(window: MainWindow) -> None:
         )
 
     def on_paste() -> None:
-        path = ckit.getClipboardText().strip().replace('"', "")
-        if 0 < len(path):
-            if path.startswith("http"):
-                make_internet_shortcut(path)
-            else:
-                CPane(window).openPath(path)
-        else:
+        c = ckit.getClipboardText()
+        if len(c) < 1:
             save_clipboard_image_as_file()
+            return
+        if c.startswith("http"):
+            make_internet_shortcut(c)
+            return
+        CPane(window).openPath(c.strip().strip('"'))
 
     KEYBINDER.bind("C-V", on_paste)
 
@@ -2878,7 +2878,7 @@ def configure(window: MainWindow) -> None:
         def _save(job_item: ckit.JobItem) -> None:
             job_item.file_name = ""
             img = ImageGrab.grabclipboard()
-            if not img:
+            if not img or isinstance(img, list):
                 Kiritori.log("Canceled: No image in clipboard.")
                 return
             job_item.file_name = (
