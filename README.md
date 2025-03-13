@@ -12,8 +12,6 @@ cfiler.ini
 $d = "CraftFiler"; New-Item -Path ($env:APPDATA | Join-Path -ChildPath $d) -Value ($pwd.Path | Join-Path -ChildPath $d) -ItemType Junction
 ```
 
-Run [`set-startup.ps1`](set-startup.ps1) makes shortcut (.lnk) to windows startup.
-
 ---
 
 https://sites.google.com/site/craftware/cfiler
