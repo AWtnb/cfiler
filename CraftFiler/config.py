@@ -3111,7 +3111,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         path = Path(window.item.getFullpath())
         enc = window.encoding.encoding
         if enc:
-            if window.encoding.bom:
+            if enc == "utf-8" and window.encoding.bom:
                 enc += "-sig"
             content = path.read_text(enc)
             ckit.setClipboardText(content)
