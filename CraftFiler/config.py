@@ -1506,6 +1506,7 @@ def configure(window: MainWindow) -> None:
             if job_item.isCanceled():
                 Kiritori.log("Canceled.")
             else:
+                name = basename + ".pdf"
                 Kiritori.log("Concatenated as '{}':\n\n{}".format(name, src))
 
         job = ckit.JobItem(_conc, _finish)
