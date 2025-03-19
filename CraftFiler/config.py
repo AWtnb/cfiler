@@ -986,36 +986,23 @@ def configure(window: MainWindow) -> None:
             "m4a",
             "mp4",
             "pdf",
-        ]:
-            window.command_Execute(None)
-            return True
-
-        if ext[1:].lower() in [
             "xlsx",
             "xls",
-            "docx",
             "doc",
             "pptx",
             "ppt",
         ]:
-            menu = ["Binary editor", "Associated app"]
-            readable = ext[1:] == "docx"
-            if readable:
-                menu.append("(copy text)")
-            result, _ = invoke_listwindow(window, "open with:", menu)
-            if result < 0:
-                return True
-            if readable:
-                if result == 0:
-                    return False
-                if result == 1:
-                    window.command_Execute(None)
-                    return True
-                copy_docx_content(focus_path)
-                return True
-            if result == 1:
+            window.command_Execute(None)
+            return True
+
+        if ext == ".docx":
+            menu = ["Open", "Copy content"]
+            result, _ = invoke_listwindow(window, "docx file:", menu)
+            if result == 0:
                 window.command_Execute(None)
-                return True
+            elif result == 1:
+                copy_docx_content(focus_path)
+            return True
 
         return False
 
