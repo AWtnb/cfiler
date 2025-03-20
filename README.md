@@ -1,10 +1,6 @@
-# cfiler (内骨格) customization
+# README
 
-With [Syncthing](https://syncthing.net/), append below on `.stignore` to skip syncing local history.
-
-```
-cfiler.ini
-```
+[cfiler](https://github.com/crftwr/cfiler) (内骨格) customization.
 
 ## Install
 
@@ -12,8 +8,8 @@ cfiler.ini
 $d = "CraftFiler"; New-Item -Path ($env:APPDATA | Join-Path -ChildPath $d) -Value ($pwd.Path | Join-Path -ChildPath $d) -ItemType Junction
 ```
 
----
+With [Syncthing](https://syncthing.net/), append below on `.stignore` to skip syncing local history.
 
-https://sites.google.com/site/craftware/cfiler
-
-https://github.com/crftwr/cfiler
+```
+(?d)cfiler.ini
+```
