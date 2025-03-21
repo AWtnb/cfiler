@@ -3110,6 +3110,19 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
 
     window.keymap["C-C"] = copy_content
 
+    def copy_line_at_top(_) -> None:
+        enc = window.encoding.encoding
+        if not enc:
+            return
+        if enc == "utf-8" and window.encoding.bom:
+            enc += "-sig"
+        path = Path(window.item.getFullpath())
+        lines = path.read_text(enc).splitlines()
+        line = lines[window.scroll_info.pos]
+        ckit.setClipboardText(line)
+
+    window.keymap["C-T"] = copy_line_at_top
+
     def reload_with_encoding(_) -> None:
 
         def _auto_detect() -> None:
