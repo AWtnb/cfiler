@@ -1272,20 +1272,12 @@ def configure(window: MainWindow) -> None:
 
         escaped_paths = [p.replace(" ", "` ") for p in paths]
 
-        def _convert(job_item: ckit.JobItem) -> None:
-            job_item.result = ""
+        def _convert(_) -> None:
             cmd = ["PowerShell", pwsh_script] + escaped_paths
-            proc = subprocess.run(cmd, capture_output=True, encoding="cp932")
-            if proc.returncode != 0:
-                if o := proc.stdout:
-                    Kiritori.log(o)
-                if e := proc.stderr:
-                    Kiritori.log(e)
-            job_item.result = proc.stdout
+            subprocess.run(cmd)
 
-        def _finished(job_item: ckit.JobItem) -> None:
-            if len(job_item.result):
-                Kiritori.log(job_item.result)
+        def _finished(_) -> None:
+            pass
 
         job = ckit.JobItem(_convert, _finished)
         window.taskEnqueue(job, create_new_queue=False)
