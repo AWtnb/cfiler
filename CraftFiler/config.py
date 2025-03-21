@@ -1258,37 +1258,37 @@ def configure(window: MainWindow) -> None:
             _convert(path)
 
     def word_to_pdf() -> None:
-        def _convert(path: str) -> None:
-            if Path(path).suffix not in [".docx", ".doc"]:
-                return
-
-            pwsh_script = os.path.join(
-                os.environ.get("APPDATA"), "CraftFiler", "word2pdf.ps1"
-            )
-            if not smart_check_path(pwsh_script):
-                Kiritori.log("PowerShell script file not found: {}".format(pwsh_script))
-                return
-
-            escaped_path = path.replace(" ", "` ")
-
-            def __convert(_) -> None:
-                cmd = ["PowerShell", pwsh_script, escaped_path]
-                subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
-                Kiritori.log("Converted to PDF: {}".format(path))
-
-            def __finished(_) -> None:
-                pass
-
-            job = ckit.JobItem(__convert, __finished)
-            window.taskEnqueue(job, create_new_queue=False)
+        pwsh_script = os.path.join(
+            os.environ.get("APPDATA"), "CraftFiler", "word2pdf.ps1"
+        )
+        if not smart_check_path(pwsh_script):
+            Kiritori.log("PowerShell script file not found: {}".format(pwsh_script))
+            return
 
         pane = CPane(window)
         paths = pane.selectedItemPaths
         if len(paths) < 1:
             paths = [pane.focusedItemPath]
 
-        for path in paths:
-            _convert(path)
+        escaped_paths = [p.replace(" ", "` ") for p in paths]
+
+        def _convert(job_item: ckit.JobItem) -> None:
+            job_item.result = ""
+            cmd = ["PowerShell", pwsh_script] + escaped_paths
+            proc = subprocess.run(cmd, capture_output=True, encoding="cp932")
+            if proc.returncode != 0:
+                if o := proc.stdout:
+                    Kiritori.log(o)
+                if e := proc.stderr:
+                    Kiritori.log(e)
+            job_item.result = proc.stdout
+
+        def _finished(job_item: ckit.JobItem) -> None:
+            if len(job_item.result):
+                Kiritori.log(job_item.result)
+
+        job = ckit.JobItem(_convert, _finished)
+        window.taskEnqueue(job, create_new_queue=False)
 
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
