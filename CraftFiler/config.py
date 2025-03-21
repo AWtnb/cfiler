@@ -1269,8 +1269,10 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log("PowerShell script file not found: {}".format(pwsh_script))
                 return
 
+            escaped_path = path.replace(" ", "` ")
+
             def __convert(_) -> None:
-                cmd = ["PowerShell", pwsh_script, path]
+                cmd = ["PowerShell", pwsh_script, escaped_path]
                 subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
                 Kiritori.log("Converted to PDF: {}".format(path))
 
