@@ -1257,31 +1257,6 @@ def configure(window: MainWindow) -> None:
         for path in paths:
             _convert(path)
 
-    def word_to_pdf() -> None:
-        pwsh_script = os.path.join(
-            os.environ.get("APPDATA"), "CraftFiler", "word2pdf.ps1"
-        )
-        if not smart_check_path(pwsh_script):
-            Kiritori.log("PowerShell script file not found: {}".format(pwsh_script))
-            return
-
-        pane = CPane(window)
-        paths = pane.selectedItemPaths
-        if len(paths) < 1:
-            paths = [pane.focusedItemPath]
-
-        escaped_paths = [p.replace(" ", "` ") for p in paths]
-
-        def _convert(_) -> None:
-            cmd = ["PowerShell", pwsh_script] + escaped_paths
-            subprocess.run(cmd)
-
-        def _finished(_) -> None:
-            pass
-
-        job = ckit.JobItem(_convert, _finished)
-        window.taskEnqueue(job, create_new_queue=False)
-
     class DirRule:
         def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
             self._current_path = current_path
@@ -2989,7 +2964,6 @@ def configure(window: MainWindow) -> None:
             "SetBookmarkAlias": set_bookmark_alias,
             "BookmarkHere": bookmark_here,
             "DocxToTxt": docx_to_txt,
-            "WordToPdf": word_to_pdf,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
