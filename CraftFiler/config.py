@@ -3093,17 +3093,32 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["C-Enter"] = open_original
     window.keymap["C-L"] = open_original
 
-    def copy_content(_) -> None:
-        path = Path(window.item.getFullpath())
+    def get_encoding() -> str:
         enc = window.encoding.encoding
         if enc:
             if enc == "utf-8" and window.encoding.bom:
                 enc += "-sig"
-            content = path.read_text(enc)
-            ckit.setClipboardText(content)
-            msg = "copied content of '{}' as {} encoding.".format(path.name, enc)
+            return enc
+        return ""
+
+    def get_fullpath() -> str:
+        return window.item.getFullpath()
+
+    def get_content(path: str = "") -> str:
+        p = get_fullpath() if len(path) < 1 else path
+        enc = get_encoding()
+        if enc:
+            return Path(p).read_text(enc)
+        return ""
+
+    def copy_content(_) -> None:
+        c = get_content()
+        n = Path(get_fullpath()).name
+        if len(c) < 1:
+            msg = "nothing was copied: '{}' is not text file.".format(n)
         else:
-            msg = "nothing was copied: '{}' is not text file.".format(path.name)
+            ckit.setClipboardText(c)
+            msg = "copied content of '{}'.".format(n)
         print("\n{}\n".format(msg))
         delay(200)
         window.command_Close(None)
@@ -3111,17 +3126,25 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["C-C"] = copy_content
 
     def copy_line_at_top(_) -> None:
-        enc = window.encoding.encoding
-        if not enc:
+        c = get_content()
+        if len(c) < 1:
             return
-        if enc == "utf-8" and window.encoding.bom:
-            enc += "-sig"
-        path = Path(window.item.getFullpath())
-        lines = path.read_text(enc).splitlines()
-        line = lines[window.scroll_info.pos]
+        line = c.splitlines()[window.scroll_info.pos]
         ckit.setClipboardText(line)
 
     window.keymap["C-T"] = copy_line_at_top
+
+    def copy_displayed_lines(_) -> None:
+        c = get_content()
+        if len(c) < 1:
+            return
+        lines = c.splitlines()
+        top = window.scroll_info.pos
+        bottom = min(top + window.height() - 1, top + window._numLines() - 1)
+        s = "\n".join(lines[top:bottom])
+        ckit.setClipboardText(s)
+
+    window.keymap["C-S-C"] = copy_displayed_lines
 
     def reload_with_encoding(_) -> None:
 
