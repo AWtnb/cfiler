@@ -2199,7 +2199,7 @@ def configure(window: MainWindow) -> None:
                 self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
             self.names = []
             for name in pane.names:
-                if self.sep not in name:
+                if self.sep not in name or name.startswith(self.sep):
                     continue
                 p = Path(pane.currentPath, name)
                 if include_ext:
