@@ -1535,13 +1535,15 @@ def configure(window: MainWindow) -> None:
         pane = CPane(window)
 
         current_drive = Path(pane.currentPath).drive
-        sep = "|"
+        pair = "<>"
+        sep = pair[0]
+        tail = pair[-1]
         drives = []
         for d in ckit.getDrives():
             d += ":"
             if d != current_drive:
                 detail = ckit.getDriveDisplayName(d)
-                drives.append(d + sep + detail[: detail.find("(") - 1])
+                drives.append(d + sep + detail[: detail.find("(") - 1] + tail)
 
         def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
             found = []
@@ -1559,7 +1561,7 @@ def configure(window: MainWindow) -> None:
         if result == None:
             return
         result = result.strip()
-        if sep in result:
+        if sep in result and result.endswith(tail):
             result = result[: result.find(sep)]
         if len(result) < 1:
             return
