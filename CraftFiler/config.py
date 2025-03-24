@@ -1564,7 +1564,7 @@ def configure(window: MainWindow) -> None:
                 result = result[: result.find(wrapper[0])]
             if len(result) < 1:
                 return
-            if os.sep in result:
+            if ":" in result:
                 pane.openPath(result)
             else:
                 pane.openPath(os.path.join(pane.currentPath, result))
@@ -3153,31 +3153,25 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
 
     def reload_with_encoding(_) -> None:
 
-        def _auto_detect() -> None:
-            window.load(auto=True)
-
-        def _invoke_encoder(enc: Union[str, None]) -> Callable:
-            def _encoder() -> None:
-                window.load(auto=False, encoding=ckit.TextEncoding(enc))
-
-            return _encoder
-
         encodes = {
-            "(Auto)": _auto_detect,
-            "S-JIS": _invoke_encoder("cp932"),
-            "EUC-JP": _invoke_encoder("euc-jp"),
-            "JIS": _invoke_encoder("iso-2022-jp"),
-            "UTF-8": _invoke_encoder("utf-8"),
-            "UTF-16LE": _invoke_encoder("utf-16-le"),
-            "UTF-16BE": _invoke_encoder("utf-16-be"),
-            "binary": _invoke_encoder(None),
+            "(Auto)": "",
+            "S-JIS": "cp932",
+            "EUC-JP": "euc-jp",
+            "JIS": "iso-2022-jp",
+            "UTF-8": "utf-8",
+            "UTF-16LE": "utf-16-le",
+            "UTF-16BE": "utf-16-be",
+            "binary": None,
         }
         names = list(encodes.keys())
         result, _ = invoke_listwindow(window, "encoding", names)
         if result < 0:
             return
 
-        encodes[names[result]]()
+        enc = encodes[names[result]]
+        auto_flag = enc is not None and len(enc) < 1
+        window.load(auto=auto_flag, encoding=ckit.TextEncoding(enc))
+
         window.scroll_info.makeVisible(0, window.height() - 1)
 
     window.keymap["C-Comma"] = reload_with_encoding
