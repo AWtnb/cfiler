@@ -1553,29 +1553,21 @@ def configure(window: MainWindow) -> None:
                     found.append(name)
             return found, 0
 
-        result, mod = window.commandLine(
+        result = window.commandLine(
             title="JumpInputSmart",
             auto_complete=True,
             candidate_handler=_listup_names,
-            return_modkey=True,
         )
-        if result == None:
-            return
-        result = result.strip()
-        if wrapper[0] in result:
-            result = result[: result.find(wrapper[0])]
-        if len(result) < 1:
-            return
-        open_path = Path(pane.currentPath, result)
-        if open_path.is_dir():
-            if mod == ckit.MODKEY_SHIFT:
-                pane.openPath(str(open_path.parent), str(open_path.name))
+        if result is not None:
+            result = result.strip()
+            if wrapper[0] in result:
+                result = result[: result.find(wrapper[0])]
+            if len(result) < 1:
+                return
+            if os.sep in result:
+                pane.openPath(result)
             else:
-                pane.openPath(str(open_path))
-        else:
-            pane.openPath(str(open_path))
-            if mod == ckit.MODKEY_SHIFT:
-                shell_exec(str(open_path))
+                pane.openPath(os.path.join(pane.currentPath, result))
 
     KEYBINDER.bind("F", smart_jump_input)
 
