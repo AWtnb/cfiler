@@ -2020,9 +2020,9 @@ def configure(window: MainWindow) -> None:
         def _get_length() -> int:
             if sep in result:
                 if result.endswith(sep):
-                    return 0
+                    return -1
                 return int(result[result.rfind(sep) + 1 :])
-            return 0
+            return -1
 
         offset = _get_offset()
         length = _get_length()
@@ -2038,7 +2038,7 @@ def configure(window: MainWindow) -> None:
                 org_path = Path(item.getFullpath())
                 stem = org_path.stem
                 new_name = stem[:offset]
-                if 0 < length:
+                if -1 < length:
                     new_name += stem[offset + length :]
                 new_name += org_path.suffix
 
