@@ -452,6 +452,7 @@ def configure(window: MainWindow) -> None:
             "A-C-Up": window.command_LogUp,
             "S-OpenBracket": window.command_MoveSeparatorUp,
             "S-CloseBracket": window.command_MoveSeparatorDown,
+            "C-S-R": window.command_BatchRename,
         }
     )
 
@@ -2003,6 +2004,10 @@ def configure(window: MainWindow) -> None:
             except Exception as e:
                 print(e)
 
+    class RenameInfo(NamedTuple):
+        orgPath: Path
+        newName: str
+
     def rename_substr() -> None:
         renamer = Renamer(window)
 
@@ -2035,10 +2040,6 @@ def configure(window: MainWindow) -> None:
 
         offset = _get_offset()
         length = _get_length()
-
-        class RenameInfo(NamedTuple):
-            orgPath: Path
-            newName: str
 
         def _confirm() -> List[RenameInfo]:
             infos = []
@@ -2109,8 +2110,8 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        print("Rename insert (reversable with shift-enter):")
-        result, mod = window.commandLine("Text[@position]", return_modkey=True)
+        print("Rename insert:")
+        result = window.commandLine("Text[@position]")
 
         if not result:
             print("Canceled.\n")
@@ -2134,11 +2135,6 @@ def configure(window: MainWindow) -> None:
 
         ins = _get_insert_text()
         pos = _get_insert_pos()
-        reverse = mod == ckit.MODKEY_SHIFT
-
-        class RenameInfo(NamedTuple):
-            orgPath: Path
-            newName: str
 
         def _confirm() -> List[RenameInfo]:
             infos = []
@@ -2150,8 +2146,7 @@ def configure(window: MainWindow) -> None:
                     if pos is None:
                         return org_path.stem + ins + org_path.suffix
                     stem = org_path.stem
-                    i = pos * -1 if reverse else pos
-                    return stem[:i] + ins + stem[i:] + org_path.suffix
+                    return stem[:pos] + ins + stem[pos:] + org_path.suffix
 
                 new_name = _get_new_name()
                 infos.append(RenameInfo(org_path, new_name))
@@ -2175,6 +2170,62 @@ def configure(window: MainWindow) -> None:
         Kiritori.wrap(_func)
 
     KEYBINDER.bind("S-I", rename_insert)
+
+    def rename_regexp() -> None:
+        renamer = Renamer(window)
+
+        targets = renamer.candidate
+        if len(targets) < 1:
+            return
+
+        print("Search regexp to rename (case-sensitive):")
+        result_reg = window.commandLine("Regexp (case-sensitive)")
+
+        if not result_reg:
+            print("Canceled.\n")
+            return
+        print(result_reg)
+
+        print("New text to replace with:")
+        result_new_text = window.commandLine("NewText")
+        if result_new_text is None:
+            print("Canceled.\n")
+            return
+        print(result_new_text)
+
+        reg = re.compile(result_reg)
+
+        def _confirm() -> List[RenameInfo]:
+            infos = []
+            lines = []
+            for item in targets:
+                org_path = Path(item.getFullpath())
+                new_name = reg.sub(result_new_text, org_path.stem) + org_path.suffix
+                infos.append(RenameInfo(org_path, new_name))
+                lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
+
+            lines.append(
+                "\nreplace: {}\nwith: {}\nOK? (Enter / Esc)".format(
+                    result_reg, result_new_text
+                )
+            )
+
+            if not popResultWindow(window, "Preview", "\n".join(lines)):
+                return []
+            return infos
+
+        infos = _confirm()
+        if len(infos) < 1:
+            print("Canceled.\n")
+            return
+
+        def _func() -> None:
+            for info in infos:
+                renamer.execute(info.orgPath, info.newName)
+
+        Kiritori.wrap(_func)
+
+    KEYBINDER.bind("S-R", rename_regexp)
 
     class Suffixer:
         sep = "_"
