@@ -2540,8 +2540,9 @@ def configure(window: MainWindow) -> None:
         def sorter_UnderscoreFirst(items):
             items.sort(
                 key=lambda item: (
-                    not item.getName().startswith("_"),
                     not item.isdir(),
+                    not item.name.startswith("_"),
+                    len(item.name) - len(item.name.lstrip("_")),
                     item.name.lower(),
                 )
             )
