@@ -1,3 +1,4 @@
+import configparser
 import datetime
 import hashlib
 import inspect
@@ -1095,22 +1096,31 @@ def configure(window: MainWindow) -> None:
                 return True
         return False
 
-    class FuzzyBookmark:
-        alias_config = os.path.join(USER_PROFILE, r"Personal\alias.txt")
+    class BookmarkAlias:
+        ini_section = "BOOKMARK_ALIAS"
 
         def __init__(self, window: MainWindow) -> None:
-            self._bookmarks = [path for path in window.bookmark.getItems()]
+            self._window = window
+            try:
+                self._window.ini.add_section(self.ini_section)
+            except configparser.DuplicateSectionError:
+                pass
+            self.options = self._window.ini.items(self.ini_section)
 
-        def load_config(self) -> dict:
-            d = {}
-            if not smart_check_path(self.alias_config):
-                return d
-            lines = Path(self.alias_config).read_text("utf-8").splitlines()
-            for line in lines:
-                if 0 < len(line.strip()) and "=" in line:
-                    pair = [s.strip() for s in line.split("=")]
-                    d[pair[0]] = pair[1]
-            return d
+        def register(self, name: str, path: str) -> None:
+            for o in self.get_options():
+                if o[1] == path:
+                    self._window.ini.remove_option(self.ini_section, o[0])
+            self._window.ini.set(self.ini_section, name, path)
+
+        def get_options(self) -> List[tuple]:
+            return self._window.ini.items(self.ini_section)
+
+    class FuzzyBookmark:
+
+        def __init__(self, window: MainWindow) -> None:
+            self._window = window
+            self._bookmarks = [path for path in self._window.bookmark.getItems()]
 
         @staticmethod
         def get_name(path: str) -> str:
@@ -1122,11 +1132,16 @@ def configure(window: MainWindow) -> None:
 
         @property
         def name_path_table(self) -> dict:
-            alias_mapping = self.load_config()
+            ba = BookmarkAlias(self._window)
+            options = ba.get_options()
             d = {}
             for bookmark_path in self._bookmarks:
+                alias = None
+                for o in options:
+                    if o[1] == bookmark_path:
+                        alias = o[0]
                 name = self.get_name(bookmark_path)
-                if 0 < len(alias := alias_mapping.get(bookmark_path, "")):
+                if alias:
                     name = "{}::{}".format(alias, name)
                 d[name] = bookmark_path
             return d
@@ -1190,13 +1205,7 @@ def configure(window: MainWindow) -> None:
         if len(alias) < 1:
             return
 
-        entries = []
-        p = FuzzyBookmark.alias_config
-        if smart_check_path(p):
-            entries = Path(p).read_text("utf-8").splitlines()
-        entries.append("{}={}".format(target, alias))
-
-        Path(p).write_text("\n".join(entries), "utf-8")
+        BookmarkAlias(window).register(alias, target)
 
         if target not in window.bookmark.getItems():
             window.bookmark.append(target)
