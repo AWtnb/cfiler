@@ -504,6 +504,10 @@ def configure(window: MainWindow) -> None:
             self._window.subThreadCall(self.fileList.refresh, (False, True))
             self.fileList.applyItems()
 
+        def setSorter(self, sorter: Callable) -> None:
+            self._window.subThreadCall(self.fileList.setSorter, (sorter,))
+            self.refresh()
+
         @property
         def items(self) -> list:
             if self.isBlank:
@@ -2531,6 +2535,21 @@ def configure(window: MainWindow) -> None:
         LeftPane(window).activate()
 
     KEYBINDER.bind("C-0", lambda: to_home_position(True))
+
+    def sort_filelist() -> None:
+        def sorter_UnderscoreFirst(items):
+            items.sort(
+                key=lambda item: (
+                    not item.getName().startswith("_"),
+                    not item.isdir(),
+                    item.name.lower(),
+                )
+            )
+
+        LeftPane(window).setSorter(sorter_UnderscoreFirst)
+        RightPane(window).setSorter(sorter_UnderscoreFirst)
+
+    sort_filelist()
 
     def reload_config() -> None:
         window.configure()
