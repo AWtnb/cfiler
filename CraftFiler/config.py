@@ -1113,46 +1113,39 @@ def configure(window: MainWindow) -> None:
             self.options = self._window.ini.items(self.ini_section)
 
         def register(self, name: str, path: str) -> None:
-            for o in self.get_options():
-                if o[1] == path:
-                    self._window.ini.remove_option(self.ini_section, o[0])
+            options = self._window.ini.items(self.ini_section)
+            for opt in options:
+                if opt[1] == path:
+                    self._window.ini.remove_option(self.ini_section, opt[0])
             self._window.ini.set(self.ini_section, name, path)
 
-        def get_options(self) -> List[tuple]:
-            return self._window.ini.items(self.ini_section)
-
-    class FuzzyBookmark:
-
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
-            self._bookmarks = [path for path in self._window.bookmark.getItems()]
-
         @staticmethod
-        def get_name(path: str) -> str:
+        def to_leaf(path: str) -> str:
             path = path.rstrip(os.sep)
             p = Path(path)
             if 0 < len(p.name):
                 return p.name
             return path.split(os.sep)[-1]
 
-        @property
-        def name_path_table(self) -> dict:
-            ba = BookmarkAlias(self._window)
-            options = ba.get_options()
+        def to_dict(self) -> dict:
             d = {}
-            for bookmark_path in self._bookmarks:
-                alias = None
-                for o in options:
-                    if o[1] == bookmark_path:
-                        alias = o[0]
-                name = self.get_name(bookmark_path)
-                if alias:
-                    name = "{}::{}".format(alias, name)
-                d[name] = bookmark_path
+            for opt in self._window.ini.items(self.ini_section):
+                name = "{}[{}]".format(opt[0], self.to_leaf(opt[1]))
+                d[name] = opt[1]
+            paths_with_alias = d.values()
+            for path in self._window.bookmark.getItems():
+                if path not in paths_with_alias:
+                    name = self.to_leaf(path)
+                    d[name] = path
             return d
 
+    class FuzzyBookmark:
+
+        def __init__(self, window: MainWindow) -> None:
+            self._table = BookmarkAlias(window).to_dict()
+
         def fzf(self) -> str:
-            table = self.name_path_table
+            table = self._table
             src = "\n".join(sorted(table.keys(), reverse=True))
             try:
                 cmd = ["fzf.exe"]
