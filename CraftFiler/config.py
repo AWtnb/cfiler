@@ -2385,8 +2385,11 @@ def configure(window: MainWindow) -> None:
                 found = [dd for dd in possible_dests if dd.startswith(update_info.text)]
                 return found, 0
 
+            default_name = "_obsolete"
             result, mod = window.commandLine(
                 prompt,
+                text=default_name,
+                selection=[0, len(default_name)],
                 auto_complete=True,
                 candidate_handler=_listup_dests,
                 return_modkey=True,
@@ -2394,12 +2397,12 @@ def configure(window: MainWindow) -> None:
             if not result:
                 return
 
-            dir_path = Path(pane.currentPath, result)
+            dir_path = os.path.join(pane.currentPath, result)
             if not smart_check_path(dir_path):
                 pane.mkdir(result)
             pane.copyToChild(result, items, remove_origin)
             if mod == ckit.MODKEY_SHIFT:
-                pane.openPath(str(dir_path))
+                pane.openPath(dir_path)
             else:
                 pane.focusByName(result)
 
@@ -2473,31 +2476,6 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("T", TOUCHER.invoke("txt"))
     KEYBINDER.bind("A-T", TOUCHER.invoke("md"))
     KEYBINDER.bind("C-N", TOUCHER.invoke(""))
-
-    def to_obsolete_dir() -> None:
-        pane = CPane(window)
-
-        items = []
-        for i in range(pane.count):
-            item = pane.byIndex(i)
-            if item.selected() and hasattr(item, "delete"):
-                items.append(item)
-        count = len(items)
-        if count < 1:
-            return
-
-        dest_name = "_obsolete"
-        if pane.byName(dest_name) < 0:
-            pane.mkdir(dest_name, False)
-        pane.copyToChild(dest_name, items, True)
-
-        msg = "moving {} item".format(count)
-        if 1 < count:
-            msg += "s"
-        msg += " to '{}'".format(dest_name)
-        Kiritori.log(msg)
-
-    KEYBINDER.bind("A-O", to_obsolete_dir)
 
     class Rect(NamedTuple):
         left: int
