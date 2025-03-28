@@ -2253,7 +2253,8 @@ def configure(window: MainWindow) -> None:
                         sufs.append(name[i:])
             sufs = sorted(list(set(sufs)), key=len)
             if self.timestamp:
-                sufs = [self.sep + self.timestamp] + sufs
+                if (s := self.sep + self.timestamp) not in sufs:
+                    sufs = [s] + sufs
             return sufs
 
         def candidates(self, s: str) -> List[str]:
