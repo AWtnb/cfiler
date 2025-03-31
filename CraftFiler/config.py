@@ -1949,7 +1949,7 @@ def configure(window: MainWindow) -> None:
         active_pane.focusOther()
 
     KEYBINDER.bind("S-U", open_parent_to_other)
-    KEYBINDER.bind("A-H", open_parent_to_other)
+    KEYBINDER.bind("S-H", open_parent_to_other)
 
     def on_vscode() -> None:
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
