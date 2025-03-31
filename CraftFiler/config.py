@@ -1949,6 +1949,7 @@ def configure(window: MainWindow) -> None:
         active_pane.focusOther()
 
     KEYBINDER.bind("S-U", open_parent_to_other)
+    KEYBINDER.bind("A-H", open_parent_to_other)
 
     def on_vscode() -> None:
         vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
@@ -2559,7 +2560,7 @@ def configure(window: MainWindow) -> None:
         help_path = os.path.join(ckit.getAppExePath(), "doc", "index.html")
         shell_exec(help_path)
 
-    KEYBINDER.bind("A-H", open_doc)
+    KEYBINDER.bind("C-F1", open_doc)
 
     def edit_config() -> None:
         config_dir = os.path.join(os.environ.get("APPDATA"), "CraftFiler")
