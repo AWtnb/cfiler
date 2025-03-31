@@ -2226,12 +2226,17 @@ def configure(window: MainWindow) -> None:
         sep = "_"
 
         def __init__(
-            self, window: MainWindow, include_ext: bool, with_timestamp: bool = False
+            self,
+            window: MainWindow,
+            include_ext: bool,
+            with_timestamp: bool = False,
+            additional: List[str] = [],
         ) -> None:
             pane = CPane(window)
             self.timestamp = ""
             if with_timestamp:
                 self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
+            self._additional = [self.sep + a for a in additional]
             self.names = []
             for name in pane.names:
                 if self.sep not in name or name.startswith(self.sep):
@@ -2250,6 +2255,8 @@ def configure(window: MainWindow) -> None:
                     if c == self.sep:
                         sufs.append(name[i:])
             sufs = sorted(list(set(sufs)), key=len)
+            if 0 < len(self._additional):
+                sufs = self._additional + sufs
             if self.timestamp:
                 if (s := self.sep + self.timestamp) not in sufs:
                     sufs = [s] + sufs
@@ -2287,11 +2294,14 @@ def configure(window: MainWindow) -> None:
             o = offset if append else 0
             sel = [o, o]
 
+            ts = item.time()
+            item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
+
             new_stem, mod = window.commandLine(
                 title="NewStem",
                 text=org_path.stem,
                 selection=sel,
-                candidate_handler=Suffixer(window, False, True),
+                candidate_handler=Suffixer(window, False, True, [item_timestamp]),
                 return_modkey=True,
             )
 
