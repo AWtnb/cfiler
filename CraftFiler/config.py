@@ -2358,7 +2358,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S-D", lambda: duplicate_file(True))
     KEYBINDER.bind("A-S-D", lambda: duplicate_file(False))
 
-    def smart_move_to_dir(remove_origin: bool) -> None:
+    def smart_copy_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
 
         def _mover() -> None:
@@ -2407,8 +2407,8 @@ def configure(window: MainWindow) -> None:
 
         return _mover
 
-    KEYBINDER.bind("A-M", smart_move_to_dir(True))
-    KEYBINDER.bind("A-C", smart_move_to_dir(False))
+    KEYBINDER.bind("A-M", smart_copy_to_dir(True))
+    KEYBINDER.bind("A-C", smart_copy_to_dir(False))
 
     def smart_mkdir() -> None:
         pane = CPane(window)
