@@ -2513,27 +2513,58 @@ def configure(window: MainWindow) -> None:
                 left = (visible_rect.right - visible_rect.left) // 2
                 wnd.setRect([left, 0, visible_rect.right, visible_rect.bottom])
         window.command_MoveSeparatorCenter(None)
-        LeftPane(window).activate()
 
     KEYBINDER.bind("C-0", lambda: to_home_position(True))
 
+    class sorter_UnderscoreFirst:
+        def __init__(self, order: int = 1) -> None:
+            self.order = order
+
+        def __call__(self, items) -> None:
+            def key_func(item):
+                is_dir = item.isdir()
+                starts_with_underscore = item.name.startswith("_")
+                underscore_count = len(item.name) - len(item.name.lstrip("_"))
+                lower_name = item.name.lower()
+
+                if self.order == 1:
+                    return (
+                        not is_dir,
+                        not starts_with_underscore,
+                        underscore_count,
+                        lower_name,
+                    )
+                else:
+                    return (
+                        is_dir,
+                        not starts_with_underscore,
+                        underscore_count,
+                        lower_name,
+                    )
+
+            items.sort(key=key_func, reverse=self.order == -1)
+
+    def update_sorter_list() -> None:
+        if len(window.sorter_list) == 4:
+            window.sorter_list = [
+                (
+                    "U : アンダースコア優先",
+                    sorter_UnderscoreFirst(),
+                    sorter_UnderscoreFirst(order=-1),
+                ),
+            ] + window.sorter_list
+
     def sort_filelist() -> None:
-        def sorter_UnderscoreFirst(items):
-            items.sort(
-                key=lambda item: (
-                    not item.isdir(),
-                    not item.name.startswith("_"),
-                    len(item.name) - len(item.name.lstrip("_")),
-                    item.name.lower(),
-                )
-            )
+
+        update_sorter_list()
 
         name = None
         if focus := CPane(window).focusedItem:
             name = focus.getName()
 
-        LeftPane(window).setSorter(sorter_UnderscoreFirst)
-        RightPane(window).setSorter(sorter_UnderscoreFirst)
+        sorter = window.sorter_list[0][1]
+        LeftPane(window).setSorter(sorter)
+        RightPane(window).setSorter(sorter)
 
         if name:
             CPane(window).focusByName(name)
