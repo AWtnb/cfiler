@@ -2535,31 +2535,31 @@ def configure(window: MainWindow) -> None:
 
             items.sort(key=key_func, reverse=self.order == -1)
 
-    def update_sorter_list() -> None:
-        if len(window.sorter_list) == 4:
-            window.sorter_list = [
-                (
-                    "U : アンダースコア優先",
-                    sorter_UnderscoreFirst(),
-                    sorter_UnderscoreFirst(order=-1),
-                ),
-            ] + window.sorter_list
+    class SorterHandler:
+        def __init__(self, window: MainWindow) -> None:
+            if len(window.sorter_list) == 4:
+                window.sorter_list = [
+                    (
+                        "U : アンダースコア優先",
+                        sorter_UnderscoreFirst(),
+                        sorter_UnderscoreFirst(order=-1),
+                    ),
+                ] + window.sorter_list
+            self._window = window
 
-    def sort_filelist() -> None:
-        update_sorter_list()
+        def apply(self) -> None:
+            name = None
+            if focus := CPane(self._window).focusedItem:
+                name = focus.getName()
 
-        name = None
-        if focus := CPane(window).focusedItem:
-            name = focus.getName()
+            sorter = self._window.sorter_list[0][1]
+            LeftPane(self._window).setSorter(sorter)
+            RightPane(self._window).setSorter(sorter)
 
-        sorter = window.sorter_list[0][1]
-        LeftPane(window).setSorter(sorter)
-        RightPane(window).setSorter(sorter)
+            if name:
+                CPane(window).focusByName(name)
 
-        if name:
-            CPane(window).focusByName(name)
-
-    sort_filelist()
+    SorterHandler(window).apply()
 
     def reload_config() -> None:
         window.configure()
