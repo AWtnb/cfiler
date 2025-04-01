@@ -2528,8 +2528,15 @@ def configure(window: MainWindow) -> None:
                 )
             )
 
+        name = None
+        if focus := CPane(window).focusedItem:
+            name = focus.getName()
+
         LeftPane(window).setSorter(sorter_UnderscoreFirst)
         RightPane(window).setSorter(sorter_UnderscoreFirst)
+
+        if name:
+            CPane(window).focusByName(name)
 
     sort_filelist()
 
