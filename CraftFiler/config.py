@@ -2522,25 +2522,16 @@ def configure(window: MainWindow) -> None:
 
         def __call__(self, items) -> None:
             def key_func(item):
-                is_dir = item.isdir()
+                dir_flag = not item.isdir() if self.order == 1 else item.isdir()
                 starts_with_underscore = item.name.startswith("_")
                 underscore_count = len(item.name) - len(item.name.lstrip("_"))
                 lower_name = item.name.lower()
-
-                if self.order == 1:
-                    return (
-                        not is_dir,
-                        not starts_with_underscore,
-                        underscore_count,
-                        lower_name,
-                    )
-                else:
-                    return (
-                        is_dir,
-                        not starts_with_underscore,
-                        underscore_count,
-                        lower_name,
-                    )
+                return (
+                    dir_flag,
+                    not starts_with_underscore,
+                    underscore_count,
+                    lower_name,
+                )
 
             items.sort(key=key_func, reverse=self.order == -1)
 
@@ -2555,7 +2546,6 @@ def configure(window: MainWindow) -> None:
             ] + window.sorter_list
 
     def sort_filelist() -> None:
-
         update_sorter_list()
 
         name = None
