@@ -3253,6 +3253,13 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
             return
         line = c.splitlines()[window.scroll_info.pos]
         ckit.setClipboardText(line)
+        window.setTitle(
+            "{} - [ {} ] copied line {}.".format(
+                cfiler_resource.cfiler_appname,
+                window.item.name,
+                window.scroll_info.pos + 1,
+            )
+        )
 
     window.keymap["C-T"] = copy_line_at_top
 
