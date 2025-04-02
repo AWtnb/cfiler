@@ -68,7 +68,10 @@ from cfiler_resultwindow import popResultWindow
 # https://github.com/crftwr/cfiler/blob/master/cfiler_misc.py
 from cfiler_misc import getFileSizeString
 
+# https://github.com/crftwr/cfiler/blob/master/cfiler_resource.py
 import cfiler_resource
+
+import cfiler_msgbox
 
 
 class PaintOption:
@@ -417,8 +420,6 @@ def configure(window: MainWindow) -> None:
             "M": window.command_Move,
             "S-Enter": window.command_View,
             "C-S-Q": window.command_CancelTask,
-            "C-Q": window.command_Quit,
-            "A-F4": window.command_Quit,
             "C-Comma": window.command_ConfigMenu,
             "C-S-Comma": window.command_ConfigMenu2,
             "C-H": window.command_JumpHistory,
@@ -2583,6 +2584,29 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("0", lambda: starting_position(False))
     KEYBINDER.bind("S-0", lambda: starting_position(True))
+
+    def safety_quit() -> None:
+        if window.ini.getint("MISC", "confirm_quit"):
+            result = cfiler_msgbox.popMessageBox(
+                window,
+                cfiler_msgbox.MessageBox.TYPE_YESNO,
+                "Confirm",
+                "Quit?",
+            )
+            if result != cfiler_msgbox.MessageBox.RESULT_YES:
+                return
+
+        desktop_path = os.path.join(USER_PROFILE, "Desktop")
+        left = LeftPane(window)
+        right = RightPane(window)
+        for pane in [left, right]:
+            if not pane.currentPath.startswith("C:"):
+                pane.openPath(desktop_path)
+
+        window.quit()
+
+    KEYBINDER.bind("C-Q", safety_quit)
+    KEYBINDER.bind("A-F4", safety_quit)
 
     def open_doc() -> None:
         help_path = os.path.join(ckit.getAppExePath(), "doc", "index.html")
