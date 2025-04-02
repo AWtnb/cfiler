@@ -8,7 +8,9 @@ import shutil
 import subprocess
 import time
 import unicodedata
+import urllib
 from concurrent.futures import ThreadPoolExecutor
+import urllib.parse
 
 from PIL import ImageGrab
 
@@ -1507,21 +1509,23 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_conc, _finish)
         window.taskEnqueue(job, create_new_queue=False)
 
-    def make_internet_shortcut(src: str = "") -> None:
-        lines = ["[InternetShortcut]"]
-        url = window.commandLine("URL", text=src)
-        if not url:
-            return
+    def make_internet_shortcut(url: str = "") -> None:
         if not url.startswith("http"):
             Kiritori.log("invalid url: '{}'".format(url))
             return
-        lines.append("URL={}".format(url))
-        title = window.commandLine("Shortcut title")
-        if not title:
+        print("Making shortcut for:\n{}".format(url))
+        lines = ["[InternetShortcut]"]
+        domain = urllib.parse.urlparse(url).netloc
+        name = window.commandLine(
+            "Shortcut title", text=" - {}".format(domain), selection=[0, 0]
+        )
+        if not name:
+            print("Canceled.\n")
             return
-        if not title.endswith(".url"):
-            title = title + ".url"
-        Path(CPane(window).currentPath, title).write_text(
+        lines.append("URL={}".format(url))
+        if not name.endswith(".url"):
+            name = name + ".url"
+        Path(CPane(window).currentPath, name).write_text(
             "\n".join(lines), encoding="utf-8"
         )
 
