@@ -1939,9 +1939,10 @@ def configure(window: MainWindow) -> None:
 
     def open_to_other() -> None:
         active_pane = CPane(window, True)
-        inactive_pane = CPane(window, False)
-        inactive_pane.openPath(active_pane.focusedItemPath)
-        active_pane.focusOther()
+        if not active_pane.isBlank:
+            inactive_pane = CPane(window, False)
+            inactive_pane.openPath(active_pane.focusedItemPath)
+            active_pane.focusOther()
 
     KEYBINDER.bind("S-L", open_to_other)
 
