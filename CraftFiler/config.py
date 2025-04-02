@@ -2522,12 +2522,12 @@ def configure(window: MainWindow) -> None:
 
         def __call__(self, items) -> None:
             def key_func(item):
-                dir_flag = not item.isdir() if self.order == 1 else item.isdir()
+                dir_upper_flag = not item.isdir() if self.order == 1 else item.isdir()
                 starts_with_underscore = item.name.startswith("_")
                 underscore_count = len(item.name) - len(item.name.lstrip("_"))
                 lower_name = item.name.lower()
                 return (
-                    dir_flag,
+                    dir_upper_flag,
                     not starts_with_underscore,
                     underscore_count,
                     lower_name,
@@ -2540,7 +2540,7 @@ def configure(window: MainWindow) -> None:
             if len(window.sorter_list) == 4:
                 window.sorter_list = [
                     (
-                        "U : アンダースコア優先",
+                        "U : Underscore First",
                         sorter_UnderscoreFirst(),
                         sorter_UnderscoreFirst(order=-1),
                     ),
