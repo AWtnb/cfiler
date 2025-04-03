@@ -2173,6 +2173,105 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-I", rename_insert)
 
+    def rename_index() -> None:
+        renamer = Renamer(window)
+
+        targets = renamer.candidate
+        if len(targets) < 1:
+            return
+
+        print("Rename insert index:")
+        result = window.commandLine(
+            "Index[@position,step,suffix]", text="01@0,1,_", selection=[0, 2]
+        )
+
+        if not result:
+            print("Canceled.\n")
+            return
+
+        class NameIndex:
+            position = -1
+            step = 1
+            suffix = ""
+
+            def __init__(self) -> None:
+                self.index_base = result.split("@")[0]
+                if 1 < len(ss := result.split("@")):
+                    infos = ss[1].split(",")
+                    self.position = int(infos[0].strip())
+                    if 1 < len(infos):
+                        self.step = int(infos[1].strip())
+                        if 2 < len(infos):
+                            self.suffix = infos[2]
+
+            @property
+            def width(self) -> int:
+                return len(self.index_base)
+
+            @property
+            def filler(self) -> str:
+                if not self.index_base.startswith("0"):
+                    return self.index_base[0]
+                return "0"
+
+            @property
+            def start(self) -> int:
+                try:
+                    return int(self.index_base.lstrip(self.filler))
+                except:
+                    return -1
+
+            @property
+            def is_valid(self) -> bool:
+                return self.start != -1
+
+        ni = NameIndex()
+        if not ni.is_valid:
+            print("Canceled (Invalid format).\n")
+            return
+
+        print(result)
+
+        def _confirm() -> List[RenameInfo]:
+            infos = []
+            lines = []
+            idx = ni.start
+            for item in targets:
+                org_path = Path(item.getFullpath())
+                org_stem = org_path.stem
+                pos = ni.position
+                if ni.position < 0:
+                    pos = len(org_stem) + 1 + ni.position
+                new_name = (
+                    org_stem[:pos]
+                    + str(idx).rjust(ni.width, ni.filler)
+                    + ni.suffix
+                    + org_stem[pos:]
+                    + org_path.suffix
+                )
+                idx += ni.step
+                infos.append(RenameInfo(org_path, new_name))
+                lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
+
+            lines.append("\ninsert:\nOK? (Enter / Esc)")
+
+            if not popResultWindow(window, "Preview", "\n".join(lines)):
+                return []
+            return infos
+
+        infos = _confirm()
+        if len(infos) < 1:
+            print("Canceled.\n")
+            return
+
+        def _func() -> None:
+            for info in infos:
+                renamer.execute(info.orgPath, info.newName)
+
+        Kiritori.wrap(_func)
+
+    KEYBINDER.bind("A-S-I", rename_index)
+
     def rename_regexp() -> None:
         renamer = Renamer(window)
 
