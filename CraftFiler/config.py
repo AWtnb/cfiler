@@ -2676,6 +2676,12 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-R", reload_config)
     KEYBINDER.bind("F5", reload_config)
 
+    def open_desktop_to_other() -> None:
+        desktop_path = os.path.join(USER_PROFILE, "Desktop")
+        CPane(window, False).openPath(desktop_path)
+
+    KEYBINDER.bind("S-0", open_desktop_to_other)
+
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
         desktop_path = os.path.join(USER_PROFILE, "Desktop")
@@ -2687,9 +2693,9 @@ def configure(window: MainWindow) -> None:
             LeftPane(window).activate()
 
     KEYBINDER.bind("0", lambda: starting_position(False))
-    KEYBINDER.bind("S-0", lambda: starting_position(True))
+    KEYBINDER.bind("A-0", lambda: starting_position(True))
 
-    def safety_quit() -> None:
+    def safe_quit() -> None:
         if window.ini.getint("MISC", "confirm_quit"):
             result = cfiler_msgbox.popMessageBox(
                 window,
@@ -2709,8 +2715,8 @@ def configure(window: MainWindow) -> None:
 
         window.quit()
 
-    KEYBINDER.bind("C-Q", safety_quit)
-    KEYBINDER.bind("A-F4", safety_quit)
+    KEYBINDER.bind("C-Q", safe_quit)
+    KEYBINDER.bind("A-F4", safe_quit)
 
     def open_doc() -> None:
         help_path = os.path.join(ckit.getAppExePath(), "doc", "index.html")
