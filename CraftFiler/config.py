@@ -2680,7 +2680,7 @@ def configure(window: MainWindow) -> None:
         desktop_path = os.path.join(USER_PROFILE, "Desktop")
         CPane(window, False).openPath(desktop_path)
 
-    KEYBINDER.bind("S-0", open_desktop_to_other)
+    KEYBINDER.bind("A-0", open_desktop_to_other)
 
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
@@ -2693,7 +2693,7 @@ def configure(window: MainWindow) -> None:
             LeftPane(window).activate()
 
     KEYBINDER.bind("0", lambda: starting_position(False))
-    KEYBINDER.bind("A-0", lambda: starting_position(True))
+    KEYBINDER.bind("S-0", lambda: starting_position(True))
 
     def safe_quit() -> None:
         if window.ini.getint("MISC", "confirm_quit"):
