@@ -2387,44 +2387,47 @@ def configure(window: MainWindow) -> None:
         ) -> Tuple[List[str], int]:
             return self.candidates(update_info.text), 0
 
-    def invoke_renamer(append: bool) -> Callable:
-        def _renamer() -> None:
-            pane = CPane(window)
-            renamer = Renamer(window)
-            item = pane.focusedItem
-            if not renamer.renamable(item) or pane.isBlank:
-                return
+    def invoke_renamer() -> Callable:
+        pane = CPane(window)
+        renamer = Renamer(window)
+        item = pane.focusedItem
+        if not renamer.renamable(item) or pane.isBlank:
+            return
 
-            org_path = Path(item.getFullpath())
-            offset = len(org_path.stem)
-            o = offset if append else 0
-            sel = [o, o]
+        org_path = Path(item.getFullpath())
+        offset = len(org_path.stem)
 
-            ts = item.time()
-            item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
+        ts = item.time()
+        item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
 
-            new_stem, mod = window.commandLine(
-                title="NewStem",
-                text=org_path.stem,
-                selection=sel,
-                candidate_handler=Suffixer(window, False, True, [item_timestamp]),
-                return_modkey=True,
-            )
+        place_holder = org_path.stem
+        sel = [offset, offset]
 
-            if not new_stem:
-                return
+        if (other_pane := CPane(window, False)).hasSelection:
+            if len(other_pane.selectedItems) == 1:
+                new_stem = Path(other_pane.selectedItemPaths[0]).stem
+                place_holder = place_holder + new_stem
+                sel = [offset, len(place_holder)]
 
-            new_name = new_stem + org_path.suffix
+        new_stem, mod = window.commandLine(
+            title="NewStem",
+            text=place_holder,
+            selection=sel,
+            candidate_handler=Suffixer(window, False, True, [item_timestamp]),
+            return_modkey=True,
+        )
 
-            def _func() -> None:
-                renamer.execute(org_path, new_name, mod == ckit.MODKEY_SHIFT)
+        if not new_stem:
+            return
 
-            Kiritori.wrap(_func)
+        new_name = new_stem + org_path.suffix
 
-        return _renamer
+        def _func() -> None:
+            renamer.execute(org_path, new_name, mod == ckit.MODKEY_SHIFT)
 
-    KEYBINDER.bind("N", invoke_renamer(True))
-    KEYBINDER.bind("S-N", invoke_renamer(False))
+        Kiritori.wrap(_func)
+
+    KEYBINDER.bind("N", invoke_renamer)
 
     def duplicate_file(only_stem: bool) -> None:
         pane = CPane(window)
