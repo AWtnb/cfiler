@@ -2113,30 +2113,18 @@ def configure(window: MainWindow) -> None:
             return
 
         print("Rename insert:")
-        result = window.commandLine("Text[@position]")
+        result = window.commandLine("Text[@position]", text="@-1", selection=[0, 0])
 
         if not result:
             print("Canceled.\n")
             return
-
         sep = "@"
 
-        def _get_insert_text() -> str:
-            if sep in result:
-                if result.endswith(sep):
-                    return result[:-1]
-                return result[: result.rfind(sep)]
-            return result
+        if result.endswith(sep) or sep not in result:
+            result += "@-1"
 
-        def _get_insert_pos() -> Union[int, None]:
-            if sep in result:
-                if result.endswith(sep):
-                    return None
-                return int(result[result.rfind(sep) + 1 :])
-            return None
-
-        ins = _get_insert_text()
-        pos = _get_insert_pos()
+        ins = result[: result.rfind(sep)]
+        pos = int(result[result.rfind(sep) + 1 :])
 
         def _confirm() -> List[RenameInfo]:
             infos = []
@@ -2145,10 +2133,14 @@ def configure(window: MainWindow) -> None:
                 org_path = Path(item.getFullpath())
 
                 def _get_new_name() -> str:
-                    if pos is None:
-                        return org_path.stem + ins + org_path.suffix
                     stem = org_path.stem
-                    return stem[:pos] + ins + stem[pos:] + org_path.suffix
+                    suf = org_path.suffix
+                    if pos < 0:
+                        if pos == -1:
+                            return stem + ins + suf
+                        p = pos + 1
+                        return stem[:p] + ins + stem[p:] + suf
+                    return stem[:pos] + ins + stem[pos:] + suf
 
                 new_name = _get_new_name()
                 infos.append(RenameInfo(org_path, new_name))
