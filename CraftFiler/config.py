@@ -3137,7 +3137,7 @@ def configure(window: MainWindow) -> None:
             return True
 
         def __str__(self) -> str:
-            return "[FILTERING]"
+            return "[FILTERING {}]".format(self.root)
 
     def hide_unselected() -> None:
         pane = CPane(window)
