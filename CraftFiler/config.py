@@ -2018,30 +2018,30 @@ def configure(window: MainWindow) -> None:
             return
 
         print("Rename substring:")
-        result = window.commandLine("Offset[;Length]")
+        result = window.commandLine("Offset[;Length]", text=";-1", selection=[0, 0])
 
         if not result:
             print("Canceled.\n")
             return
 
+        result = result.strip()
+        if len(result) < 1:
+            print("Canceled.\n")
+            return
+
         sep = ";"
+        if sep not in result:
+            result += ";-1"
+        else:
+            if result.startswith(sep):
+                result = "0" + result
 
-        def _get_offset() -> int:
-            if sep in result:
-                if result.startswith(sep):
-                    return 0
-                return int(result[: result.find(sep)])
-            return int(result)
+        offset = int(result[: result.find(sep)])
+        length = int(result[result.rfind(sep) + 1 :])
 
-        def _get_length() -> int:
-            if sep in result:
-                if result.endswith(sep):
-                    return -1
-                return int(result[result.rfind(sep) + 1 :])
-            return -1
-
-        offset = _get_offset()
-        length = _get_length()
+        if offset == 0 and length == -1:
+            print("Canceled.\n")
+            return
 
         def _confirm() -> List[RenameInfo]:
             infos = []
@@ -2049,10 +2049,17 @@ def configure(window: MainWindow) -> None:
             for item in targets:
                 org_path = Path(item.getFullpath())
                 stem = org_path.stem
-                new_name = stem[:offset]
-                if -1 < length:
-                    new_name += stem[offset + length :]
-                new_name += org_path.suffix
+                suf = org_path.suffix
+
+                def _get_new_name() -> str:
+                    substr = stem[:offset]
+                    if length < 0:
+                        if length == -1:
+                            return substr + suf
+                        return substr + stem[offset:][: length + 1]
+                    return substr + stem[offset + length] + suf
+
+                new_name = _get_new_name()
 
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
@@ -2118,7 +2125,16 @@ def configure(window: MainWindow) -> None:
         if not result:
             print("Canceled.\n")
             return
+
+        result = result.strip()
+        if len(result) < 1:
+            print("Canceled.\n")
+            return
+
         sep = "@"
+        if result.startswith(sep):
+            print("Canceled.\n")
+            return
 
         if result.endswith(sep) or sep not in result:
             result += "@-1"
@@ -2131,10 +2147,10 @@ def configure(window: MainWindow) -> None:
             lines = []
             for item in targets:
                 org_path = Path(item.getFullpath())
+                stem = org_path.stem
+                suf = org_path.suffix
 
                 def _get_new_name() -> str:
-                    stem = org_path.stem
-                    suf = org_path.suffix
                     if pos < 0:
                         if pos == -1:
                             return stem + ins + suf
