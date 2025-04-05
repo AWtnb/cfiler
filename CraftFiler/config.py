@@ -1111,7 +1111,6 @@ def configure(window: MainWindow) -> None:
                 self._window.ini.add_section(self.ini_section)
             except configparser.DuplicateSectionError:
                 pass
-            self.options = self._window.ini.items(self.ini_section)
 
         def register(self, name: str, path: str) -> None:
             options = self._window.ini.items(self.ini_section)
