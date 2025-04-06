@@ -119,40 +119,6 @@ def smart_check_path(
         return False
 
 
-class LocalApps:
-
-    def __init__(self, app_dict: dict) -> None:
-        self.dict = app_dict
-
-    @property
-    def names(self) -> list:
-        names = []
-        for name, path in self.dict.items():
-            if smart_check_path(path):
-                names.append(name)
-        return names
-
-    def get_path(self, name: str) -> str:
-        return self.dict.get(name, "")
-
-
-PDF_VIEWERS = LocalApps(
-    {
-        "sumatra": r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
-        "adobe": r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe",
-        "xchange editor": r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe",
-    }
-)
-
-TEXT_EDITORS = LocalApps(
-    {
-        "notepad": r"C:\Windows\System32\notepad.exe",
-        "mery": os.path.join(USER_PROFILE, r"AppData\Local\Programs\Mery\Mery.exe"),
-        "vscode": os.path.join(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"),
-    }
-)
-
-
 def invoke_listwindow(
     window: ckit.TextWindow, prompt: str, items, ini_pos: int = 0
 ) -> Tuple[int, int]:
@@ -1023,6 +989,33 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-S-H", toggle_hidden)
 
+    class LocalApps:
+        def __init__(self, app_dict: dict) -> None:
+            d = {}
+            for name, path in app_dict.items():
+                if smart_check_path(path):
+                    d[name] = path
+            self._dict = d
+
+        @property
+        def names(self) -> list:
+            return list(self._dict.keys())
+
+        def get_path(self, name: str) -> str:
+            return self._dict.get(name, "")
+
+    PDF_VIEWERS = {
+        "sumatra": r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
+        "adobe": r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe",
+        "xchange editor": r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe",
+    }
+
+    TEXT_EDITORS = {
+        "notepad": r"C:\Windows\System32\notepad.exe",
+        "mery": os.path.join(USER_PROFILE, r"AppData\Local\Programs\Mery\Mery.exe"),
+        "vscode": os.path.join(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"),
+    }
+
     def open_with() -> None:
         pane = CPane(window)
         if pane.isBlank or pane.focusedItem.isdir():
@@ -1037,7 +1030,8 @@ def configure(window: MainWindow) -> None:
             if Path(path).suffix != ".pdf":
                 with_pdf_viewer = False
 
-        apps = PDF_VIEWERS if with_pdf_viewer else TEXT_EDITORS
+        d = PDF_VIEWERS if with_pdf_viewer else TEXT_EDITORS
+        apps = LocalApps(d)
 
         if not with_pdf_viewer and 1 < len(paths):
             return
@@ -1046,9 +1040,11 @@ def configure(window: MainWindow) -> None:
         if len(names) < 1:
             return
 
-        result, _ = invoke_listwindow(window, "open with:", names)
-        if result < 0:
-            return
+        result = 0
+        if 1 < len(names):
+            result, _ = invoke_listwindow(window, "open with:", names)
+            if result < 0:
+                return
 
         exe_path = apps.get_path(names[result])
         for path in paths:
@@ -3301,24 +3297,6 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
 
     window.keymap["E"] = to_bottom
     window.keymap["End"] = to_bottom
-
-    def edit_by(_):
-        te = TEXT_EDITORS
-        names = te.names
-        if len(names) < 1:
-            return
-
-        delay()
-        result, _ = invoke_listwindow(window, "open with:", names)
-
-        if result < 0:
-            return
-
-        editor_path = te.get_path(names[result])
-        pyauto.shellExecute(None, editor_path, window.item.getFullpath(), "")
-        window.command_Close(None)
-
-    window.keymap["C-E"] = edit_by
 
     def open_original(_) -> None:
         pane = window.main_window.activePane()
