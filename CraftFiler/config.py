@@ -2012,7 +2012,7 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        print("Rename substring:")
+        print("Rename substring (extract part of filename):")
         result = window.commandLine("Offset[;Length]", text=";-1", selection=[0, 0])
 
         if not result:
