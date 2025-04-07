@@ -177,7 +177,7 @@ def configure(window: MainWindow) -> None:
 
     def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(window, item, width, _):
         if item.isdir():
-            str_size = "<DIR>"
+            str_size = "\ud83d\udcc1"
         else:
             str_size = getFileSizeString(item.size()).rjust(6)
 
