@@ -2046,15 +2046,14 @@ def configure(window: MainWindow) -> None:
                 stem = org_path.stem
                 suf = org_path.suffix
 
-                def _get_new_name() -> str:
-                    substr = stem[:offset]
+                def _get_new_stem() -> str:
                     if length < 0:
                         if length == -1:
-                            return substr + suf
-                        return substr + stem[offset:][: length + 1]
-                    return substr + stem[offset + length] + suf
+                            return stem[offset:]
+                        return stem[offset : length + 1]
+                    return stem[offset : offset + length]
 
-                new_name = _get_new_name()
+                new_name = _get_new_stem() + suf
 
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
@@ -2145,15 +2144,15 @@ def configure(window: MainWindow) -> None:
                 stem = org_path.stem
                 suf = org_path.suffix
 
-                def _get_new_name() -> str:
+                def _get_new_stem() -> str:
                     if pos < 0:
                         if pos == -1:
-                            return stem + ins + suf
+                            return stem + ins
                         p = pos + 1
-                        return stem[:p] + ins + stem[p:] + suf
-                    return stem[:pos] + ins + stem[pos:] + suf
+                        return stem[:p] + ins + stem[p:]
+                    return stem[:pos] + ins + stem[pos:]
 
-                new_name = _get_new_name()
+                new_name = _get_new_stem() + suf
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
 
