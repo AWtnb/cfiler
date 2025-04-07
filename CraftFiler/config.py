@@ -740,6 +740,10 @@ def configure(window: MainWindow) -> None:
             if not smart_check_path(target, 2.0):
                 Kiritori.log("invalid path: '{}'".format(path))
                 return
+            if path.startswith(self.currentPath) and len(self.currentPath) < len(path):
+                rel = path[len(self.currentPath) + 1 :]
+                child = rel.split(os.sep)[0]
+                self.focusByName(child)
             if target.is_file():
                 path = str(target.parent)
                 focus_name = target.name
