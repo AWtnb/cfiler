@@ -107,6 +107,28 @@ def delay(msec: int = 50) -> None:
     time.sleep(msec / 1000)
 
 
+def get_common_parent(path_a: str, path_b: str) -> str:
+    elems_a = path_a.split(os.sep)
+    elems_b = path_b.split(os.sep)
+    ss = []
+    for i, ea in enumerate(elems_a):
+        if len(elems_b) - 1 < i:
+            continue
+        if elems_b[i] == ea:
+            ss.append(ea)
+    return os.sep.join(ss)
+
+
+def get_direct_child(root: str, fullpath: str) -> str:
+    if len(root) < len(fullpath):
+        rel = fullpath[len(root) :].lstrip(os.sep)
+        if len(rel) < 1:
+            return ""
+        child = rel.split(os.sep)[0]
+        return os.path.join(root, child)
+    return ""
+
+
 def smart_check_path(
     path: Union[str, Path], timeout_sec: Union[int, float, None] = None
 ) -> bool:
@@ -740,10 +762,11 @@ def configure(window: MainWindow) -> None:
             if not smart_check_path(target, 2.0):
                 Kiritori.log("invalid path: '{}'".format(path))
                 return
-            if path.startswith(self.currentPath) and len(self.currentPath) < len(path):
-                rel = path[len(self.currentPath) + 1 :]
-                child = rel.split(os.sep)[0]
-                self.focusByName(child)
+            ancestor = get_common_parent(self.currentPath, path)
+            if 0 < len(ancestor):
+                c = get_direct_child(ancestor, path)
+                if 0 < len(c):
+                    self.appendHistory(c, False)
             if target.is_file():
                 path = str(target.parent)
                 focus_name = target.name
