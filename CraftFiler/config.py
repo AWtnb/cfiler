@@ -2088,33 +2088,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-S", rename_substr)
 
-    def rename_extension() -> None:
-        pane = CPane(window)
-        renamer = Renamer(window)
-        item = pane.focusedItem
-        if not renamer.renamable(item) or pane.isBlank:
-            return
-        focus_path = Path(item.getFullpath())
-        org_ext = focus_path.suffix
-        new_ext, mod = window.commandLine(
-            title="New Extension", text=org_ext[1:], return_modkey=True
-        )
-        if not new_ext:
-            return
-        new_ext = new_ext.strip()
-        if len(new_ext) < 1:
-            return
-        if new_ext.startswith("."):
-            new_ext = new_ext[1:]
-        new_name = focus_path.stem + "." + new_ext
-
-        def _func() -> None:
-            renamer.execute(focus_path, new_name, mod == ckit.MODKEY_SHIFT)
-
-        Kiritori.wrap(_func)
-
-    KEYBINDER.bind("A-X", rename_extension)
-
     def rename_insert() -> None:
         renamer = Renamer(window)
 
@@ -2298,8 +2271,14 @@ def configure(window: MainWindow) -> None:
             return
         print(result_reg)
 
+        if mo := re.search(r"\d{8}", CPane(window).currentPath):
+            additional_suffix = [mo.group(0)]
+
         print("New text to replace with:")
-        result_new_text = window.commandLine("NewText")
+        result_new_text = window.commandLine(
+            title="NewText",
+            candidate_handler=Suffixer(window, False, True, additional_suffix),
+        )
         if result_new_text is None:
             print("Canceled.\n")
             return
@@ -2345,7 +2324,7 @@ def configure(window: MainWindow) -> None:
         def __init__(
             self,
             window: MainWindow,
-            include_ext: bool,
+            with_extension: bool,
             with_timestamp: bool = False,
             additional: List[str] = [],
         ) -> None:
@@ -2359,7 +2338,7 @@ def configure(window: MainWindow) -> None:
                 if self.sep not in name or name.startswith(self.sep):
                     continue
                 p = Path(pane.currentPath, name)
-                if include_ext:
+                if with_extension:
                     self.names.append(p.name)
                 else:
                     self.names.append(p.stem)
@@ -2446,7 +2425,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("N", invoke_renamer)
 
-    def duplicate_file(only_stem: bool) -> None:
+    def duplicate_file() -> None:
         pane = CPane(window)
 
         src_path = Path(pane.focusedItemPath)
@@ -2456,16 +2435,16 @@ def configure(window: MainWindow) -> None:
                 return
             src_path = Path(pane.selectedItemPaths[0])
 
-        sel_end = len(src_path.stem) if only_stem else len(src_path.name)
+        sel_end = len(src_path.stem)
         sel_start = src_path.stem.rfind("_")
         if sel_start < 0:
             sel_start = sel_end
-        prompt = "NewStem" if only_stem else "NewName"
-        placeholder = src_path.stem if only_stem else src_path.name
+        prompt = "NewStem"
+        placeholder = src_path.stem
         result = window.commandLine(
             title=prompt,
             text=placeholder,
-            candidate_handler=Suffixer(window, (not only_stem), True),
+            candidate_handler=Suffixer(window, False, True),
             selection=[sel_start, sel_end],
         )
 
@@ -2473,7 +2452,7 @@ def configure(window: MainWindow) -> None:
             result = result.strip()
             if len(result) < 1:
                 return
-            if src_path.is_file() and only_stem:
+            if src_path.is_file():
                 result = result + src_path.suffix
             new_path = src_path.with_name(result)
 
@@ -2491,8 +2470,7 @@ def configure(window: MainWindow) -> None:
             pane.refresh()
             pane.focusByName(Path(new_path).name)
 
-    KEYBINDER.bind("S-D", lambda: duplicate_file(True))
-    KEYBINDER.bind("A-S-D", lambda: duplicate_file(False))
+    KEYBINDER.bind("S-D", duplicate_file)
 
     def smart_copy_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
