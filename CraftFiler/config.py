@@ -2095,8 +2095,18 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
+        placeholder = "@-1"
+        sel_end = 0
+        try:
+            placeholder = window.ini.get("RENAME", "insert")
+            sel_end = placeholder.find("@")
+        except configparser.NoSectionError:
+            pass
+
         print("Rename insert:")
-        result = window.commandLine("Text[@position]", text="@-1", selection=[0, 0])
+        result = window.commandLine(
+            "Text[@position]", text=placeholder, selection=[0, sel_end]
+        )
 
         if not result:
             print("Canceled.\n")
@@ -2106,6 +2116,12 @@ def configure(window: MainWindow) -> None:
         if len(result) < 1:
             print("Canceled.\n")
             return
+
+        try:
+            window.ini.add_section("RENAME")
+            window.ini.set("RENAME", "insert", result)
+        except configparser.DuplicateSectionError:
+            pass
 
         sep = "@"
         if result.startswith(sep):
