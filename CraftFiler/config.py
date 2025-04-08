@@ -2410,6 +2410,12 @@ def configure(window: MainWindow) -> None:
 
         ts = item.time()
         item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
+        additional_suffix = [item_timestamp]
+
+        if mo := re.search(r"\d{8}", pane.currentPath):
+            ts = mo.group(0)
+            if ts != additional_suffix[0]:
+                additional_suffix.append(ts)
 
         place_holder = org_path.stem
         sel = [offset, offset]
@@ -2424,7 +2430,7 @@ def configure(window: MainWindow) -> None:
             title="NewStem",
             text=place_holder,
             selection=sel,
-            candidate_handler=Suffixer(window, False, True, [item_timestamp]),
+            candidate_handler=Suffixer(window, False, True, additional_suffix),
             return_modkey=True,
         )
 
