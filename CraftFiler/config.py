@@ -155,12 +155,6 @@ def invoke_listwindow(
 
 
 def configure(window: MainWindow) -> None:
-    INI_SECTION_RENAME_HISTORY = "RENAME_HISTORY"
-    try:
-        window.ini.add_section(INI_SECTION_RENAME_HISTORY)
-    except configparser.DuplicateSectionError:
-        pass
-
     class ItemTimestamp:
         def __init__(self, item) -> None:
             self._time = item.time()
@@ -2016,6 +2010,27 @@ def configure(window: MainWindow) -> None:
             except Exception as e:
                 print(e)
 
+    class RenameIniOption:
+        ini_section = "RENAME_HISTORY"
+
+        def __init__(self, window: MainWindow, option_name: str) -> None:
+            self._window = window
+            try:
+                self._window.ini.add_section(self.ini_section)
+            except configparser.DuplicateSectionError:
+                pass
+            self._option_name = option_name
+
+        def register(self, value: str) -> None:
+            self._window.ini.set(self.ini_section, self._option_name, value)
+
+        @property
+        def value(self) -> str:
+            try:
+                return self._window.ini.get(self.ini_section, self._option_name)
+            except:
+                return ""
+
     class RenameInfo(NamedTuple):
         orgPath: Path
         newName: str
@@ -2103,11 +2118,12 @@ def configure(window: MainWindow) -> None:
 
         placeholder = "@-1"
         sel_end = 0
-        try:
-            placeholder = window.ini.get(INI_SECTION_RENAME_HISTORY, "insert")
-            sel_end = placeholder.find("@")
-        except:
-            pass
+
+        rename_ini_insert = RenameIniOption(window, "insert")
+        last_insert = rename_ini_insert.value
+        if 0 < len(last_insert):
+            placeholder = last_insert
+            sel_end = last_insert.find("@")
 
         print("Rename insert:")
         result = window.commandLine(
@@ -2123,7 +2139,7 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        window.ini.set(INI_SECTION_RENAME_HISTORY, "insert", result)
+        rename_ini_insert.register(result)
 
         sep = "@"
         if result.startswith(sep):
@@ -2282,12 +2298,10 @@ def configure(window: MainWindow) -> None:
             return
 
         placeholder_search = ""
-        try:
-            placeholder_search = window.ini.get(
-                INI_SECTION_RENAME_HISTORY, "regexp-search"
-            )
-        except:
-            pass
+        rename_ini_search = RenameIniOption(window, "regexp-search")
+        last_search = rename_ini_search.value
+        if 0 < len(last_search):
+            placeholder_search = last_search
 
         print("Search regexp to rename (case-sensitive):")
         result_reg = window.commandLine(
@@ -2299,19 +2313,14 @@ def configure(window: MainWindow) -> None:
             return
         print(result_reg)
 
-        window.ini.set(INI_SECTION_RENAME_HISTORY, "regexp-search", result_reg)
+        rename_ini_search.register(result_reg)
 
         additional_suffix = []
         if mo := re.search(r"\d{8}", CPane(window).currentPath):
             additional_suffix.append(mo.group(0))
 
-        placeholder_new_text = ""
-        try:
-            placeholder_new_text = window.ini.get(
-                INI_SECTION_RENAME_HISTORY, "regexp-new-text"
-            )
-        except:
-            pass
+        rename_ini_new_text = RenameIniOption(window, "regexp-new-text")
+        placeholder_new_text = rename_ini_new_text.value
 
         print("New text to replace with:")
         result_new_text = window.commandLine(
@@ -2324,7 +2333,7 @@ def configure(window: MainWindow) -> None:
             return
         print(result_new_text)
 
-        window.ini.set(INI_SECTION_RENAME_HISTORY, "regexp-new-text", result_new_text)
+        rename_ini_new_text.register(result_new_text)
 
         reg = re.compile(result_reg)
 
