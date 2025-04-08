@@ -155,6 +155,12 @@ def invoke_listwindow(
 
 
 def configure(window: MainWindow) -> None:
+    INI_SECTION_RENAME_HISTORY = "RENAME_HISTORY"
+    try:
+        window.ini.add_section(INI_SECTION_RENAME_HISTORY)
+    except configparser.DuplicateSectionError:
+        pass
+
     class ItemTimestamp:
         def __init__(self, item) -> None:
             self._time = item.time()
@@ -2098,9 +2104,9 @@ def configure(window: MainWindow) -> None:
         placeholder = "@-1"
         sel_end = 0
         try:
-            placeholder = window.ini.get("RENAME", "insert")
+            placeholder = window.ini.get(INI_SECTION_RENAME_HISTORY, "insert")
             sel_end = placeholder.find("@")
-        except configparser.NoSectionError:
+        except:
             pass
 
         print("Rename insert:")
@@ -2117,11 +2123,7 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        try:
-            window.ini.add_section("RENAME")
-            window.ini.set("RENAME", "insert", result)
-        except configparser.DuplicateSectionError:
-            pass
+        window.ini.set(INI_SECTION_RENAME_HISTORY, "insert", result)
 
         sep = "@"
         if result.startswith(sep):
@@ -2279,26 +2281,50 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
+        placeholder_search = ""
+        try:
+            placeholder_search = window.ini.get(
+                INI_SECTION_RENAME_HISTORY, "regexp-search"
+            )
+        except:
+            pass
+
         print("Search regexp to rename (case-sensitive):")
-        result_reg = window.commandLine("Regexp (case-sensitive)")
+        result_reg = window.commandLine(
+            "Regexp (case-sensitive)", text=placeholder_search
+        )
 
         if not result_reg:
             print("Canceled.\n")
             return
         print(result_reg)
 
+        window.ini.set(INI_SECTION_RENAME_HISTORY, "regexp-search", result_reg)
+
+        additional_suffix = []
         if mo := re.search(r"\d{8}", CPane(window).currentPath):
-            additional_suffix = [mo.group(0)]
+            additional_suffix.append(mo.group(0))
+
+        placeholder_new_text = ""
+        try:
+            placeholder_new_text = window.ini.get(
+                INI_SECTION_RENAME_HISTORY, "regexp-new-text"
+            )
+        except:
+            pass
 
         print("New text to replace with:")
         result_new_text = window.commandLine(
             title="NewText",
+            text=placeholder_new_text,
             candidate_handler=Suffixer(window, False, True, additional_suffix),
         )
         if result_new_text is None:
             print("Canceled.\n")
             return
         print(result_new_text)
+
+        window.ini.set(INI_SECTION_RENAME_HISTORY, "regexp-new-text", result_new_text)
 
         reg = re.compile(result_reg)
 
