@@ -1189,6 +1189,11 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("B", fuzzy_bookmark)
 
+    def trim_commandline_result(result: str) -> str:
+        if result:
+            return result.strip()
+        return ""
+
     def set_bookmark_alias() -> None:
         pane = CPane(window)
         target = pane.currentPath
@@ -1201,10 +1206,7 @@ def configure(window: MainWindow) -> None:
             else:
                 target = pane.selectedItemPaths[0]
 
-        result = window.commandLine("Bookmark alias")
-        if not result:
-            return
-        alias = result.strip()
+        alias = trim_commandline_result(window.commandLine("Bookmark alias"))
         if len(alias) < 1:
             return
 
@@ -1473,12 +1475,11 @@ def configure(window: MainWindow) -> None:
                 return
 
         basename = "conc"
-        result = window.commandLine(
-            title="Outname", text=basename, selection=[0, len(basename)]
+        basename = trim_commandline_result(
+            window.commandLine(
+                title="Outname", text=basename, selection=[0, len(basename)]
+            )
         )
-        if not result:
-            return
-        basename = result.strip()
         if len(basename) < 1:
             return
 
@@ -1520,10 +1521,12 @@ def configure(window: MainWindow) -> None:
         print("Making shortcut for:\n{}".format(url))
         lines = ["[InternetShortcut]"]
         domain = urllib.parse.urlparse(url).netloc
-        name = window.commandLine(
-            "Shortcut title", text=" - {}".format(domain), selection=[0, 0]
+        name = trim_commandline_result(
+            window.commandLine(
+                "Shortcut title", text=" - {}".format(domain), selection=[0, 0]
+            )
         )
-        if not name:
+        if len(name) < 1:
             print("Canceled.\n")
             return
         lines.append("URL={}".format(url))
@@ -1567,21 +1570,21 @@ def configure(window: MainWindow) -> None:
                     found.append(name)
             return found, 0
 
-        result = window.commandLine(
-            title="JumpInputSmart",
-            auto_complete=True,
-            candidate_handler=_listup_names,
+        result = trim_commandline_result(
+            window.commandLine(
+                title="JumpInputSmart",
+                auto_complete=True,
+                candidate_handler=_listup_names,
+            )
         )
-        if result is not None:
-            result = result.strip()
-            if wrapper[0] in result:
-                result = result[: result.find(wrapper[0])]
-            if len(result) < 1:
-                return
-            if ":" in result:
-                pane.openPath(result)
-            else:
-                pane.openPath(os.path.join(pane.currentPath, result))
+        if len(result) < 1 or result.startswith(wrapper[0]):
+            return
+        if wrapper[0] in result:
+            result = result[: result.find(wrapper[0])]
+        if ":" in result:
+            pane.openPath(result)
+        else:
+            pane.openPath(os.path.join(pane.currentPath, result))
 
     KEYBINDER.bind("F", smart_jump_input)
 
@@ -1598,8 +1601,10 @@ def configure(window: MainWindow) -> None:
             return
 
         dirname_filler = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
-        result = window.commandLine("Extract as", text=dirname_filler)
-        if not result:
+        result = trim_commandline_result(
+            window.commandLine("Extract as", text=dirname_filler)
+        )
+        if len(result) < 1:
             return
 
         if active_pane.byName(result) != -1:
@@ -2043,13 +2048,10 @@ def configure(window: MainWindow) -> None:
             return
 
         print("Rename substring (extract part of filename):")
-        result = window.commandLine("Offset[;Length]", text=";-1", selection=[0, 0])
+        result = trim_commandline_result(
+            window.commandLine("Offset[;Length]", text=";-1", selection=[0, 0])
+        )
 
-        if not result:
-            print("Canceled.\n")
-            return
-
-        result = result.strip()
         if len(result) < 1:
             print("Canceled.\n")
             return
@@ -2126,15 +2128,12 @@ def configure(window: MainWindow) -> None:
             sel_end = last_insert.find("@")
 
         print("Rename insert:")
-        result = window.commandLine(
-            "Text[@position]", text=placeholder, selection=[0, sel_end]
+        result = trim_commandline_result(
+            window.commandLine(
+                "Text[@position]", text=placeholder, selection=[0, sel_end]
+            )
         )
 
-        if not result:
-            print("Canceled.\n")
-            return
-
-        result = result.strip()
         if len(result) < 1:
             print("Canceled.\n")
             return
@@ -2199,11 +2198,13 @@ def configure(window: MainWindow) -> None:
             return
 
         print("Rename insert index:")
-        result = window.commandLine(
-            "Index[@position,step,suffix]", text="01@0,1,_", selection=[0, 2]
+        result = trim_commandline_result(
+            window.commandLine(
+                "Index[@position,step,suffix]", text="01@0,1,_", selection=[0, 2]
+            )
         )
 
-        if not result:
+        if len(result) < 1:
             print("Canceled.\n")
             return
 
@@ -2492,34 +2493,35 @@ def configure(window: MainWindow) -> None:
             sel_start = sel_end
         prompt = "NewStem"
         placeholder = src_path.stem
-        result = window.commandLine(
-            title=prompt,
-            text=placeholder,
-            candidate_handler=Suffixer(window, False, True),
-            selection=[sel_start, sel_end],
+        result = trim_commandline_result(
+            window.commandLine(
+                title=prompt,
+                text=placeholder,
+                candidate_handler=Suffixer(window, False, True),
+                selection=[sel_start, sel_end],
+            )
         )
 
-        if result:
-            result = result.strip()
-            if len(result) < 1:
-                return
-            if src_path.is_file():
-                result = result + src_path.suffix
-            new_path = src_path.with_name(result)
+        if len(result) < 1:
+            return
 
-            if smart_check_path(new_path):
-                Kiritori.log("Canceled. (Same item exists)")
-                return
+        if src_path.is_file():
+            result = result + src_path.suffix
+        new_path = src_path.with_name(result)
 
-            def _copy_as(new_path: str) -> None:
-                if Path(src_path).is_dir():
-                    shutil.copytree(src_path, new_path)
-                else:
-                    shutil.copy(src_path, new_path)
+        if smart_check_path(new_path):
+            Kiritori.log("Canceled. (Same item exists)")
+            return
 
-            window.subThreadCall(_copy_as, (new_path,))
-            pane.refresh()
-            pane.focusByName(Path(new_path).name)
+        def _copy_as(new_path: str) -> None:
+            if Path(src_path).is_dir():
+                shutil.copytree(src_path, new_path)
+            else:
+                shutil.copy(src_path, new_path)
+
+        window.subThreadCall(_copy_as, (new_path,))
+        pane.refresh()
+        pane.focusByName(Path(new_path).name)
 
     KEYBINDER.bind("S-D", duplicate_file)
 
