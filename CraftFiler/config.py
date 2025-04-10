@@ -2675,7 +2675,7 @@ def configure(window: MainWindow) -> None:
             self.order = order
 
         def __call__(self, items) -> None:
-            def key_func(item):
+            def _sort_key(item):
                 dir_upper_flag = not item.isdir() if self.order == 1 else item.isdir()
                 starts_with_underscore = item.name.startswith("_")
                 underscore_count = len(item.name) - len(item.name.lstrip("_"))
@@ -2687,7 +2687,7 @@ def configure(window: MainWindow) -> None:
                     lower_name,
                 )
 
-            items.sort(key=key_func, reverse=self.order == -1)
+            items.sort(key=_sort_key, reverse=self.order == -1)
 
     class SorterHandler:
         def __init__(self, window: MainWindow) -> None:
