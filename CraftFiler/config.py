@@ -757,7 +757,9 @@ def configure(window: MainWindow) -> None:
                         last_visit_path = hist[0]
                         if last_visit_path.startswith(path):
                             if last_visit_path != path:
-                                focus_name = last_visit_path[len(path) + 1 :].split(os.sep)[0]
+                                focus_name = last_visit_path[len(path) + 1 :].split(
+                                    os.sep
+                                )[0]
                             break
             lister = lister_Default(self._window, path)
             self._window.jumpLister(self._pane, lister, focus_name)
@@ -1088,10 +1090,12 @@ def configure(window: MainWindow) -> None:
         active_selects = active.selectedItemNames
         active_path = active.currentPath
         active_focus_name = None if active.isBlank else active.focusedItem.getName()
+        active_sorter = active.fileList.getSorter()
 
         inactive = CPane(window, False)
         inactive_selects = inactive.selectedItemNames
         inactive_path = inactive.currentPath
+        inactive_sorter = inactive.fileList.getSorter()
 
         inactive_focus_name = (
             None if inactive.isBlank else inactive.focusedItem.getName()
@@ -1099,9 +1103,11 @@ def configure(window: MainWindow) -> None:
 
         active.openPath(inactive_path, inactive_focus_name)
         active.selectByNames(inactive_selects)
+        active.setSorter(inactive_sorter)
 
         inactive.openPath(active_path, active_focus_name)
         inactive.selectByNames(active_selects)
+        inactive.setSorter(active_sorter)
 
         LeftPane(window).activate()
 
