@@ -952,7 +952,8 @@ def configure(window: MainWindow) -> None:
         focus_path = pane.focusedItemPath
         p = Path(focus_path)
         if p.is_dir():
-            return False
+            pane.openPath(focus_path)
+            return True
 
         if pane.focusedItem.size() == 0:
             window.command_Execute(None)
