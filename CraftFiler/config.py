@@ -1189,9 +1189,11 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("B", fuzzy_bookmark)
 
-    def trim_commandline_result(result: str) -> str:
-        if result:
-            return result.strip()
+    def stringify(x: Union[str, None], trim: bool = True) -> str:
+        if x:
+            if trim:
+                return x.strip()
+            return x
         return ""
 
     def set_bookmark_alias() -> None:
@@ -1206,7 +1208,7 @@ def configure(window: MainWindow) -> None:
             else:
                 target = pane.selectedItemPaths[0]
 
-        alias = trim_commandline_result(window.commandLine("Bookmark alias"))
+        alias = stringify(window.commandLine("Bookmark alias"))
         if len(alias) < 1:
             return
 
@@ -1475,7 +1477,7 @@ def configure(window: MainWindow) -> None:
                 return
 
         basename = "conc"
-        basename = trim_commandline_result(
+        basename = stringify(
             window.commandLine(
                 title="Outname", text=basename, selection=[0, len(basename)]
             )
@@ -1521,7 +1523,7 @@ def configure(window: MainWindow) -> None:
         print("Making shortcut for:\n{}".format(url))
         lines = ["[InternetShortcut]"]
         domain = urllib.parse.urlparse(url).netloc
-        name = trim_commandline_result(
+        name = stringify(
             window.commandLine(
                 "Shortcut title", text=" - {}".format(domain), selection=[0, 0]
             )
@@ -1570,7 +1572,7 @@ def configure(window: MainWindow) -> None:
                     found.append(name)
             return found, 0
 
-        result = trim_commandline_result(
+        result = stringify(
             window.commandLine(
                 title="JumpInputSmart",
                 auto_complete=True,
@@ -1601,9 +1603,7 @@ def configure(window: MainWindow) -> None:
             return
 
         dirname_filler = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
-        result = trim_commandline_result(
-            window.commandLine("Extract as", text=dirname_filler)
-        )
+        result = stringify(window.commandLine("Extract as", text=dirname_filler))
         if len(result) < 1:
             return
 
@@ -2048,7 +2048,7 @@ def configure(window: MainWindow) -> None:
             return
 
         print("Rename substring (extract part of filename):")
-        result = trim_commandline_result(
+        result = stringify(
             window.commandLine("Offset[;Length]", text=";-1", selection=[0, 0])
         )
 
@@ -2128,7 +2128,7 @@ def configure(window: MainWindow) -> None:
             sel_end = last_insert.find("@")
 
         print("Rename insert:")
-        result = trim_commandline_result(
+        result = stringify(
             window.commandLine(
                 "Text[@position]", text=placeholder, selection=[0, sel_end]
             )
@@ -2198,7 +2198,7 @@ def configure(window: MainWindow) -> None:
             return
 
         print("Rename insert index:")
-        result = trim_commandline_result(
+        result = stringify(
             window.commandLine(
                 "Index[@position,step,suffix]", text="01@0,1,_", selection=[0, 2]
             )
@@ -2493,7 +2493,7 @@ def configure(window: MainWindow) -> None:
             sel_start = sel_end
         prompt = "NewStem"
         placeholder = src_path.stem
-        result = trim_commandline_result(
+        result = stringify(
             window.commandLine(
                 title=prompt,
                 text=placeholder,
@@ -2528,54 +2528,51 @@ def configure(window: MainWindow) -> None:
     def smart_copy_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
 
-        def _mover() -> None:
-            pane = CPane(window)
+        pane = CPane(window)
 
-            items = []
-            for item in pane.selectedItems:
-                if hasattr(item, "delete"):
-                    items.append(item)
+        items = []
+        for item in pane.selectedItems:
+            if remove_origin and hasattr(item, "delete"):
+                items.append(item)
 
-            if len(items) < 1:
-                return
+        if len(items) < 1:
+            return
 
-            possible_dests = []
-            names = [item.getName() for item in items]
-            for d in pane.dirs:
-                if (dn := d.getName()) not in names:
-                    possible_dests.append(dn)
+        default_name = "_obsolete"
 
-            def _listup_dests(
-                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-            ) -> tuple:
-                found = [dd for dd in possible_dests if dd.startswith(update_info.text)]
-                return found, 0
+        def _listup_dests(
+            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+        ) -> tuple:
+            found = [default_name]
+            for item in pane.items:
+                if item.isdir() and not item.selected():
+                    name = item.getName()
+                    if name.startswith(update_info.text):
+                        found.append(name)
+            return found, 0
 
-            default_name = "_obsolete"
-            result, mod = window.commandLine(
-                prompt,
-                text=default_name,
-                selection=[0, len(default_name)],
-                auto_complete=True,
-                candidate_handler=_listup_dests,
-                return_modkey=True,
-            )
-            if not result:
-                return
+        result, mod = window.commandLine(
+            prompt,
+            text=default_name,
+            selection=[0, len(default_name)],
+            auto_complete=True,
+            candidate_handler=_listup_dests,
+            return_modkey=True,
+        )
+        if not result:
+            return
 
-            dir_path = os.path.join(pane.currentPath, result)
-            if not smart_check_path(dir_path):
-                pane.mkdir(result)
-            pane.copyToChild(result, items, remove_origin)
-            if mod == ckit.MODKEY_SHIFT:
-                pane.openPath(dir_path)
-            else:
-                pane.focusByName(result)
+        dir_path = os.path.join(pane.currentPath, result)
+        if not smart_check_path(dir_path):
+            pane.mkdir(result)
+        pane.copyToChild(result, items, remove_origin)
+        if mod == ckit.MODKEY_SHIFT:
+            pane.openPath(dir_path)
+        else:
+            pane.focusByName(result)
 
-        return _mover
-
-    KEYBINDER.bind("A-M", smart_copy_to_dir(True))
-    KEYBINDER.bind("A-C", smart_copy_to_dir(False))
+    KEYBINDER.bind("S-M", lambda: smart_copy_to_dir(True))
+    KEYBINDER.bind("S-C", lambda: smart_copy_to_dir(False))
 
     def smart_mkdir() -> None:
         pane = CPane(window)
