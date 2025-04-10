@@ -107,6 +107,14 @@ def delay(msec: int = 50) -> None:
     time.sleep(msec / 1000)
 
 
+def stringify(x: Union[str, None], trim: bool = True) -> str:
+    if x:
+        if trim:
+            return x.strip()
+        return x
+    return ""
+
+
 def smart_check_path(
     path: Union[str, Path], timeout_sec: Union[int, float, None] = None
 ) -> bool:
@@ -1188,13 +1196,6 @@ def configure(window: MainWindow) -> None:
         window.taskEnqueue(job, create_new_queue=False)
 
     KEYBINDER.bind("B", fuzzy_bookmark)
-
-    def stringify(x: Union[str, None], trim: bool = True) -> str:
-        if x:
-            if trim:
-                return x.strip()
-            return x
-        return ""
 
     def set_bookmark_alias() -> None:
         pane = CPane(window)
