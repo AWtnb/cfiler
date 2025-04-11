@@ -2322,8 +2322,7 @@ def configure(window: MainWindow) -> None:
             found = []
             for pre in pres:
                 if pre.startswith(s):
-                    prefix_rest = pre[len(s) :]
-                    found.append(s + prefix_rest)
+                    found.append(pre)
             return found
 
         def __call__(
