@@ -3053,7 +3053,11 @@ def configure(window: MainWindow) -> None:
         t = stem[first_sep:]
 
         result, mod = window.commandLine(
-            "EndsWith", return_modkey=True, text=t, selection=[0, 0]
+            "EndsWith",
+            return_modkey=True,
+            text=t,
+            selection=[0, 0],
+            candidate_handler=Suffixer(window),
         )
         if result:
             Selector(window).stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
