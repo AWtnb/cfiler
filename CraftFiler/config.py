@@ -2302,7 +2302,8 @@ def configure(window: MainWindow) -> None:
         def __init__(self, window: MainWindow) -> None:
             pane = CPane(window)
             self.names = []
-            for name in pane.names:
+            for item in pane.selectedOrAllItems:
+                name = item.getName()
                 if self.sep not in name or name.startswith(self.sep):
                     continue
                 p = Path(pane.currentPath, name)
@@ -2345,7 +2346,8 @@ def configure(window: MainWindow) -> None:
                 self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
             self._additional = [self.sep + a for a in additional]
             self.names = []
-            for name in pane.names:
+            for item in pane.selectedOrAllItems:
+                name = item.getName()
                 if self.sep not in name or name.startswith(self.sep):
                     continue
                 p = Path(pane.currentPath, name)
@@ -2373,11 +2375,11 @@ def configure(window: MainWindow) -> None:
             if s.endswith(self.sep):
                 return [s + suf[1:] for suf in sufs]
             found = []
-            suffix_from_command = s[s.find(self.sep) :]
+            sep_pos = s.find(self.sep)
+            command_suffix = s[sep_pos:]
             for suf in sufs:
-                if suf.startswith(suffix_from_command):
-                    suffix_rest = suf[len(suffix_from_command) :]
-                    found.append(s + suffix_rest)
+                if suf.startswith(command_suffix):
+                    found.append(s[:sep_pos] + suf)
             return found
 
         def __call__(
@@ -2984,17 +2986,9 @@ def configure(window: MainWindow) -> None:
                 inactive.selectByName(name)
 
     def select_stem_startswith() -> None:
-        pane = CPane(window)
-        stem = Path(pane.focusedItemPath).stem
-        last_sep = stem.rfind("_")
-        t = stem[: last_sep + 1]
-
-        c = [len(t)] * 2
         result, mod = window.commandLine(
             "StartsWith",
             return_modkey=True,
-            text=t,
-            selection=c,
             candidate_handler=Prefixer(window),
         )
         if result:
@@ -3003,16 +2997,10 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("Caret", select_stem_startswith)
 
     def select_stem_endswith() -> None:
-        pane = CPane(window)
-        stem = Path(pane.focusedItemPath).stem
-        first_sep = stem.find("_")
-        t = stem[first_sep:]
-
         result, mod = window.commandLine(
             "EndsWith",
             return_modkey=True,
-            text=t,
-            selection=[0, 0],
+            text=Suffixer.sep,
             candidate_handler=Suffixer(window),
         )
         if result:
