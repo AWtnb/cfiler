@@ -2733,7 +2733,11 @@ def configure(window: MainWindow) -> None:
 
     def open_desktop_to_other() -> None:
         desktop_path = os.path.join(USER_PROFILE, "Desktop")
-        CPane(window, False).openPath(desktop_path)
+        inactive = CPane(window, False)
+        if inactive.currentPath != desktop_path:
+            inactive.openPath(desktop_path)
+        else:
+            CPane(window).focusOther()
 
     KEYBINDER.bind("A-0", open_desktop_to_other)
 
