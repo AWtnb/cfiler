@@ -2334,7 +2334,7 @@ def configure(window: MainWindow) -> None:
         result_new_text = window.commandLine(
             title="NewText",
             text=placeholder_new_text,
-            candidate_handler=Suffixer(window, False, True, additional_suffix),
+            candidate_handler=Suffixer(window, True, additional_suffix),
         )
         if result_new_text is None:
             print("Canceled.\n")
@@ -2383,7 +2383,6 @@ def configure(window: MainWindow) -> None:
         def __init__(
             self,
             window: MainWindow,
-            with_extension: bool,
             with_timestamp: bool = False,
             additional: List[str] = [],
         ) -> None:
@@ -2397,10 +2396,7 @@ def configure(window: MainWindow) -> None:
                 if self.sep not in name or name.startswith(self.sep):
                     continue
                 p = Path(pane.currentPath, name)
-                if with_extension:
-                    self.names.append(p.name)
-                else:
-                    self.names.append(p.stem)
+                self.names.append(p.stem)
 
         @property
         def possible_suffix(self) -> List[str]:
@@ -2468,11 +2464,12 @@ def configure(window: MainWindow) -> None:
             title="NewStem",
             text=place_holder,
             selection=sel,
-            candidate_handler=Suffixer(window, False, True, additional_suffix),
+            candidate_handler=Suffixer(window, True, additional_suffix),
             return_modkey=True,
         )
 
-        if not new_stem:
+        new_stem = stringify(new_stem)
+        if len(new_stem) < 1:
             return
 
         new_name = new_stem + org_path.suffix
@@ -2504,7 +2501,7 @@ def configure(window: MainWindow) -> None:
             window.commandLine(
                 title=prompt,
                 text=placeholder,
-                candidate_handler=Suffixer(window, False, True),
+                candidate_handler=Suffixer(window, True),
                 selection=[sel_start, sel_end],
             )
         )
@@ -2566,7 +2563,9 @@ def configure(window: MainWindow) -> None:
             candidate_handler=_listup_dests,
             return_modkey=True,
         )
-        if not result:
+
+        result = stringify(result)
+        if len(result) < 1:
             return
 
         dir_path = os.path.join(pane.currentPath, result)
@@ -2588,15 +2587,14 @@ def configure(window: MainWindow) -> None:
             "DirName",
             text=ts,
             selection=[0, len(ts)],
-            candidate_handler=Suffixer(window, False, False),
+            candidate_handler=Suffixer(window, False),
             return_modkey=True,
         )
-        if not result:
-            return
-        dirname = result.strip()
+
+        dirname = stringify(result)
         if len(dirname) < 1:
             return
-        pane.mkdir(result)
+        pane.mkdir(dirname)
         if mod == ckit.MODKEY_SHIFT:
             pane.openChild(dirname)
 
@@ -2613,24 +2611,23 @@ def configure(window: MainWindow) -> None:
                     return
 
                 prompt = "NewFileName"
-                suffix = "." + extension if 0 < len(extension) else ""
-                if suffix:
-                    prompt += " ({})".format(suffix)
+                ext = "." + extension if 0 < len(extension) else ""
+                if ext:
+                    prompt += " ({})".format(ext)
                 else:
                     prompt += " (with extension)"
                 result, mod = window.commandLine(
                     prompt,
-                    candidate_handler=Suffixer(window, len(extension) < 1, True),
+                    candidate_handler=Suffixer(window, True),
                     return_modkey=True,
                 )
-                if not result:
-                    return
-                filename = result.strip()
+
+                filename = stringify(result)
                 if len(filename) < 1:
                     return
 
-                if suffix and not filename.endswith(suffix):
-                    filename += suffix
+                if ext and not filename.endswith(ext):
+                    filename += ext
                 new_path = os.path.join(pane.currentPath, filename)
                 if smart_check_path(new_path):
                     Kiritori.log("'{}' already exists.".format(filename))
