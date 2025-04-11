@@ -219,127 +219,46 @@ def configure(window: MainWindow) -> None:
 
     window.itemformat = itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS
 
-    class Themer:
-        def __init__(self, color: str) -> None:
+    def set_custom_theme():
+        custom_theme = {
+            "bg": (18, 37, 48),
+            "fg": (255, 255, 255),
+            "cursor0": (255, 255, 255),
+            "cursor1": (255, 64, 64),
+            "bar_fg": (0, 0, 0),
+            "bar_error_fg": (200, 0, 0),
+            "file_fg": (230, 230, 230),
+            "dir_fg": (244, 215, 26),
+            "hidden_file_fg": (85, 85, 85),
+            "hidden_dir_fg": (85, 85, 50),
+            "error_file_fg": (255, 0, 0),
+            "select_file_bg1": (30, 100, 150),
+            "select_file_bg2": (30, 100, 150),
+            "bookmark_file_bg1": (107, 58, 112),
+            "bookmark_file_bg2": (107, 58, 112),
+            "file_cursor": (127, 255, 187),
+            "select_bg": (30, 100, 150),
+            "select_fg": (255, 255, 255),
+            "choice_bg": (50, 50, 50),
+            "choice_fg": (255, 255, 255),
+            "diff_bg1": (100, 50, 50),
+            "diff_bg2": (50, 100, 50),
+            "diff_bg3": (50, 50, 100),
+        }
 
-            if color == "black":
-                colortable = {
-                    "bg": (0, 0, 0),
-                    "fg": (255, 255, 255),
-                    "cursor0": (255, 255, 255),
-                    "cursor1": (255, 64, 64),
-                    "bar_fg": (0, 0, 0),
-                    "bar_error_fg": (200, 0, 0),
-                    "file_fg": (255, 255, 255),
-                    "dir_fg": (255, 255, 150),
-                    "hidden_file_fg": (85, 85, 85),
-                    "hidden_dir_fg": (85, 85, 50),
-                    "error_file_fg": (255, 0, 0),
-                    "select_file_bg1": (30, 100, 150),
-                    "select_file_bg2": (60, 200, 255),
-                    "bookmark_file_bg2": (100, 70, 0),
-                    "bookmark_file_bg1": (140, 110, 0),
-                    "file_cursor": (255, 128, 128),
-                    "select_bg": (30, 100, 150),
-                    "select_fg": (255, 255, 255),
-                    "choice_bg": (50, 50, 50),
-                    "choice_fg": (255, 255, 255),
-                    "diff_bg1": (100, 50, 50),
-                    "diff_bg2": (50, 100, 50),
-                    "diff_bg3": (50, 50, 100),
-                }
-            else:
-                colortable = {
-                    "bg": (255, 255, 255),
-                    "fg": (0, 0, 0),
-                    "cursor0": (255, 255, 255),
-                    "cursor1": (0, 255, 255),
-                    "bar_fg": (255, 255, 255),
-                    "bar_error_fg": (255, 0, 0),
-                    "file_fg": (0, 0, 0),
-                    "dir_fg": (100, 50, 0),
-                    "hidden_file_fg": (100, 100, 100),
-                    "hidden_dir_fg": (200, 150, 100),
-                    "error_file_fg": (255, 0, 0),
-                    "select_file_bg1": (60, 150, 220),
-                    "select_file_bg2": (80, 200, 255),
-                    "bookmark_file_bg2": (220, 150, 50),
-                    "bookmark_file_bg1": (255, 200, 50),
-                    "file_cursor": (255, 70, 70),
-                    "select_bg": (70, 200, 255),
-                    "select_fg": (0, 0, 0),
-                    "choice_bg": (150, 150, 150),
-                    "choice_fg": (0, 0, 0),
-                    "diff_bg1": (100, 50, 50),
-                    "diff_bg2": (50, 100, 50),
-                    "diff_bg3": (50, 50, 100),
-                }
-            self._theme_path = Path(ckit.getAppExePath(), "theme", color, "theme.ini")
-            self._data = colortable
+        name = "black"
+        ckit.ckit_theme.theme_name = name
+        window.ini.set("THEME", "name", name)
 
-        def update(self, key: str, value: str) -> None:
-            if key not in self._data:
-                return
-            if type(value) is tuple:
-                self._data[key] = value
-                return
-            colorcode = value.strip("#")
-            if len(colorcode) == 6:
-                r, g, b = colorcode[:2], colorcode[2:4], colorcode[4:6]
-                try:
-                    rgb = tuple(int(c, 16) for c in [r, g, b])
-                    self._data[key] = rgb
-                except Exception as e:
-                    Kiritori.log(e)
+        for k, v in custom_theme.items():
+            ckit.ckit_theme.ini.set("COLOR", k, str(v))
 
-        def to_string(self) -> str:
-            lines = ["[COLOR]"]
-            for key, value in self._data.items():
-                line = "{} = {}".format(key, value)
-                lines.append(line)
-            return "\n".join(lines)
+        window.destroyThemePlane()
+        window.createThemePlane()
+        window.updateColor()
+        window.updateWallpaper()
 
-        def overwrite(self) -> None:
-            theme = self.to_string()
-            if (
-                not smart_check_path(self._theme_path)
-                or self._theme_path.read_text() != theme
-            ):
-                self._theme_path.write_text(theme)
-
-    def set_theme(theme_table: dict):
-        color = window.ini.get("THEME", "name")
-        t = Themer(color)
-        for k, v in theme_table.items():
-            t.update(k, v)
-        t.overwrite()
-
-    CUSTOM_THEME = {
-        "bg": "#122530",
-        "fg": "#FFFFFF",
-        "cursor0": "#FFFFFF",
-        "cursor1": "#FF4040",
-        "bar_fg": "#000000",
-        "bar_error_fg": "#C80000",
-        "file_fg": "#E6E6E6",
-        "dir_fg": "#F4D71A",
-        "hidden_file_fg": "#555555",
-        "hidden_dir_fg": "#555532",
-        "error_file_fg": "#FF0000",
-        "select_file_bg1": "#1E6496",
-        "select_file_bg2": "#1E6496",
-        "bookmark_file_bg1": "#6B3A70",
-        "bookmark_file_bg2": "#6B3A70",
-        "file_cursor": "#7FFFBB",
-        "select_bg": "#1E6496",
-        "select_fg": "#FFFFFF",
-        "choice_bg": "#323232",
-        "choice_fg": "#FFFFFF",
-        "diff_bg1": "#643232",
-        "diff_bg2": "#326432",
-        "diff_bg3": "#323264",
-    }
-    set_theme(CUSTOM_THEME)
+    set_custom_theme()
 
     class Kiritori:
         sep = "-"
@@ -2755,7 +2674,6 @@ def configure(window: MainWindow) -> None:
 
     def reload_config() -> None:
         window.configure()
-        window.reloadTheme()
         to_home_position(False)
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
         window.setStatusMessage("reloaded config.py | {}".format(ts), 2000)
