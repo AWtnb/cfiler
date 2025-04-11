@@ -2377,6 +2377,41 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("S-R", rename_regexp)
 
+    class Prefixer:
+        sep = "_"
+
+        def __init__(self, window: MainWindow) -> None:
+            pane = CPane(window)
+            self.names = []
+            for name in pane.names:
+                if self.sep not in name or name.startswith(self.sep):
+                    continue
+                p = Path(pane.currentPath, name)
+                self.names.append(p.stem)
+
+        @property
+        def possible_prefix(self) -> List[str]:
+            pres = []
+            for name in self.names:
+                for i, c in enumerate(name):
+                    if c == self.sep:
+                        pres.append(name[: i + 1])
+            return sorted(list(set(pres)), key=len)
+
+        def candidates(self, s: str) -> List[str]:
+            pres = self.possible_prefix
+            found = []
+            for pre in pres:
+                if pre.startswith(s):
+                    prefix_rest = pre[len(s) :]
+                    found.append(s + prefix_rest)
+            return found
+
+        def __call__(
+            self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
+        ) -> Tuple[List[str], int]:
+            return self.candidates(update_info.text), 0
+
     class Suffixer:
         sep = "_"
 
@@ -3039,7 +3074,11 @@ def configure(window: MainWindow) -> None:
 
         c = [len(t)] * 2
         result, mod = window.commandLine(
-            "StartsWith", return_modkey=True, text=t, selection=c
+            "StartsWith",
+            return_modkey=True,
+            text=t,
+            selection=c,
+            candidate_handler=Prefixer(window),
         )
         if result:
             Selector(window).stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
