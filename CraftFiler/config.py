@@ -826,28 +826,6 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-L", smart_focus_other)
 
-    class ExtensionChecker:
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
-
-            self._archivers = []
-            for archiver in self._window.archiver_list:
-                for ext in archiver[0].split():
-                    self._archivers.append(ext[1:])
-            self._images = window.image_file_ext_list
-            self._musics = window.music_file_ext_list
-
-        def is_archiver(self, ext: str) -> bool:
-            return ext in self._archivers
-
-        def is_image(self, ext: str) -> bool:
-            return ext in self._images
-
-        def is_music(self, ext: str) -> bool:
-            return ext in self._musics
-
-    EXTENSION_CHECKER = ExtensionChecker(window)
-
     def copy_docx_content(path) -> None:
         if not path.endswith(".docx"):
             return
@@ -861,6 +839,13 @@ def configure(window: MainWindow) -> None:
 
         job = ckit.JobItem(_read, _view)
         window.taskEnqueue(job, create_new_queue=False)
+
+    def is_extractable(ext: str) -> bool:
+        for archiver in window.archiver_list:
+            for pattern in archiver[0].split():
+                if ext == pattern[1:]:
+                    return True
+        return False
 
     def hook_enter() -> bool:
         # returning `True` hooks (skips) default action.
@@ -882,15 +867,15 @@ def configure(window: MainWindow) -> None:
 
         ext = p.suffix
 
-        if EXTENSION_CHECKER.is_image(ext):
+        if ext in window.image_file_ext_list:
             pane.appendHistory(focus_path, True)
             return False
 
-        if EXTENSION_CHECKER.is_archiver(ext):
+        if ext in window.music_file_ext_list:
+            window.command_Execute(None)
             return True
 
-        if EXTENSION_CHECKER.is_music(ext):
-            window.command_Execute(None)
+        if is_extractable(ext):
             return True
 
         if ext[1:].lower() in [
@@ -1518,18 +1503,17 @@ def configure(window: MainWindow) -> None:
 
     def smart_extract() -> None:
         active_pane = CPane(window)
-        checker = ExtensionChecker(window)
 
         for item in active_pane.selectedItems:
             ext = Path(item.getFullpath()).suffix
-            if not checker.is_archiver(ext):
-                active_pane.unSelect(active_pane.byName(item.getName()))
+            if not is_extractable(ext):
+                active_pane.unSelectByName(item.getName())
 
-        if len(active_pane.selectedItems) < 1:
+        if not active_pane.hasSelection:
             return
 
-        dirname_filler = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
-        result = stringify(window.commandLine("Extract as", text=dirname_filler))
+        placeholder = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
+        result = stringify(window.commandLine("Extract as", text=placeholder))
         if len(result) < 1:
             return
 
