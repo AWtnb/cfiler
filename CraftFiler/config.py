@@ -1194,15 +1194,29 @@ def configure(window: MainWindow) -> None:
             for path in p.parents:
                 f = Path(path, self._src_name)
                 if smart_check_path(f):
-                    return f.read_text("utf-8")
+                    return f.read_text("utf-8").strip()
             return ""
 
+        def filter_src(self) -> List[str]:
+            existing = [
+                d.name.lstrip("0123456789") for d in Path(self._current_path).iterdir()
+            ]
+            lines = []
+            for s in self.read_src().splitlines():
+                if not s.lstrip("#").split("|")[0] in existing:
+                    lines.append(s)
+
+            def _sort_key(line) -> Tuple[int]:
+                return (len(line), line)
+
+            return sorted(lines, key=_sort_key)
+
         def fzf(self) -> str:
-            src = self.read_src().strip()
+            src = self.read_src()
             if len(src) < 1:
                 Kiritori.log("src file '{}' not found...".format(self._src_name))
                 return ""
-            src = "\n".join(sorted(sorted(src.splitlines()), key=len))
+            src = "\n".join(self.filter_src())
             try:
                 cmd = ["fzf.exe", "--no-sort"]
                 proc = subprocess.run(
@@ -2617,7 +2631,7 @@ def configure(window: MainWindow) -> None:
             self.order = order
 
         def __call__(self, items) -> None:
-            def _sort_key(item):
+            def _sort_key(item) -> tuple:
                 dir_upper_flag = not item.isdir() if self.order == 1 else item.isdir()
                 starts_with_underscore = item.name.startswith("_")
                 underscore_count = len(item.name) - len(item.name.lstrip("_"))
