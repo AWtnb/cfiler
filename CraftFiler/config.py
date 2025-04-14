@@ -1934,8 +1934,8 @@ def configure(window: MainWindow) -> None:
             except Exception as e:
                 print(e)
 
-    class RenameIniOption:
-        ini_section = "RENAME_HISTORY"
+    class RenameConfig:
+        ini_section = "RENAME_CONFIG"
 
         def __init__(self, window: MainWindow, option_name: str) -> None:
             self._window = window
@@ -2040,8 +2040,8 @@ def configure(window: MainWindow) -> None:
         placeholder = "@-1"
         sel_end = 0
 
-        rename_ini_insert = RenameIniOption(window, "insert")
-        last_insert = rename_ini_insert.value
+        rename_config_insert = RenameConfig(window, "insert")
+        last_insert = rename_config_insert.value
         if 0 < len(last_insert):
             placeholder = last_insert
             sel_end = last_insert.find("@")
@@ -2057,7 +2057,7 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        rename_ini_insert.register(result)
+        rename_config_insert.register(result)
 
         sep = "@"
         if result.startswith(sep):
@@ -2218,8 +2218,8 @@ def configure(window: MainWindow) -> None:
             return
 
         placeholder_search = ""
-        rename_ini_search = RenameIniOption(window, "regexp-search")
-        last_search = rename_ini_search.value
+        rename_config_search = RenameConfig(window, "regexp-search")
+        last_search = rename_config_search.value
         if 0 < len(last_search):
             placeholder_search = last_search
 
@@ -2233,14 +2233,14 @@ def configure(window: MainWindow) -> None:
             return
         print(result_reg)
 
-        rename_ini_search.register(result_reg)
+        rename_config_search.register(result_reg)
 
         additional_suffix = []
         if mo := re.search(r"\d{8}", CPane(window).currentPath):
             additional_suffix.append(mo.group(0))
 
-        rename_ini_new_text = RenameIniOption(window, "regexp-new-text")
-        placeholder_new_text = rename_ini_new_text.value
+        rename_config_new_text = RenameConfig(window, "regexp-new-text")
+        placeholder_new_text = rename_config_new_text.value
 
         print("New text to replace with:")
         result_new_text = window.commandLine(
@@ -2253,7 +2253,7 @@ def configure(window: MainWindow) -> None:
             return
         print(result_new_text)
 
-        rename_ini_new_text.register(result_new_text)
+        rename_config_new_text.register(result_new_text)
 
         reg = re.compile(result_reg)
 
