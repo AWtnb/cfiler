@@ -2500,7 +2500,9 @@ def configure(window: MainWindow) -> None:
         def _listup_dests(
             update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
         ) -> tuple:
-            found = [default_name]
+            found = []
+            if default_name not in pane.names:
+                found.append(default_name)
             for item in pane.items:
                 if item.isdir() and not item.selected():
                     name = item.getName()
