@@ -1036,10 +1036,6 @@ def configure(window: MainWindow) -> None:
                 pass
 
         def register(self, name: str, path: str) -> None:
-            options = self._window.ini.items(self.ini_section)
-            for opt in options:
-                if opt[1] == path:
-                    self._window.ini.remove_option(self.ini_section, opt[0])
             self._window.ini.set(self.ini_section, name, path)
 
         @staticmethod
