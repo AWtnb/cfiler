@@ -673,12 +673,11 @@ def configure(window: MainWindow) -> None:
             else:
                 if focus_name is None:
                     for hist in self.entity.history.items:
-                        last_visit_path = hist[0]
-                        if last_visit_path.startswith(path):
-                            if last_visit_path != path:
-                                focus_name = last_visit_path[len(path) + 1 :].split(
-                                    os.sep
-                                )[0]
+                        if (d := hist[0]).startswith(path):
+                            if d == path:
+                                focus_name = hist[1]
+                            else:
+                                focus_name = d[len(path) + 1 :].split(os.sep)[0]
                             break
             lister = lister_Default(self._window, path)
             self._window.jumpLister(self._pane, lister, focus_name)
