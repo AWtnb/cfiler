@@ -2489,8 +2489,9 @@ def configure(window: MainWindow) -> None:
 
         items = []
         for item in pane.selectedItems:
-            if remove_origin and hasattr(item, "delete"):
-                items.append(item)
+            if remove_origin and not hasattr(item, "delete"):
+                continue
+            items.append(item)
 
         if len(items) < 1:
             return
