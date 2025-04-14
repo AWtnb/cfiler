@@ -1102,6 +1102,27 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("B", fuzzy_bookmark)
 
+    def cleanup_alias_for_unbookmarked() -> None:
+        cleared = []
+        section_name = BookmarkAlias.ini_section
+        bookmarks = window.bookmark.getItems()
+        for opt in window.ini.items(section_name):
+            alias, path = opt[:2]
+            if path not in bookmarks:
+                window.ini.remove_option(section_name, alias)
+                cleared.append((alias, path))
+
+        def _display() -> None:
+            if 0 < len(cleared):
+                if len(cleared) == 1:
+                    print("Removed alias for unbookmarked:")
+                else:
+                    print("Removed aliases for unbookmarked:")
+                for c in cleared:
+                    print("- '{}' for '{}'".format(*c))
+
+        Kiritori().wrap(_display)
+
     def set_bookmark_alias() -> None:
         pane = CPane(window)
         target = pane.currentPath
@@ -3174,7 +3195,7 @@ def configure(window: MainWindow) -> None:
         bookmarks = [p for p in window.bookmark.getItems()]
         if path in bookmarks:
             window.bookmark.remove(path)
-            Kiritori.log("Removed from bookmark: '{}'".format(path))
+            Kiritori.log("Unbookmarked: '{}'".format(path))
         else:
             window.bookmark.append(path)
             Kiritori.log("Bookmarked: '{}'".format(path))
@@ -3190,6 +3211,7 @@ def configure(window: MainWindow) -> None:
     update_command_list(
         {
             "SetBookmarkAlias": set_bookmark_alias,
+            "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
             "BookmarkHere": bookmark_here,
             "DocxToTxt": docx_to_txt,
             "ConcPdfGo": concatenate_pdf,
