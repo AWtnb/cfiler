@@ -2147,8 +2147,11 @@ def configure(window: MainWindow) -> None:
         print("Rename insert index:")
         result = stringify(
             window.commandLine(
-                "Index[@position,step,suffix]", text="01@0,1,_", selection=[0, 2]
-            )
+                "Index[@position,step,suffix,skips1,skips2,...]",
+                text="01@0,1,_",
+                selection=[0, 2],
+            ),
+            trim=False,
         )
 
         if len(result) < 1:
@@ -2159,37 +2162,53 @@ def configure(window: MainWindow) -> None:
             position = -1
             step = 1
             suffix = ""
+            skips = []
 
             def __init__(self) -> None:
-                self.index_base = result.split("@")[0]
-                if 1 < len(ss := result.split("@")):
-                    infos = ss[1].split(",")
-                    self.position = int(infos[0].strip())
-                    if 1 < len(infos):
-                        self.step = int(infos[1].strip())
-                        if 2 < len(infos):
-                            self.suffix = infos[2]
+                commands = result.split("@")
+                self.index_template = commands[0].rstrip()
+                if 1 < len(commands):
+                    args = [a.strip() for a in commands[1].split(",")]
+                    self.position = int(args[0])
+                    if 1 < len(args):
+                        self.step = int(args[1])
+                    if 2 < len(args):
+                        self.suffix = args[2]
+                    if 3 < len(args):
+                        self.skips = args[3:]
 
             @property
             def width(self) -> int:
-                return len(self.index_base)
+                return len(self.index_template)
 
             @property
             def filler(self) -> str:
-                if not self.index_base.startswith("0"):
-                    return self.index_base[0]
-                return "0"
+                c = self.index_template[0]
+                if c in "123456789":
+                    return ""
+                return c
 
             @property
             def start(self) -> int:
                 try:
-                    return int(self.index_base.lstrip(self.filler))
+                    return int(self.index_template.lstrip(self.filler))
                 except:
                     return -1
 
             @property
             def is_valid(self) -> bool:
                 return self.start != -1
+
+            def increment(self, i: int) -> int:
+                i += self.step
+                if len(self.skips) < 1:
+                    return i
+                while 1:
+                    if str(i) not in self.skips:
+                        break
+                    else:
+                        i += self.step
+                return i
 
         ni = NameIndex()
         if not ni.is_valid:
@@ -2215,11 +2234,15 @@ def configure(window: MainWindow) -> None:
                     + org_stem[pos:]
                     + org_path.suffix
                 )
-                idx += ni.step
+                idx = ni.increment(idx)
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
 
-            lines.append("\ninsert:\nOK? (Enter / Esc)")
+            lines.append(
+                "\ninsert (start={}, step={}, skips={}):\nOK? (Enter / Esc)".format(
+                    ni.start, ni.step, ni.skips
+                )
+            )
 
             if not popResultWindow(window, "Preview", "\n".join(lines)):
                 return []
