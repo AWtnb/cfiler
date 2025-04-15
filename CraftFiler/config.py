@@ -100,7 +100,6 @@ class PaintOption:
 
 
 PO = PaintOption()
-USER_PROFILE = os.environ.get("USERPROFILE", "")
 
 
 def delay(msec: int = 50) -> None:
@@ -934,8 +933,10 @@ def configure(window: MainWindow) -> None:
 
     TEXT_EDITORS = {
         "notepad": r"C:\Windows\System32\notepad.exe",
-        "mery": os.path.join(USER_PROFILE, r"AppData\Local\Programs\Mery\Mery.exe"),
-        "vscode": os.path.join(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe"),
+        "mery": os.path.expandvars(r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"),
+        "vscode": os.path.expandvars(
+            r"${USERPROFILE}\scoop\apps\vscode\current\Code.exe"
+        ),
     }
 
     def open_with() -> None:
@@ -1148,7 +1149,7 @@ def configure(window: MainWindow) -> None:
         Kiritori.log("Registered '{}' as alias for '{}'".format(alias, target))
 
     def read_docx(path: str) -> str:
-        exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\docxr.exe")
+        exe_path = os.path.expandvars(r"${USERPROFILE}\Personal\tools\bin\docxr.exe")
         if not smart_check_path(exe_path):
             Kiritori.log("'{}' not found...".format(exe_path))
             return ""
@@ -1298,10 +1299,12 @@ def configure(window: MainWindow) -> None:
 
     class zyl:
         def __init__(self) -> None:
-            self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyl.exe")
-            self._src_path = Path(USER_PROFILE, r"Personal\launch.yaml")
+            self._exe_path = os.path.expandvars(
+                r"${USERPROFILE}\Personal\tools\bin\zyl.exe"
+            )
+            self._src_path = os.path.expandvars(r"${USERPROFILE}\Personal\launch.yaml")
             self._cmd = [
-                str(self._exe_path),
+                self._exe_path,
                 "-src={}".format(self._src_path),
                 "-exclude=_obsolete,node_modules",
                 "-stdout=True",
@@ -1347,9 +1350,11 @@ def configure(window: MainWindow) -> None:
 
     class zyw:
         def __init__(self) -> None:
-            self._exe_path = Path(USER_PROFILE, r"Personal\tools\bin\zyw.exe")
+            self._exe_path = os.path.expandvars(
+                r"${USERPROFILE}\Personal\tools\bin\zyw.exe"
+            )
             self._cmd = [
-                str(self._exe_path),
+                self._exe_path,
                 "-exclude=_obsolete,node_modules",
             ]
 
@@ -1401,7 +1406,9 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("C-F", zyw().invoke(True, 0))
 
     def concatenate_pdf() -> None:
-        exe_path = os.path.join(USER_PROFILE, r"Personal\tools\bin\go-pdfconc.exe")
+        exe_path = os.path.expandvars(
+            r"${USERPROFILE}\Personal\tools\bin\go-pdfconc.exe"
+        )
         if not smart_check_path(exe_path):
             return
 
@@ -1907,10 +1914,10 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S-H", open_parent_to_other)
 
     def on_vscode() -> None:
-        vscode_path = Path(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
+        vscode_path = TEXT_EDITORS["vscode"]
         if smart_check_path(vscode_path):
             pane = CPane(window)
-            shell_exec(str(vscode_path), pane.currentPath)
+            shell_exec(vscode_path, pane.currentPath)
 
     KEYBINDER.bind("V", on_vscode)
 
@@ -2700,7 +2707,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F5", reload_config)
 
     def open_desktop_to_other() -> None:
-        desktop_path = os.path.join(USER_PROFILE, "Desktop")
+        desktop_path = os.path.expandvars(r"${USERPROFILE}\Desktop")
         inactive = CPane(window, False)
         if inactive.currentPath != desktop_path:
             inactive.openPath(desktop_path)
@@ -2711,7 +2718,7 @@ def configure(window: MainWindow) -> None:
 
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
-        desktop_path = os.path.join(USER_PROFILE, "Desktop")
+        desktop_path = os.path.expandvars(r"${USERPROFILE}\Desktop")
         pane = CPane(window, True)
         if pane.currentPath != desktop_path:
             pane.openPath(desktop_path)
@@ -2733,7 +2740,7 @@ def configure(window: MainWindow) -> None:
             if result != cfiler_msgbox.MessageBox.RESULT_YES:
                 return
 
-        desktop_path = os.path.join(USER_PROFILE, "Desktop")
+        desktop_path = os.path.expandvars(r"${USERPROFILE}\Desktop")
         left = LeftPane(window)
         right = RightPane(window)
         for pane in [left, right]:
@@ -2759,7 +2766,7 @@ def configure(window: MainWindow) -> None:
         dir_path = config_dir
         if (real_path := os.path.realpath(config_dir)) != config_dir:
             dir_path = os.path.dirname(real_path)
-        vscode_path = os.path.join(USER_PROFILE, r"scoop\apps\vscode\current\Code.exe")
+        vscode_path = TEXT_EDITORS["vscode"]
         if smart_check_path(vscode_path):
             shell_exec(vscode_path, dir_path)
         else:
@@ -2901,7 +2908,9 @@ def configure(window: MainWindow) -> None:
         ItemsDiff().compare()
 
     def diffinity() -> None:
-        exe_path = Path(USER_PROFILE, r"scoop\apps\diffinity\current\Diffinity.exe")
+        exe_path = os.path.expandvars(
+            r"${USERPROFILE}\scoop\apps\diffinity\current\Diffinity.exe"
+        )
         if not smart_check_path(exe_path):
             Kiritori.log("cannnot find diffinity.exe...")
             return
