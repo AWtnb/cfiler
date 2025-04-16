@@ -2561,7 +2561,6 @@ def configure(window: MainWindow) -> None:
             prompt,
             text=default_name,
             selection=[0, len(default_name)],
-            auto_complete=True,
             candidate_handler=_listup_dests,
             return_modkey=True,
         )
