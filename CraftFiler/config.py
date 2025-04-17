@@ -161,6 +161,9 @@ def invoke_listwindow(
     return result, mod
 
 
+DESKTOP_PATH = os.path.expandvars(r"${USERPROFILE}\Desktop")
+
+
 def configure(window: MainWindow) -> None:
     class ItemTimestamp:
         def __init__(self, item) -> None:
@@ -1538,6 +1541,65 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("F", smart_jump_input)
 
+    def eject_drive() -> None:
+        pane = CPane(window)
+
+        current_drive = Path(pane.currentPath).drive
+        wrapper = "<>"
+
+        drives = []
+        for d in ckit.getDrives():
+            d += ":"
+            if d != current_drive:
+                detail = ckit.getDriveDisplayName(d)
+                drives.append(
+                    d + wrapper[0] + detail[: detail.find("(") - 1] + wrapper[-1]
+                )
+
+        def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
+            found = []
+            for name in drives:
+                if name.lower().startswith(update_info.text.lower()):
+                    found.append(name)
+            return found, 0
+
+        drive_name = stringify(
+            window.commandLine(
+                title="Eject",
+                candidate_handler=_listup_names,
+            )
+        )
+        if len(drive_name) < 1 or drive_name.startswith(wrapper[0]):
+            return
+        if wrapper[0] in drive_name:
+            drive_name = drive_name[: drive_name.find(wrapper[0])]
+
+        def _eject(job_item: ckit.JobItem) -> None:
+            job_item.result = None
+            cmd = (
+                "PowerShell -Command "
+                '$driveEject = New-Object -comObject Shell.Application; $driveEject.Namespace(17).ParseName("""{}""").InvokeVerb("""Eject""")'.format(
+                    drive_name
+                )
+            )
+            proc = subprocess.run(
+                cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True
+            )
+            if proc.returncode != 0:
+                if o := proc.stdout:
+                    Kiritori.log(o)
+                if e := proc.stderr:
+                    Kiritori.log(e)
+                return
+            job_item.result = "Ejected drive '{}'".format(drive_name)
+
+        def _finished(job_item: ckit.JobItem) -> None:
+            if job_item.result is not None:
+                Kiritori.log(job_item.result)
+
+        job = ckit.JobItem(_eject, _finished)
+        window.taskEnqueue(job, create_new_queue=False)
+
     def smart_extract() -> None:
         active_pane = CPane(window)
 
@@ -2729,10 +2791,9 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F5", reload_config)
 
     def open_desktop_to_other() -> None:
-        desktop_path = os.path.expandvars(r"${USERPROFILE}\Desktop")
         inactive = CPane(window, False)
-        if inactive.currentPath != desktop_path:
-            inactive.openPath(desktop_path)
+        if inactive.currentPath != DESKTOP_PATH:
+            inactive.openPath(DESKTOP_PATH)
         else:
             CPane(window).focusOther()
 
@@ -2740,10 +2801,9 @@ def configure(window: MainWindow) -> None:
 
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
-        desktop_path = os.path.expandvars(r"${USERPROFILE}\Desktop")
         pane = CPane(window, True)
-        if pane.currentPath != desktop_path:
-            pane.openPath(desktop_path)
+        if pane.currentPath != DESKTOP_PATH:
+            pane.openPath(DESKTOP_PATH)
         if both_pane:
             window.command_ChdirInactivePaneToOther(None)
             LeftPane(window).activate()
@@ -2762,12 +2822,11 @@ def configure(window: MainWindow) -> None:
             if result != cfiler_msgbox.MessageBox.RESULT_YES:
                 return
 
-        desktop_path = os.path.expandvars(r"${USERPROFILE}\Desktop")
         left = LeftPane(window)
         right = RightPane(window)
         for pane in [left, right]:
             if not pane.currentPath.startswith("C:"):
-                pane.openPath(desktop_path)
+                pane.openPath(DESKTOP_PATH)
 
         window.quit()
 
@@ -3245,6 +3304,7 @@ def configure(window: MainWindow) -> None:
             "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
             "BookmarkHere": bookmark_here,
             "DocxToTxt": docx_to_txt,
+            "EjectDrive": eject_drive,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
@@ -3517,16 +3577,14 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         def _copy(_) -> None:
             item = window.items[window.cursor]
             path = item.getFullpath()
-            cmd = [
-                "PowerShell",
-                "-Command",
-                "Add-Type",
-                "-AssemblyName",
-                "System.Windows.Forms;[Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('{}'));".format(
+            cmd = (
+                "PowerShell -Command "
+                "Add-Type -AssemblyName System.Windows.Forms;"
+                "[Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('{}'));".format(
                     path
-                ),
-            ]
-            subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+                )
+            )
+            subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True)
 
         def _finished(_) -> None:
             window.setTitle(
