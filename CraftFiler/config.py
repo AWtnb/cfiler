@@ -1501,20 +1501,39 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-V", on_paste)
 
+    class DriveHandler:
+        wrapper = "<>"
+
+        def __init__(self, window: MainWindow) -> None:
+            pane = CPane(window)
+            self._current_drive = Path(pane.currentPath).drive
+
+        def listup(self) -> List[str]:
+            drives = []
+            for d in ckit.getDrives():
+                d += ":"
+                if d != self._current_drive:
+                    detail = ckit.getDriveDisplayName(d)
+                    drives.append(
+                        d
+                        + self.wrapper[0]
+                        + detail[: detail.find("(") - 1]
+                        + self.wrapper[-1]
+                    )
+            return drives
+
+        def parse(self, s: str) -> str:
+            if len(s) < 1 or s.startswith(self.wrapper[0]):
+                return ""
+            if self.wrapper[0] in s:
+                return s[: s.find(self.wrapper[0])]
+            return s
+
     def smart_jump_input() -> None:
         pane = CPane(window)
 
-        current_drive = Path(pane.currentPath).drive
-        wrapper = "<>"
-
-        drives = []
-        for d in ckit.getDrives():
-            d += ":"
-            if d != current_drive:
-                detail = ckit.getDriveDisplayName(d)
-                drives.append(
-                    d + wrapper[0] + detail[: detail.find("(") - 1] + wrapper[-1]
-                )
+        drive_handler = DriveHandler(window)
+        drives = drive_handler.listup()
 
         def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
             found = []
@@ -1530,10 +1549,9 @@ def configure(window: MainWindow) -> None:
                 candidate_handler=_listup_names,
             )
         )
-        if len(result) < 1 or result.startswith(wrapper[0]):
+        result = drive_handler.parse(result)
+        if len(result) < 1:
             return
-        if wrapper[0] in result:
-            result = result[: result.find(wrapper[0])]
         if ":" in result:
             pane.openPath(result)
         else:
@@ -1542,19 +1560,8 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F", smart_jump_input)
 
     def eject_drive() -> None:
-        pane = CPane(window)
-
-        current_drive = Path(pane.currentPath).drive
-        wrapper = "<>"
-
-        drives = []
-        for d in ckit.getDrives():
-            d += ":"
-            if d != current_drive:
-                detail = ckit.getDriveDisplayName(d)
-                drives.append(
-                    d + wrapper[0] + detail[: detail.find("(") - 1] + wrapper[-1]
-                )
+        drive_handler = DriveHandler(window)
+        drives = drive_handler.listup()
 
         def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
             found = []
@@ -1563,16 +1570,15 @@ def configure(window: MainWindow) -> None:
                     found.append(name)
             return found, 0
 
-        drive_name = stringify(
+        result = stringify(
             window.commandLine(
                 title="Eject",
                 candidate_handler=_listup_names,
             )
         )
-        if len(drive_name) < 1 or drive_name.startswith(wrapper[0]):
+        drive_name = drive_handler.parse(result)
+        if len(drive_name) < 1:
             return
-        if wrapper[0] in drive_name:
-            drive_name = drive_name[: drive_name.find(wrapper[0])]
 
         def _eject(job_item: ckit.JobItem) -> None:
             job_item.result = None
