@@ -2153,15 +2153,19 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        rename_config_insert.register(result)
 
         sep = "@"
         if result.startswith(sep):
             print("Canceled.\n")
             return
 
-        if result.endswith(sep) or sep not in result:
+        if sep not in result:
             result += "@-1"
+        else:
+            if result.endswith(sep):
+                result += "-1"
+
+        rename_config_insert.register(result)
 
         ins = result[: result.rfind(sep)]
         pos = int(result[result.rfind(sep) + 1 :])
