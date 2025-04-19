@@ -1021,12 +1021,7 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("S", swap_pane)
 
     def check_fzf() -> bool:
-        paths = os.environ.get("PATH", "").split(os.pathsep)
-        for path in paths:
-            p = Path(path, "fzf.exe")
-            if smart_check_path(p):
-                return True
-        return False
+        return shutil.which("fzf.exe") is not None
 
     class BookmarkAlias:
         ini_section = "BOOKMARK_ALIAS"
