@@ -1503,23 +1503,22 @@ def configure(window: MainWindow) -> None:
             pane = CPane(window)
             self._current_drive = Path(pane.currentPath).drive
 
-        def listup(self) -> List[str]:
+        def listup(self, include_current: bool = False) -> List[str]:
             drives = []
             for d in ckit.getDrives():
                 d += ":"
-                if d != self._current_drive:
-                    detail = ckit.getDriveDisplayName(d)
-                    drives.append(
-                        d
-                        + self.wrapper[0]
-                        + detail[: detail.find("(") - 1]
-                        + self.wrapper[-1]
-                    )
+                if d == self._current_drive and not include_current:
+                    continue
+                detail = ckit.getDriveDisplayName(d)
+                drives.append(
+                    d
+                    + self.wrapper[0]
+                    + detail[: detail.find("(") - 1]
+                    + self.wrapper[-1]
+                )
             return drives
 
         def parse(self, s: str) -> str:
-            if len(s) < 1 or s.startswith(self.wrapper[0]):
-                return ""
             if self.wrapper[0] in s:
                 return s[: s.find(self.wrapper[0])]
             return s
@@ -1548,39 +1547,30 @@ def configure(window: MainWindow) -> None:
         if len(result) < 1:
             return
         if ":" in result:
+            if result == "C:":
+                pane.openPath(DESKTOP_PATH)
+                return
             pane.openPath(result)
         else:
             pane.openPath(os.path.join(pane.currentPath, result))
 
     KEYBINDER.bind("F", smart_jump_input)
 
-    def eject_drive() -> None:
-        drive_handler = DriveHandler(window)
-        drives = drive_handler.listup()
-
-        def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
-            found = []
-            for name in drives:
-                if name.lower().startswith(update_info.text.lower()):
-                    found.append(name)
-            return found, 0
-
-        result = stringify(
-            window.commandLine(
-                title="Eject",
-                candidate_handler=_listup_names,
-            )
-        )
-        drive_name = drive_handler.parse(result)
-        if len(drive_name) < 1:
+    def eject_current_drive() -> None:
+        pane = CPane(window)
+        current = pane.currentPath
+        if current.startswith("C:"):
             return
+
+        current_drive = Path(current).drive
+        pane.openPath(DESKTOP_PATH)
 
         def _eject(job_item: ckit.JobItem) -> None:
             job_item.result = None
             cmd = (
                 "PowerShell -Command "
                 '$driveEject = New-Object -comObject Shell.Application; $driveEject.Namespace(17).ParseName("""{}""").InvokeVerb("""Eject""")'.format(
-                    drive_name
+                    current_drive
                 )
             )
             proc = subprocess.run(
@@ -1592,10 +1582,13 @@ def configure(window: MainWindow) -> None:
                 if e := proc.stderr:
                     Kiritori.log(e)
                 return
-            job_item.result = "Ejected drive '{}'".format(drive_name)
+            job_item.result = "Ejected drive '{}'".format(current_drive)
 
         def _finished(job_item: ckit.JobItem) -> None:
-            if job_item.result is not None:
+            if job_item.result is None:
+                pane.openPath(current)
+                Kiritori.log("Failed to eject drive '{}'".format(current_drive))
+            else:
                 Kiritori.log(job_item.result)
 
         job = ckit.JobItem(_eject, _finished)
@@ -2147,7 +2140,6 @@ def configure(window: MainWindow) -> None:
         if len(result) < 1:
             print("Canceled.\n")
             return
-
 
         sep = "@"
         if result.startswith(sep):
@@ -3255,6 +3247,7 @@ def configure(window: MainWindow) -> None:
             pane.refresh()
             pane.focus(0)
             pane.repaint(PO.Focused)
+            CPane(window).unSelectAll()
 
     def clear_filter() -> None:
         pane = CPane(window)
@@ -3309,7 +3302,7 @@ def configure(window: MainWindow) -> None:
             "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
             "BookmarkHere": bookmark_here,
             "DocxToTxt": docx_to_txt,
-            "EjectDrive": eject_drive,
+            "EjectCurrentDrive": eject_current_drive,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
