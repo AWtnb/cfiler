@@ -10,7 +10,6 @@ import time
 import unicodedata
 import urllib
 from concurrent.futures import ThreadPoolExecutor
-import urllib.parse
 
 from PIL import ImageGrab
 
