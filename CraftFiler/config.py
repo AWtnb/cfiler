@@ -953,7 +953,7 @@ def configure(window: MainWindow) -> None:
 
         with_pdf_viewer = True
         for path in paths:
-            if Path(path).suffix != ".pdf":
+            if not path.endswith(".pdf"):
                 with_pdf_viewer = False
 
         d = PDF_VIEWERS if with_pdf_viewer else TEXT_EDITORS
