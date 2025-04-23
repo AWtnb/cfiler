@@ -1636,63 +1636,51 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-A-P", copy_current_path)
 
-    class Clipper:
-        def __init__(self) -> None:
-            pass
+    def on_copy() -> None:
+        selection_left, selection_right = window.log_pane.selection
+        if selection_left != selection_right:
+            window.command_SetClipboard_LogSelected(None)
+            return
 
-        @staticmethod
-        def targets() -> List[str]:
-            pane = CPane(window)
-            if pane.isBlank:
-                return [pane.currentPath]
-            paths = []
+        pane = CPane(window)
+
+        targets = []
+        if pane.isBlank:
+            targets.append(pane.currentPath)
+        else:
             for i in range(pane.count):
                 item = pane.byIndex(i)
                 if item.selected():
-                    paths.append(item.getFullpath())
-                    pane.unSelect(i)
-            if len(paths) < 1:
-                paths.append(pane.focusedItemPath)
-            return paths
+                    targets.append(item.getFullpath())
+                if len(targets) < 1:
+                    targets.append(pane.focusedItemPath)
 
-        @staticmethod
-        def toClipboard(ss: List[str]) -> None:
-            if check_log_selected():
-                window.command_SetClipboard_LogSelected(None)
-                return
-            if 0 < len(ss):
-                ckit.setClipboardText("\n".join(ss))
-                if len(ss) == 1:
-                    window.setStatusMessage("Copied: '{}'".format(ss[0]), 2000)
-                    return
+        menu = ["Fullpath", "Name", "Basename"]
+        result, _ = invoke_listwindow(window, "Copy", menu)
+        if result < 0:
+            return
 
-                def _func() -> None:
-                    print("Copied:")
-                    for s in ss:
-                        print("- '{}'".format(s))
+        lines = []
+        if result == 0:
+            lines = targets
+        elif result == 1:
+            for p in targets:
+                lines.append(Path(p).name)
+        else:
+            for p in targets:
+                lines.append(Path(p).stem)
 
-                Kiritori.wrap(_func)
+        count = len(lines)
+        if 0 < count:
+            ckit.setClipboardText("\n".join(lines))
+            s = "Copied {} of {} item".format(menu[result], count)
+            if 1 < count:
+                s += "s."
+            else:
+                s += "."
+            Kiritori.log(s)
 
-        @classmethod
-        def paths(cls) -> None:
-            paths = cls.targets()
-            cls.toClipboard(paths)
-
-        @classmethod
-        def names(cls) -> None:
-            paths = cls.targets()
-            names = [Path(path).name for path in paths]
-            cls.toClipboard(names)
-
-        @classmethod
-        def basenames(cls) -> None:
-            paths = cls.targets()
-            basenames = [Path(path).stem for path in paths]
-            cls.toClipboard(basenames)
-
-    KEYBINDER.bind("C-C", Clipper().paths)
-    KEYBINDER.bind("C-S-C", Clipper().names)
-    KEYBINDER.bind("C-S-B", Clipper().basenames)
+    KEYBINDER.bind("C-C", on_copy)
 
     class Selector:
         def __init__(self, window: MainWindow) -> None:
