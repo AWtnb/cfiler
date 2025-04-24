@@ -2478,10 +2478,16 @@ def configure(window: MainWindow) -> None:
         ) -> Tuple[List[str], int]:
             return self.candidates(update_info.text), 0
 
-    def invoke_renamer() -> Callable:
+    def invoke_renamer() -> None:
         pane = CPane(window)
-        renamer = Renamer(window)
+        if not pane.hasSelection:
+            return
+
         item = pane.focusedItem
+        if not item.selected():
+            return
+
+        renamer = Renamer(window)
         if not renamer.renamable(item) or pane.isBlank:
             return
 
