@@ -2480,15 +2480,7 @@ def configure(window: MainWindow) -> None:
 
     def invoke_renamer() -> None:
         pane = CPane(window)
-        if not pane.hasSelection:
-            return
-
-        if 1 < len(pane.selectedItems):
-            item = pane.focusedItem
-            if not item.selected():
-                return
-        else:
-            item = pane.selectedItems[0]
+        item = pane.focusedItem
 
         renamer = Renamer(window)
         if not renamer.renamable(item) or pane.isBlank:
