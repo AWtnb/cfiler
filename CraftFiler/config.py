@@ -2505,7 +2505,6 @@ def configure(window: MainWindow) -> None:
             if len(other_pane.selectedItems) == 1:
                 new_stem = Path(other_pane.selectedItemPaths[0]).stem
                 place_holder = place_holder + new_stem
-                sel = [offset, len(place_holder)]
 
         new_stem, mod = window.commandLine(
             title="NewStem",
