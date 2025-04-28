@@ -2782,7 +2782,7 @@ def configure(window: MainWindow) -> None:
         else:
             CPane(window).focusOther()
 
-    KEYBINDER.bind("A-0", open_desktop_to_other)
+    KEYBINDER.bind("A-O", open_desktop_to_other)
 
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
