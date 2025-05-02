@@ -2501,10 +2501,14 @@ def configure(window: MainWindow) -> None:
         place_holder = org_path.stem
         sel = [offset, offset]
 
-        if (other_pane := CPane(window, False)).hasSelection:
-            if len(other_pane.selectedItems) == 1:
-                new_stem = Path(other_pane.selectedItemPaths[0]).stem
-                place_holder = place_holder + new_stem
+        other_pane = CPane(window, False)
+        for p in [pane, other_pane]:
+            if p.hasSelection and len(p.selectedItems) == 1:
+                new_stem = Path(p.selectedItemPaths[0]).stem
+                if new_stem != place_holder:
+                    place_holder = place_holder + new_stem
+                    sel[0] = 0
+                    break
 
         new_stem, mod = window.commandLine(
             title="NewStem",
