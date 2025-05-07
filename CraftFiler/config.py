@@ -1569,7 +1569,7 @@ def configure(window: MainWindow) -> None:
             job_item.result = None
             cmd = (
                 "PowerShell -Command "
-                '$driveEject = New-Object -comObject Shell.Application; $driveEject.Namespace(17).ParseName("""{}""").InvokeVerb("""Eject""")'.format(
+                '$driveEject = New-Object -comObject Shell.Application; $driveEject.Namespace(17).ParseName("""{}\\""").InvokeVerb("""Eject""");Start-Sleep -Seconds 2'.format(
                     current_drive
                 )
             )
@@ -1589,11 +1589,7 @@ def configure(window: MainWindow) -> None:
                 pane.openPath(current)
                 Kiritori.log("Failed to eject drive '{}'".format(current_drive))
             else:
-                s = job_item.result
-                left = ["`{}:`".format(d) for d in ckit.getDrives() if d != "C"]
-                if 0 < len(left):
-                    s += "\n\nNow available: {}".format(" ".join(left))
-                Kiritori.log(s)
+                Kiritori.log(job_item.result)
 
         job = ckit.JobItem(_eject, _finished)
         window.taskEnqueue(job, create_new_queue=False)
