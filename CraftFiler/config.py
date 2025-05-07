@@ -1589,7 +1589,11 @@ def configure(window: MainWindow) -> None:
                 pane.openPath(current)
                 Kiritori.log("Failed to eject drive '{}'".format(current_drive))
             else:
-                Kiritori.log(job_item.result)
+                s = job_item.result
+                left = ["`{}:`".format(d) for d in ckit.getDrives() if d != "C"]
+                if 0 < len(left):
+                    s += "\n\nNow available: {}".format(" ".join(left))
+                Kiritori.log(s)
 
         job = ckit.JobItem(_eject, _finished)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2122,8 +2126,9 @@ def configure(window: MainWindow) -> None:
         result = stringify(
             window.commandLine(
                 "Text[@position]", text=placeholder, selection=[0, sel_end]
-            )
-        )
+            ),
+            False,
+        ).rstrip()
 
         if len(result) < 1:
             print("Canceled.\n")
