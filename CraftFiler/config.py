@@ -2038,9 +2038,17 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
+        placeholder = ";-1"
+        sel = [0, 0]
+
+        rename_config_substr = RenameConfig(window, "substr")
+        if 0 < len(last := rename_config_substr.value):
+            placeholder = last
+            sel = [0, last.find(";")]
+
         print("Rename substring (extract part of filename):")
         result = stringify(
-            window.commandLine("Offset[;Length]", text=";-1", selection=[0, 0])
+            window.commandLine("Offset[;Length]", text=placeholder, selection=sel)
         )
 
         if len(result) < 1:
@@ -2060,6 +2068,8 @@ def configure(window: MainWindow) -> None:
         if offset == 0 and length == -1:
             print("Canceled.\n")
             return
+
+        rename_config_substr.register(result)
 
         def _confirm() -> List[RenameInfo]:
             infos = []
