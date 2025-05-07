@@ -2039,16 +2039,18 @@ def configure(window: MainWindow) -> None:
             return
 
         placeholder = ";-1"
-        sel = [0, 0]
+        sel_end = 0
 
         rename_config_substr = RenameConfig(window, "substr")
         if 0 < len(last := rename_config_substr.value):
             placeholder = last
-            sel = [0, last.find(";")]
+            sel_end = last.find(";")
 
         print("Rename substring (extract part of filename):")
         result = stringify(
-            window.commandLine("Offset[;Length]", text=placeholder, selection=sel)
+            window.commandLine(
+                "Offset[;Length]", text=placeholder, selection=[0, sel_end]
+            )
         )
 
         if len(result) < 1:
