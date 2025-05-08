@@ -2204,11 +2204,17 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
+        placeholder = "01@-1,1"
+        rename_config_index = RenameConfig(window, "index")
+        last_value = rename_config_index.value
+        if 0 < len(last_value):
+            placeholder = last_value
+
         print("Rename insert index:")
         result = stringify(
             window.commandLine(
-                "Index[@position,step,suffix,skips1,skips2,...]",
-                text="01@0,1,_",
+                "Index[@position,step,skips1,skips2,...]",
+                text=placeholder,
                 selection=[0, 2],
             ),
             trim=False,
@@ -2221,11 +2227,10 @@ def configure(window: MainWindow) -> None:
         class NameIndex:
             position = -1
             step = 1
-            suffix = ""
             skips = []
 
-            def __init__(self) -> None:
-                commands = result.split("@")
+            def __init__(self, s: str) -> None:
+                commands = s.split("@")
                 self.index_template = commands[0].rstrip()
                 if 1 < len(commands):
                     args = [a.strip() for a in commands[1].split(",")]
@@ -2233,9 +2238,7 @@ def configure(window: MainWindow) -> None:
                     if 1 < len(args):
                         self.step = int(args[1])
                     if 2 < len(args):
-                        self.suffix = args[2]
-                    if 3 < len(args):
-                        self.skips = args[3:]
+                        self.skips = [int(a) for a in args[2:]]
 
             @property
             def width(self) -> int:
@@ -2249,33 +2252,34 @@ def configure(window: MainWindow) -> None:
                 return c
 
             @property
-            def start(self) -> int:
+            def start(self) -> Union[int, None]:
                 try:
                     return int(self.index_template.lstrip(self.filler))
                 except:
-                    return -1
+                    return None
 
             @property
             def is_valid(self) -> bool:
-                return self.start != -1
+                return self.start is not None
 
             def increment(self, i: int) -> int:
                 i += self.step
                 if len(self.skips) < 1:
                     return i
                 while 1:
-                    if str(i) not in self.skips:
+                    if i not in self.skips:
                         break
                     else:
                         i += self.step
                 return i
 
-        ni = NameIndex()
+        ni = NameIndex(result)
         if not ni.is_valid:
             print("Canceled (Invalid format).\n")
             return
 
         print(result)
+        rename_config_index.register(result)
 
         def _confirm() -> List[RenameInfo]:
             infos = []
@@ -2290,7 +2294,6 @@ def configure(window: MainWindow) -> None:
                 new_name = (
                     org_stem[:pos]
                     + str(idx).rjust(ni.width, ni.filler)
-                    + ni.suffix
                     + org_stem[pos:]
                     + org_path.suffix
                 )
