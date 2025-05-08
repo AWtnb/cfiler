@@ -876,6 +876,14 @@ def configure(window: MainWindow) -> None:
             return True
 
         if is_extractable(ext):
+            menu = ["Peek", "Extract"]
+            result, _ = invoke_listwindow(window, "Archived file:", menu)
+            if result == 0:
+                window.command_InfoArchive(None)
+            elif result == 1:
+                if not pane.hasSelection:
+                    pane.select(pane.cursor)
+                smart_extract()
             return True
 
         if ext[1:].lower() in [
@@ -1620,8 +1628,6 @@ def configure(window: MainWindow) -> None:
         inactive_pane = CPane(window, False)
         inactive_pane.openPath(extract_path)
         window.command_ExtractArchive(None)
-
-    KEYBINDER.bind("A-S-T", smart_extract)
 
     def recylcebin() -> None:
         shell_exec("shell:RecycleBinFolder")
