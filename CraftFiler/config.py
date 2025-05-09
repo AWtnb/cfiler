@@ -2808,6 +2808,9 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F5", reload_config)
 
     def open_desktop_to_other() -> None:
+        if CPane(window).currentPath == DESKTOP_PATH:
+            return
+
         inactive = CPane(window, False)
         if inactive.width < CPane.min_width:
             window.command_MoveSeparatorCenter(None)
