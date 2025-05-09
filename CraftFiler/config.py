@@ -379,19 +379,13 @@ def configure(window: MainWindow) -> None:
 
         def __init__(self, window: MainWindow, active: bool = True) -> None:
             self._window = window
-            if active:
+            self._active = active
+            if self._active:
                 self._pane = self._window.activePane()
                 self._items = self._window.activeItems()
             else:
                 self._pane = self._window.inactivePane()
                 self._items = self._window.inactiveItems()
-
-            left_width = self._window.left_window_width
-            left_focused = self._window.focus == MainWindow.FOCUS_LEFT
-            if (active and left_focused) or (not active and not left_focused):
-                self._width = left_width
-            else:
-                self._width = self._window.width() - left_width
 
         @property
         def entity(self):
@@ -477,7 +471,13 @@ def configure(window: MainWindow) -> None:
 
         @property
         def width(self) -> int:
-            return self._width
+            left_width = self._window.left_window_width
+            left_focused = self._window.focus == MainWindow.FOCUS_LEFT
+            if (self._active and left_focused) or (
+                not self._active and not left_focused
+            ):
+                return left_width
+            return self._window.width() - left_width
 
         def focusOther(self, adjust: bool = True) -> None:
             self._window.command_FocusOther(None)
@@ -1955,8 +1955,7 @@ def configure(window: MainWindow) -> None:
 
     def open_parent_to_other() -> None:
         active_pane = CPane(window, True)
-        parent = str(Path(active_pane.currentPath).parent)
-        current_name = str(Path(active_pane.currentPath).name)
+        parent, current_name = os.path.split(active_pane.currentPath)
         inactive_pane = CPane(window, False)
         inactive_pane.openPath(parent, current_name)
         active_pane.focusOther()
