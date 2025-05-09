@@ -2264,7 +2264,6 @@ def configure(window: MainWindow) -> None:
                 except:
                     return None
 
-            @property
             def is_valid(self) -> bool:
                 return self.start is not None
 
@@ -2280,7 +2279,7 @@ def configure(window: MainWindow) -> None:
                 return i
 
         ni = NameIndex(result)
-        if not ni.is_valid:
+        if not ni.is_valid():
             print("Canceled (Invalid format).\n")
             return
 
@@ -2337,59 +2336,66 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        placeholder_search = ""
-        rename_config_search = RenameConfig(window, "regexp-search")
-        last_search = rename_config_search.value
-        if 0 < len(last_search):
-            placeholder_search = last_search
+        placeholder = "/"
+        sel_end = 0
 
-        print("Search regexp to rename (case-sensitive):")
-        result_reg = window.commandLine(
-            "Regexp (case-sensitive)", text=placeholder_search
+        rename_config_regexp = RenameConfig(window, "regexp")
+        last_regexp = rename_config_regexp.value
+        if 0 < len(last_regexp):
+            placeholder = last_regexp
+            sel_end = last_regexp.find("/")
+
+        print("Rename with regexp-replace. Trailing `/c` enables case-sensitive-mode")
+        result = window.commandLine(
+            "[regexp]/[replace with](/c)", text=placeholder, selection=[0, sel_end]
         )
 
-        if not result_reg:
+        if not result:
             print("Canceled.\n")
             return
-        print(result_reg)
 
-        rename_config_search.register(result_reg)
+        class RegCommand:
+            sep = "/"
 
-        additional_suffix = []
-        if mo := re.search(r"\d{8}", CPane(window).currentPath):
-            additional_suffix.append(mo.group(0))
+            def __init__(self, line: str) -> None:
+                a = line.split(self.sep)
+                if len(a) < 2:
+                    a.append("")
+                if len(a) < 3:
+                    a.append("")
+                self.args = a
 
-        rename_config_new_text = RenameConfig(window, "regexp-new-text")
-        placeholder_new_text = rename_config_new_text.value
+            def is_valid(self) -> bool:
+                return 0 < len(self.args[0])
 
-        print("New text to replace with:")
-        result_new_text = window.commandLine(
-            title="NewText",
-            text=placeholder_new_text,
-            candidate_handler=Suffixer(window, True, additional_suffix),
-        )
-        if result_new_text is None:
-            print("Canceled.\n")
+            @property
+            def from_reg(self) -> re.Pattern:
+                flag = re.IGNORECASE if self.args[2] == "" else re.NOFLAG
+                return re.compile(self.args[0], flag)
+
+            @property
+            def to_str(self) -> str:
+                return self.args[1]
+
+        rc = RegCommand(result)
+        if not rc.is_valid():
+            print("Canceled (Invalid command).\n")
             return
-        print(result_new_text)
 
-        rename_config_new_text.register(result_new_text)
-
-        reg = re.compile(result_reg)
+        rename_config_regexp.register(result)
+        reg = rc.from_reg
 
         def _confirm() -> List[RenameInfo]:
             infos = []
             lines = []
             for item in targets:
                 org_path = Path(item.getFullpath())
-                new_name = reg.sub(result_new_text, org_path.stem) + org_path.suffix
+                new_name = reg.sub(rc.to_str, org_path.stem) + org_path.suffix
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
 
             lines.append(
-                "\nreplace: {}\nwith: {}\nOK? (Enter / Esc)".format(
-                    result_reg, result_new_text
-                )
+                "\nRegexp: {}\nNew text: {}\nOK? (Enter / Esc)".format(reg, rc.to_str)
             )
 
             if not popResultWindow(window, "Preview", "\n".join(lines)):
