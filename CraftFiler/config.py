@@ -374,11 +374,9 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER = Keybinder(window)
 
-    def check_log_selected() -> bool:
-        selection_left, selection_right = window.log_pane.selection
-        return selection_left != selection_right
-
     class CPane:
+        min_width = 20
+
         def __init__(self, window: MainWindow, active: bool = True) -> None:
             self._window = window
             if active:
@@ -387,6 +385,13 @@ def configure(window: MainWindow) -> None:
             else:
                 self._pane = self._window.inactivePane()
                 self._items = self._window.inactiveItems()
+
+            left_width = self._window.left_window_width
+            left_focused = self._window.focus == MainWindow.FOCUS_LEFT
+            if (active and left_focused) or (not active and not left_focused):
+                self._width = left_width
+            else:
+                self._width = self._window.width() - left_width
 
         @property
         def entity(self):
@@ -472,16 +477,12 @@ def configure(window: MainWindow) -> None:
 
         @property
         def width(self) -> int:
-            left_width = self._window.left_window_width
-            if self._window.focus == MainWindow.FOCUS_LEFT:
-                return left_width
-            return self._window.width() - left_width
+            return self._width
 
         def focusOther(self, adjust: bool = True) -> None:
             self._window.command_FocusOther(None)
             if adjust:
-                min_width = 20
-                if self.width < min_width:
+                if self.width < self.min_width:
                     self._window.command_MoveSeparatorCenter(None)
 
         @property
@@ -2809,6 +2810,9 @@ def configure(window: MainWindow) -> None:
 
     def open_desktop_to_other() -> None:
         inactive = CPane(window, False)
+        if inactive.width < CPane.min_width:
+            window.command_MoveSeparatorCenter(None)
+
         if inactive.currentPath != DESKTOP_PATH:
             inactive.openPath(DESKTOP_PATH)
         else:
