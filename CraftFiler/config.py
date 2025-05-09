@@ -470,8 +470,19 @@ def configure(window: MainWindow) -> None:
             if self.isValidIndex(i):
                 self.focus(i)
 
-        def focusOther(self) -> None:
+        @property
+        def width(self) -> int:
+            left_width = self._window.left_window_width
+            if self._window.focus == MainWindow.FOCUS_LEFT:
+                return left_width
+            return self._window.width() - left_width
+
+        def focusOther(self, adjust: bool = True) -> None:
             self._window.command_FocusOther(None)
+            if adjust:
+                min_width = 20
+                if self.width < min_width:
+                    self._window.command_MoveSeparatorCenter(None)
 
         @property
         def fileList(self) -> FileList:
@@ -813,18 +824,7 @@ def configure(window: MainWindow) -> None:
 
     KEYBINDER.bind("C-S", toggle_pane_width)
 
-    def smart_focus_other() -> None:
-        window.command_FocusOther(None)
-        min_width = 10
-        if window.focus == MainWindow.FOCUS_LEFT:
-            if min_width < window.left_window_width:
-                return
-        else:
-            if window.left_window_width < window.width() - min_width:
-                return
-        window.command_MoveSeparatorCenter(None)
-
-    KEYBINDER.bind("C-L", smart_focus_other)
+    KEYBINDER.bind("C-L", lambda: CPane(window).focusOther())
 
     def copy_docx_content(path) -> None:
         if not path.endswith(".docx"):
@@ -852,7 +852,7 @@ def configure(window: MainWindow) -> None:
 
         pane = CPane(window)
         if pane.isBlank:
-            smart_focus_other()
+            pane.focusOther()
             return True
 
         focus_path = pane.focusedItemPath
