@@ -2079,23 +2079,21 @@ def configure(window: MainWindow) -> None:
 
         rename_config_substr.register(result)
 
-        def _confirm() -> List[RenameInfo]:
+        def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
             lines = []
             for item in targets:
                 org_path = Path(item.getFullpath())
-                stem = org_path.stem
-                suf = org_path.suffix
 
                 def _get_new_stem() -> str:
+                    stem = org_path.stem
                     if length < 0:
                         if length == -1:
                             return stem[offset:]
                         return stem[offset : length + 1]
                     return stem[offset : offset + length]
 
-                new_name = _get_new_stem() + suf
-
+                new_name = _get_new_stem() + org_path.suffix
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
 
@@ -2103,12 +2101,10 @@ def configure(window: MainWindow) -> None:
                 "\noffset: {}\nlength: {}\nOK? (Enter / Esc)".format(offset, length)
             )
 
-            if not popResultWindow(window, "Preview", "\n".join(lines)):
-                return []
-            return infos
+            return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
-        infos = _confirm()
-        if len(infos) < 1:
+        infos, ok = _confirm()
+        if len(infos) < 1 or not ok:
             print("Canceled.\n")
             return
 
@@ -2164,15 +2160,14 @@ def configure(window: MainWindow) -> None:
         ins = result[: result.rfind(sep)]
         pos = int(result[result.rfind(sep) + 1 :])
 
-        def _confirm() -> List[RenameInfo]:
+        def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
             lines = []
             for item in targets:
                 org_path = Path(item.getFullpath())
-                stem = org_path.stem
-                suf = org_path.suffix
 
                 def _get_new_stem() -> str:
+                    stem = org_path.stem
                     if pos < 0:
                         if pos == -1:
                             return stem + ins
@@ -2180,18 +2175,16 @@ def configure(window: MainWindow) -> None:
                         return stem[:p] + ins + stem[p:]
                     return stem[:pos] + ins + stem[pos:]
 
-                new_name = _get_new_stem() + suf
+                new_name = _get_new_stem() + org_path.suffix
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
 
             lines.append("\ninsert: {}\nat: {}\nOK? (Enter / Esc)".format(ins, pos))
 
-            if not popResultWindow(window, "Preview", "\n".join(lines)):
-                return []
-            return infos
+            return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
-        infos = _confirm()
-        if len(infos) < 1:
+        infos, ok = _confirm()
+        if len(infos) < 1 or not ok:
             print("Canceled.\n")
             return
 
@@ -2286,7 +2279,7 @@ def configure(window: MainWindow) -> None:
         print(result)
         rename_config_index.register(result)
 
-        def _confirm() -> List[RenameInfo]:
+        def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
             lines = []
             idx = ni.start
@@ -2312,12 +2305,10 @@ def configure(window: MainWindow) -> None:
                 )
             )
 
-            if not popResultWindow(window, "Preview", "\n".join(lines)):
-                return []
-            return infos
+            return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
-        infos = _confirm()
-        if len(infos) < 1:
+        infos, ok = _confirm()
+        if len(infos) < 1 or not ok:
             print("Canceled.\n")
             return
 
@@ -2385,25 +2376,31 @@ def configure(window: MainWindow) -> None:
         rename_config_regexp.register(result)
         reg = rc.from_reg
 
-        def _confirm() -> List[RenameInfo]:
+        def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
             lines = []
             for item in targets:
                 org_path = Path(item.getFullpath())
                 new_name = reg.sub(rc.to_str, org_path.stem) + org_path.suffix
-                infos.append(RenameInfo(org_path, new_name))
-                lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
+                if org_path.name != new_name:
+                    infos.append(RenameInfo(org_path, new_name))
+                    lines.append(
+                        "Rename: {}\n    ==> {}\n".format(org_path.name, new_name)
+                    )
 
-            lines.append(
-                "\nRegexp: {}\nNew text: {}\nOK? (Enter / Esc)".format(reg, rc.to_str)
-            )
+            if len(lines) < 1:
+                lines.append("Nothing will be renamed.")
+            else:
+                lines.append(
+                    "\nregexp: {}\nnew text: {}\nOK? (Enter / Esc)".format(
+                        reg, rc.to_str
+                    )
+                )
 
-            if not popResultWindow(window, "Preview", "\n".join(lines)):
-                return []
-            return infos
+            return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
-        infos = _confirm()
-        if len(infos) < 1:
+        infos, ok = _confirm()
+        if len(infos) < 1 or not ok:
             print("Canceled.\n")
             return
 
