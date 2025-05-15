@@ -2523,21 +2523,21 @@ def configure(window: MainWindow) -> None:
             if ts != additional_suffix[0]:
                 additional_suffix.append(ts)
 
-        place_holder = org_path.stem
+        placeholder = org_path.stem
         sel = [offset, offset]
 
         other_pane = CPane(window, False)
         for p in [pane, other_pane]:
             if p.hasSelection and len(p.selectedItems) == 1:
                 new_stem = Path(p.selectedItemPaths[0]).stem
-                if new_stem != place_holder:
-                    place_holder = place_holder + new_stem
+                if new_stem != placeholder:
+                    placeholder = placeholder + new_stem
                     sel[0] = 0
                     break
 
         new_stem, mod = window.commandLine(
             title="NewStem",
-            text=place_holder,
+            text=placeholder,
             selection=sel,
             candidate_handler=Suffixer(window, True, additional_suffix),
             return_modkey=True,
@@ -2693,8 +2693,21 @@ def configure(window: MainWindow) -> None:
                     prompt += " ({})".format(ext)
                 else:
                     prompt += " (with extension)"
+
+                placeholder = ""
+                sel = [0, 0]
+
+                other_pane = CPane(self._window, False)
+                for p in [pane, other_pane]:
+                    if p.hasSelection and len(p.selectedItems) == 1:
+                        placeholder = Path(p.selectedItemPaths[0]).stem
+                        sel[1] = len(placeholder)
+                        break
+
                 result, mod = window.commandLine(
                     prompt,
+                    text=placeholder,
+                    selection=sel,
                     candidate_handler=Suffixer(window, True),
                     return_modkey=True,
                 )
