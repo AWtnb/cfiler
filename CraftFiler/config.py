@@ -2821,6 +2821,7 @@ def configure(window: MainWindow) -> None:
 
     def open_desktop_to_other() -> None:
         if CPane(window).currentPath == DESKTOP_PATH:
+            window.command_FocusOther(None)
             return
 
         inactive = CPane(window, False)
