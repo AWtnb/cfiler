@@ -473,17 +473,17 @@ def configure(window: MainWindow) -> None:
         def width(self) -> int:
             left_width = self._window.left_window_width
             left_focused = self._window.focus == MainWindow.FOCUS_LEFT
-            if (self._active and left_focused) or (
-                not self._active and not left_focused
+            if (left_focused and self._active) or (
+                not left_focused and not self._active
             ):
                 return left_width
             return self._window.width() - left_width
 
         def focusOther(self, adjust: bool = True) -> None:
-            self._window.command_FocusOther(None)
             if adjust:
-                if self.width < self.min_width:
+                if self._window.width() - self.width < self.min_width:
                     self._window.command_MoveSeparatorCenter(None)
+            self._window.command_FocusOther(None)
 
         @property
         def fileList(self) -> FileList:
@@ -2820,18 +2820,11 @@ def configure(window: MainWindow) -> None:
     KEYBINDER.bind("F5", reload_config)
 
     def open_desktop_to_other() -> None:
-        if CPane(window).currentPath == DESKTOP_PATH:
-            window.command_FocusOther(None)
-            return
-
-        inactive = CPane(window, False)
-        if inactive.width < CPane.min_width:
-            window.command_MoveSeparatorCenter(None)
-
-        if inactive.currentPath != DESKTOP_PATH:
-            inactive.openPath(DESKTOP_PATH)
-        else:
-            CPane(window).focusOther()
+        pane = CPane(window)
+        other = CPane(window, False)
+        if DESKTOP_PATH not in [pane.currentPath, other.currentPath]:
+            other.openPath(DESKTOP_PATH)
+        pane.focusOther()
 
     KEYBINDER.bind("A-O", open_desktop_to_other)
 
