@@ -676,6 +676,8 @@ def configure(window: MainWindow) -> None:
             self.openPath(os.path.join(self.currentPath, name))
 
         def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
+            if self.currentPath == path:
+                return
             target = Path(path)
             if not smart_check_path(target, 2.0):
                 Kiritori.log("invalid path: '{}'".format(path))
