@@ -352,8 +352,6 @@ def configure(window: MainWindow) -> None:
     )
 
     class Keybinder:
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
 
         @staticmethod
         def wrap(func: Callable) -> Callable:
@@ -369,10 +367,9 @@ def configure(window: MainWindow) -> None:
 
             return _callback
 
-        def bind(self, key: str, func: Callable) -> None:
-            self._window.keymap[key] = self.wrap(func)
-
-    KEYBINDER = Keybinder(window)
+        @classmethod
+        def bind(cls, key: str, func: Callable) -> None:
+            window.keymap[key] = cls.wrap(func)
 
     class CPane:
         min_width = 20
@@ -769,7 +766,7 @@ def configure(window: MainWindow) -> None:
                 self._window.focus = MainWindow.FOCUS_RIGHT
             self.repaint(PO.Left | PO.Right)
 
-    def smart_cursorUp(_) -> None:
+    def smart_cursorUp() -> None:
         pane = CPane(window)
         if pane.isBlank or pane.count == 1:
             return
@@ -779,10 +776,10 @@ def configure(window: MainWindow) -> None:
             pane.entity.cursor -= 1
         pane.scrollToCursor()
 
-    KEYBINDER.bind("K", smart_cursorUp)
-    KEYBINDER.bind("Up", smart_cursorUp)
+    Keybinder().bind("K", smart_cursorUp)
+    Keybinder().bind("Up", smart_cursorUp)
 
-    def smart_cursorDown(_) -> None:
+    def smart_cursorDown() -> None:
         pane = CPane(window)
         if pane.isBlank or pane.count == 1:
             return
@@ -792,8 +789,8 @@ def configure(window: MainWindow) -> None:
             pane.entity.cursor += 1
         pane.scrollToCursor()
 
-    KEYBINDER.bind("J", smart_cursorDown)
-    KEYBINDER.bind("Down", smart_cursorDown)
+    Keybinder().bind("J", smart_cursorDown)
+    Keybinder().bind("Down", smart_cursorDown)
 
     def shell_exec(path: str, *args) -> None:
         if type(path) is not str:
@@ -825,9 +822,9 @@ def configure(window: MainWindow) -> None:
         window.updateThemePosSize()
         window.paint(PO.Upper)
 
-    KEYBINDER.bind("C-S", toggle_pane_width)
+    Keybinder().bind("C-S", toggle_pane_width)
 
-    KEYBINDER.bind("C-L", lambda: CPane(window).focusOther())
+    Keybinder().bind("C-L", lambda: CPane(window).focusOther())
 
     def copy_docx_content(path) -> None:
         if not path.endswith(".docx"):
@@ -916,13 +913,13 @@ def configure(window: MainWindow) -> None:
 
     window.enter_hook = hook_enter
 
-    KEYBINDER.bind("L", window.command_Enter)
-    KEYBINDER.bind("Right", window.command_Enter)
+    Keybinder().bind("L", window.command_Enter)
+    Keybinder().bind("Right", window.command_Enter)
 
     def toggle_hidden() -> None:
         window.showHiddenFile(not window.isHiddenFileVisible())
 
-    KEYBINDER.bind("C-S-H", toggle_hidden)
+    Keybinder().bind("C-S-H", toggle_hidden)
 
     class LocalApps:
         def __init__(self, app_dict: dict) -> None:
@@ -987,21 +984,21 @@ def configure(window: MainWindow) -> None:
         for path in paths:
             shell_exec(exe_path, path)
 
-    KEYBINDER.bind("C-O", open_with)
+    Keybinder().bind("C-O", open_with)
 
     def quick_move() -> None:
         if not CPane(window).hasSelection:
             window.command_Select(None)
         window.command_Move(None)
 
-    KEYBINDER.bind("M", quick_move)
+    Keybinder().bind("M", quick_move)
 
     def quick_copy() -> None:
         if not CPane(window).hasSelection:
             window.command_Select(None)
         window.command_Copy(None)
 
-    KEYBINDER.bind("C", quick_copy)
+    Keybinder().bind("C", quick_copy)
 
     def swap_pane() -> None:
         active = CPane(window, True)
@@ -1029,7 +1026,7 @@ def configure(window: MainWindow) -> None:
 
         LeftPane(window).activate()
 
-    KEYBINDER.bind("S", swap_pane)
+    Keybinder().bind("S", swap_pane)
 
     def check_fzf() -> bool:
         return shutil.which("fzf.exe") is not None
@@ -1110,7 +1107,7 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_get_path, _open)
         window.taskEnqueue(job, create_new_queue=False)
 
-    KEYBINDER.bind("B", fuzzy_bookmark)
+    Keybinder().bind("B", fuzzy_bookmark)
 
     def cleanup_alias_for_unbookmarked() -> None:
         cleared = []
@@ -1304,7 +1301,7 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_get_name, _mkdir)
         window.taskEnqueue(job, create_new_queue=False)
 
-    KEYBINDER.bind("S-A-N", ruled_mkdir)
+    Keybinder().bind("S-A-N", ruled_mkdir)
 
     class zyl:
         def __init__(self) -> None:
@@ -1354,8 +1351,8 @@ def configure(window: MainWindow) -> None:
 
             return _wrapper
 
-    KEYBINDER.bind("C-Space", zyl().invoke())
-    KEYBINDER.bind("C-S-Space", zyl().invoke(True))
+    Keybinder().bind("C-Space", zyl().invoke())
+    Keybinder().bind("C-S-Space", zyl().invoke(True))
 
     class zyw:
         def __init__(self) -> None:
@@ -1408,11 +1405,11 @@ def configure(window: MainWindow) -> None:
         def apply(self, key: str) -> None:
             for alt, search_all in {"": False, "A-": True}.items():
                 for shift, offset in {"": -1, "S-": 1}.items():
-                    KEYBINDER.bind(alt + shift + key, self.invoke(search_all, offset))
+                    Keybinder().bind(alt + shift + key, self.invoke(search_all, offset))
 
     zyw().apply("Z")
-    KEYBINDER.bind("S-F", zyw().invoke(False, 0))
-    KEYBINDER.bind("C-F", zyw().invoke(True, 0))
+    Keybinder().bind("S-F", zyw().invoke(False, 0))
+    Keybinder().bind("C-F", zyw().invoke(True, 0))
 
     def concatenate_pdf() -> None:
         exe_path = os.path.expandvars(
@@ -1505,7 +1502,7 @@ def configure(window: MainWindow) -> None:
             return
         CPane(window).openPath(c.strip().strip('"'))
 
-    KEYBINDER.bind("C-V", on_paste)
+    Keybinder().bind("C-V", on_paste)
 
     class DriveHandler:
         wrapper = "<>"
@@ -1565,7 +1562,7 @@ def configure(window: MainWindow) -> None:
         else:
             pane.openPath(os.path.join(pane.currentPath, result))
 
-    KEYBINDER.bind("F", smart_jump_input)
+    Keybinder().bind("F", smart_jump_input)
 
     def eject_current_drive() -> None:
         pane = CPane(window)
@@ -1635,7 +1632,7 @@ def configure(window: MainWindow) -> None:
     def recylcebin() -> None:
         shell_exec("shell:RecycleBinFolder")
 
-    KEYBINDER.bind("Delete", recylcebin)
+    Keybinder().bind("Delete", recylcebin)
 
     def copy_current_path() -> None:
         pane = CPane(window)
@@ -1643,7 +1640,7 @@ def configure(window: MainWindow) -> None:
         ckit.setClipboardText(p)
         window.setStatusMessage("copied current path: '{}'".format(p), 3000)
 
-    KEYBINDER.bind("C-A-P", copy_current_path)
+    Keybinder().bind("C-A-P", copy_current_path)
 
     def on_copy() -> None:
         selection_left, selection_right = window.log_pane.selection
@@ -1689,7 +1686,7 @@ def configure(window: MainWindow) -> None:
                 s += "."
             Kiritori.log(s)
 
-    KEYBINDER.bind("C-C", on_copy)
+    Keybinder().bind("C-C", on_copy)
 
     class Selector:
         def __init__(self, window: MainWindow) -> None:
@@ -1817,7 +1814,7 @@ def configure(window: MainWindow) -> None:
                 "S-End": self.toBottom,
                 "S-E": self.toBottom,
             }.items():
-                KEYBINDER.bind(k, v)
+                Keybinder().bind(k, v)
 
     Selector(window).apply()
 
@@ -1825,7 +1822,7 @@ def configure(window: MainWindow) -> None:
         CPane(window).unSelectAll()
         CPane(window, False).unSelectAll()
 
-    KEYBINDER.bind("C-U", unselect_panes)
+    Keybinder().bind("C-U", unselect_panes)
 
     class SmartJumper:
         def __init__(self, window: MainWindow) -> None:
@@ -1916,10 +1913,10 @@ def configure(window: MainWindow) -> None:
 
         return _jumper
 
-    KEYBINDER.bind("C-J", smart_jumpDown(False))
-    KEYBINDER.bind("C-Down", smart_jumpDown(False))
-    KEYBINDER.bind("S-C-J", smart_jumpDown(True))
-    KEYBINDER.bind("S-C-Down", smart_jumpDown(True))
+    Keybinder().bind("C-J", smart_jumpDown(False))
+    Keybinder().bind("C-Down", smart_jumpDown(False))
+    Keybinder().bind("S-C-J", smart_jumpDown(True))
+    Keybinder().bind("S-C-Down", smart_jumpDown(True))
 
     def smart_jumpUp(selecting: bool = False) -> None:
         def _jumper() -> None:
@@ -1927,24 +1924,24 @@ def configure(window: MainWindow) -> None:
 
         return _jumper
 
-    KEYBINDER.bind("C-K", smart_jumpUp(False))
-    KEYBINDER.bind("C-Up", smart_jumpUp(False))
-    KEYBINDER.bind("S-C-K", smart_jumpUp(True))
-    KEYBINDER.bind("S-C-Up", smart_jumpUp(True))
+    Keybinder().bind("C-K", smart_jumpUp(False))
+    Keybinder().bind("C-Up", smart_jumpUp(False))
+    Keybinder().bind("S-C-K", smart_jumpUp(True))
+    Keybinder().bind("S-C-Up", smart_jumpUp(True))
 
     def duplicate_pane() -> None:
         window.command_ChdirInactivePaneToOther(None)
         pane = CPane(window)
         pane.focusOther()
 
-    KEYBINDER.bind("W", duplicate_pane)
-    KEYBINDER.bind("D", duplicate_pane)
+    Keybinder().bind("W", duplicate_pane)
+    Keybinder().bind("D", duplicate_pane)
 
     def open_on_explorer() -> None:
         pane = CPane(window, True)
         shell_exec(pane.currentPath)
 
-    KEYBINDER.bind("C-S-E", open_on_explorer)
+    Keybinder().bind("C-S-E", open_on_explorer)
 
     def open_to_other() -> None:
         active_pane = CPane(window, True)
@@ -1953,7 +1950,7 @@ def configure(window: MainWindow) -> None:
             inactive_pane.openPath(active_pane.focusedItemPath)
             active_pane.focusOther()
 
-    KEYBINDER.bind("S-L", open_to_other)
+    Keybinder().bind("S-L", open_to_other)
 
     def open_parent_to_other() -> None:
         active_pane = CPane(window, True)
@@ -1962,8 +1959,8 @@ def configure(window: MainWindow) -> None:
         inactive_pane.openPath(parent, current_name)
         active_pane.focusOther()
 
-    KEYBINDER.bind("S-U", open_parent_to_other)
-    KEYBINDER.bind("S-H", open_parent_to_other)
+    Keybinder().bind("S-U", open_parent_to_other)
+    Keybinder().bind("S-H", open_parent_to_other)
 
     def on_vscode() -> None:
         vscode_path = TEXT_EDITORS["vscode"]
@@ -1971,7 +1968,7 @@ def configure(window: MainWindow) -> None:
             pane = CPane(window)
             shell_exec(vscode_path, pane.currentPath)
 
-    KEYBINDER.bind("V", on_vscode)
+    Keybinder().bind("V", on_vscode)
 
     class Renamer:
         def __init__(self, window: MainWindow) -> None:
@@ -2116,7 +2113,7 @@ def configure(window: MainWindow) -> None:
 
         Kiritori.wrap(_func)
 
-    KEYBINDER.bind("S-S", rename_substr)
+    Keybinder().bind("S-S", rename_substr)
 
     def rename_insert() -> None:
         renamer = Renamer(window)
@@ -2196,7 +2193,7 @@ def configure(window: MainWindow) -> None:
 
         Kiritori.wrap(_func)
 
-    KEYBINDER.bind("S-I", rename_insert)
+    Keybinder().bind("S-I", rename_insert)
 
     def rename_index() -> None:
         renamer = Renamer(window)
@@ -2320,7 +2317,7 @@ def configure(window: MainWindow) -> None:
 
         Kiritori.wrap(_func)
 
-    KEYBINDER.bind("A-S-I", rename_index)
+    Keybinder().bind("A-S-I", rename_index)
 
     def rename_regexp() -> None:
         renamer = Renamer(window)
@@ -2412,7 +2409,7 @@ def configure(window: MainWindow) -> None:
 
         Kiritori.wrap(_func)
 
-    KEYBINDER.bind("S-R", rename_regexp)
+    Keybinder().bind("S-R", rename_regexp)
 
     class Prefixer:
         sep = "_"
@@ -2556,7 +2553,7 @@ def configure(window: MainWindow) -> None:
 
         Kiritori.wrap(_func)
 
-    KEYBINDER.bind("N", invoke_renamer)
+    Keybinder().bind("N", invoke_renamer)
 
     def duplicate_file() -> None:
         pane = CPane(window)
@@ -2604,7 +2601,7 @@ def configure(window: MainWindow) -> None:
         pane.refresh()
         pane.focusByName(Path(new_path).name)
 
-    KEYBINDER.bind("S-D", duplicate_file)
+    Keybinder().bind("S-D", duplicate_file)
 
     def smart_copy_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
@@ -2656,8 +2653,8 @@ def configure(window: MainWindow) -> None:
         else:
             pane.focusByName(result)
 
-    KEYBINDER.bind("S-M", lambda: smart_copy_to_dir(True))
-    KEYBINDER.bind("S-C", lambda: smart_copy_to_dir(False))
+    Keybinder().bind("S-M", lambda: smart_copy_to_dir(True))
+    Keybinder().bind("S-C", lambda: smart_copy_to_dir(False))
 
     def smart_mkdir() -> None:
         pane = CPane(window)
@@ -2677,7 +2674,7 @@ def configure(window: MainWindow) -> None:
         if mod == ckit.MODKEY_SHIFT:
             pane.openChild(dirname)
 
-    KEYBINDER.bind("C-S-N", smart_mkdir)
+    Keybinder().bind("C-S-N", smart_mkdir)
 
     class Toucher:
         def __init__(self, window: MainWindow) -> None:
@@ -2732,9 +2729,9 @@ def configure(window: MainWindow) -> None:
 
     TOUCHER = Toucher(window)
 
-    KEYBINDER.bind("T", TOUCHER.invoke("txt"))
-    KEYBINDER.bind("A-T", TOUCHER.invoke("md"))
-    KEYBINDER.bind("C-N", TOUCHER.invoke(""))
+    Keybinder().bind("T", TOUCHER.invoke("txt"))
+    Keybinder().bind("A-T", TOUCHER.invoke("md"))
+    Keybinder().bind("C-N", TOUCHER.invoke(""))
 
     class Rect(NamedTuple):
         left: int
@@ -2763,7 +2760,7 @@ def configure(window: MainWindow) -> None:
                 wnd.setRect([left, 0, visible_rect.right, visible_rect.bottom])
         window.command_MoveSeparatorCenter(None)
 
-    KEYBINDER.bind("C-0", lambda: to_home_position(True))
+    Keybinder().bind("C-0", lambda: to_home_position(True))
 
     class sorter_UnderscoreFirst:
         def __init__(self, order: int = 1) -> None:
@@ -2816,8 +2813,8 @@ def configure(window: MainWindow) -> None:
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
         window.setStatusMessage("reloaded config.py | {}".format(ts), 2000)
 
-    KEYBINDER.bind("C-R", reload_config)
-    KEYBINDER.bind("F5", reload_config)
+    Keybinder().bind("C-R", reload_config)
+    Keybinder().bind("F5", reload_config)
 
     def open_desktop_to_other() -> None:
         pane = CPane(window)
@@ -2826,7 +2823,7 @@ def configure(window: MainWindow) -> None:
             other.openPath(DESKTOP_PATH)
         pane.focusOther()
 
-    KEYBINDER.bind("A-O", open_desktop_to_other)
+    Keybinder().bind("A-O", open_desktop_to_other)
 
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
@@ -2837,8 +2834,8 @@ def configure(window: MainWindow) -> None:
             window.command_ChdirInactivePaneToOther(None)
             LeftPane(window).activate()
 
-    KEYBINDER.bind("0", lambda: starting_position(False))
-    KEYBINDER.bind("S-0", lambda: starting_position(True))
+    Keybinder().bind("0", lambda: starting_position(False))
+    Keybinder().bind("S-0", lambda: starting_position(True))
 
     def safe_quit() -> None:
         if window.ini.getint("MISC", "confirm_quit"):
@@ -2859,14 +2856,14 @@ def configure(window: MainWindow) -> None:
 
         window.quit()
 
-    KEYBINDER.bind("C-Q", safe_quit)
-    KEYBINDER.bind("A-F4", safe_quit)
+    Keybinder().bind("C-Q", safe_quit)
+    Keybinder().bind("A-F4", safe_quit)
 
     def open_doc() -> None:
         help_path = os.path.join(ckit.getAppExePath(), "doc", "index.html")
         shell_exec(help_path)
 
-    KEYBINDER.bind("C-F1", open_doc)
+    Keybinder().bind("C-F1", open_doc)
 
     def edit_config() -> None:
         config_dir = os.path.join(os.environ.get("APPDATA"), "CraftFiler")
@@ -2882,7 +2879,7 @@ def configure(window: MainWindow) -> None:
         else:
             shell_exec(dir_path)
 
-    KEYBINDER.bind("C-E", edit_config)
+    Keybinder().bind("C-E", edit_config)
 
     class ClonedItem(NamedTuple):
         origin: str
@@ -3077,7 +3074,7 @@ def configure(window: MainWindow) -> None:
 
         return _selector
 
-    KEYBINDER.bind("S-Colon", invoke_regex_selector(True))
+    Keybinder().bind("S-Colon", invoke_regex_selector(True))
 
     def select_same_name() -> None:
         pane = CPane(window)
@@ -3130,7 +3127,7 @@ def configure(window: MainWindow) -> None:
         if result:
             Selector(window).stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    KEYBINDER.bind("Caret", select_stem_startswith)
+    Keybinder().bind("Caret", select_stem_startswith)
 
     def select_stem_endswith() -> None:
         result, mod = window.commandLine(
@@ -3142,14 +3139,14 @@ def configure(window: MainWindow) -> None:
         if result:
             Selector(window).stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    KEYBINDER.bind("S-4", select_stem_endswith)
+    Keybinder().bind("S-4", select_stem_endswith)
 
     def select_stem_contains() -> None:
         result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
             Selector(window).stemContains(result, mod == ckit.MODKEY_SHIFT)
 
-    KEYBINDER.bind("Colon", select_stem_contains)
+    Keybinder().bind("Colon", select_stem_contains)
 
     def select_byext() -> None:
         pane = CPane(window)
@@ -3175,7 +3172,7 @@ def configure(window: MainWindow) -> None:
 
         Selector(window).byExtension(exts[result], mod == ckit.MODKEY_SHIFT)
 
-    KEYBINDER.bind("S-X", select_byext)
+    Keybinder().bind("S-X", select_byext)
 
     class PseudoVoicing:
         def __init__(self, s) -> None:
@@ -3249,7 +3246,7 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_save, _finish)
         window.taskEnqueue(job, create_new_queue=False)
 
-    KEYBINDER.bind("C-S-I", save_clipboard_image_as_file)
+    Keybinder().bind("C-S-I", save_clipboard_image_as_file)
 
     class PathMatchFilter:
         def __init__(self, root: str, names: List[str]) -> None:
@@ -3287,7 +3284,7 @@ def configure(window: MainWindow) -> None:
         pane.refresh()
         pane.repaint(PO.Focused)
 
-    KEYBINDER.bind("Q", clear_filter)
+    Keybinder().bind("Q", clear_filter)
 
     def make_junction() -> None:
         active_pane = CPane(window)
