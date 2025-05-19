@@ -310,12 +310,8 @@ def configure(window: MainWindow) -> None:
 
         @staticmethod
         def wrap(func: Callable) -> Callable:
-            if inspect.signature(func).parameters.items():
-
-                def _callback_with_arg(cmd_info: ckit.ckit_command.CommandInfo) -> None:
-                    func(cmd_info)
-
-                return _callback_with_arg
+            if len(inspect.signature(func).parameters) == 1:
+                return func
 
             def _callback(_) -> None:
                 func()
