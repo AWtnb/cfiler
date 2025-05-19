@@ -310,13 +310,14 @@ def configure(window: MainWindow) -> None:
 
         @staticmethod
         def wrap(func: Callable) -> Callable:
-            if len(inspect.signature(func).parameters) == 1:
-                return func
+            if len(inspect.signature(func).parameters) < 1:
 
-            def _callback(_) -> None:
-                func()
+                def _callback(_) -> None:
+                    func()
 
-            return _callback
+                return _callback
+
+            return func
 
         @classmethod
         def bind(
