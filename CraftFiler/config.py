@@ -342,29 +342,28 @@ def configure(window: MainWindow) -> None:
     class CPane:
         min_width = 20
 
-        def __init__(self, window: MainWindow, active: bool = True) -> None:
-            self._window = window
+        def __init__(self, active: bool = True) -> None:
             self._active = active
             if self._active:
-                self._pane = self._window.activePane()
-                self._items = self._window.activeItems()
+                self._pane = window.activePane()
+                self._items = window.activeItems()
             else:
-                self._pane = self._window.inactivePane()
-                self._items = self._window.inactiveItems()
+                self._pane = window.inactivePane()
+                self._items = window.inactiveItems()
 
         @property
         def entity(self):
             return self._pane
 
         def repaint(self, option: PaintOption = PO.All) -> None:
-            self._window.paint(option)
+            window.paint(option)
 
         def refresh(self) -> None:
-            self._window.subThreadCall(self.fileList.refresh, (False, True))
+            window.subThreadCall(self.fileList.refresh, (False, True))
             self.fileList.applyItems()
 
         def setSorter(self, sorter: Callable) -> None:
-            self._window.subThreadCall(self.fileList.setSorter, (sorter,))
+            window.subThreadCall(self.fileList.setSorter, (sorter,))
             self.refresh()
 
         @property
@@ -413,7 +412,7 @@ def configure(window: MainWindow) -> None:
 
         @property
         def cursor(self) -> int:
-            return self._pane.cursor
+            return self.entity.cursor
 
         def focus(self, i: int) -> None:
             if self.isValidIndex(i):
@@ -436,23 +435,23 @@ def configure(window: MainWindow) -> None:
 
         @property
         def width(self) -> int:
-            left_width = self._window.left_window_width
-            left_focused = self._window.focus == MainWindow.FOCUS_LEFT
+            left_width = window.left_window_width
+            left_focused = window.focus == MainWindow.FOCUS_LEFT
             if (left_focused and self._active) or (
                 not left_focused and not self._active
             ):
                 return left_width
-            return self._window.width() - left_width
+            return window.width() - left_width
 
         def focusOther(self, adjust: bool = True) -> None:
             if adjust:
-                if self._window.width() - self.width < self.min_width:
-                    self._window.command_MoveSeparatorCenter(None)
-            self._window.command_FocusOther(None)
+                if window.width() - self.width < self.min_width:
+                    window.command_MoveSeparatorCenter(None)
+            window.command_FocusOther(None)
 
         @property
         def fileList(self) -> FileList:
-            return self._pane.file_list
+            return self.entity.file_list
 
         @property
         def lister(self):
@@ -471,7 +470,7 @@ def configure(window: MainWindow) -> None:
 
         @property
         def scrollInfo(self) -> ckit.ScrollInfo:
-            return self._pane.scroll_info
+            return self.entity.scroll_info
 
         @property
         def currentPath(self) -> str:
@@ -631,7 +630,7 @@ def configure(window: MainWindow) -> None:
             return idxs[-1]
 
         def scrollTo(self, i: int) -> None:
-            self.scrollInfo.makeVisible(i, self._window.fileListItemPaneHeight(), 1)
+            self.scrollInfo.makeVisible(i, window.fileListItemPaneHeight(), 1)
             self.repaint(PO.FocusedItems)
 
         def scrollToCursor(self) -> None:
@@ -659,8 +658,8 @@ def configure(window: MainWindow) -> None:
                             else:
                                 focus_name = d[len(path) + 1 :].split(os.sep)[0]
                             break
-            lister = lister_Default(self._window, path)
-            self._window.jumpLister(self._pane, lister, focus_name)
+            lister = lister_Default(window, path)
+            window.jumpLister(self.entity, lister, focus_name)
 
         def touch(self, name: str) -> None:
             if not hasattr(self.lister, "touch"):
@@ -670,9 +669,9 @@ def configure(window: MainWindow) -> None:
             if smart_check_path(dp) and dp.is_file():
                 Kiritori.log("file '{}' already exists.".format(name))
                 return
-            self._window.subThreadCall(self.lister.touch, (name,))
+            window.subThreadCall(self.lister.touch, (name,))
             self.refresh()
-            self.focus(self._window.cursorFromName(self.fileList, name))
+            self.focus(window.cursorFromName(self.fileList, name))
 
         def mkdir(self, name: str, focus: bool = True) -> None:
             if not hasattr(self.lister, "mkdir"):
@@ -683,7 +682,7 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log("directory '{}' already exists.".format(name))
                 self.focusByName(name)
                 return
-            self._window.subThreadCall(self.lister.mkdir, (name, None))
+            window.subThreadCall(self.lister.mkdir, (name, None))
             self.refresh()
             if focus:
                 self.focusByName(name)
@@ -717,25 +716,25 @@ def configure(window: MainWindow) -> None:
             return paths
 
     class LeftPane(CPane):
-        def __init__(self, window: MainWindow) -> None:
-            super().__init__(window, (window.focus == MainWindow.FOCUS_LEFT))
+        def __init__(self) -> None:
+            super().__init__(window.focus == MainWindow.FOCUS_LEFT)
 
         def activate(self) -> None:
-            if self._window.focus == MainWindow.FOCUS_RIGHT:
-                self._window.focus = MainWindow.FOCUS_LEFT
+            if window.focus == MainWindow.FOCUS_RIGHT:
+                window.focus = MainWindow.FOCUS_LEFT
             self.repaint(PO.Left | PO.Right)
 
     class RightPane(CPane):
-        def __init__(self, window: MainWindow) -> None:
-            super().__init__(window, (window.focus == MainWindow.FOCUS_RIGHT))
+        def __init__(self) -> None:
+            super().__init__(window.focus == MainWindow.FOCUS_RIGHT)
 
         def activate(self) -> None:
-            if self._window.focus == MainWindow.FOCUS_LEFT:
-                self._window.focus = MainWindow.FOCUS_RIGHT
+            if window.focus == MainWindow.FOCUS_LEFT:
+                window.focus = MainWindow.FOCUS_RIGHT
             self.repaint(PO.Left | PO.Right)
 
     def smart_cursorUp() -> None:
-        pane = CPane(window)
+        pane = CPane()
         if pane.isBlank or pane.count == 1:
             return
         if pane.cursor == 0:
@@ -747,7 +746,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(smart_cursorUp, "K", "Up")
 
     def smart_cursorDown() -> None:
-        pane = CPane(window)
+        pane = CPane()
         if pane.isBlank or pane.count == 1:
             return
         if pane.cursor == pane.count - 1:
@@ -790,7 +789,7 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(toggle_pane_width, "C-S")
 
-    Keybinder().bind(lambda: CPane(window).focusOther(), "C-L")
+    Keybinder().bind(lambda: CPane().focusOther(), "C-L")
 
     def copy_docx_content(path) -> None:
         if not path.endswith(".docx"):
@@ -844,7 +843,7 @@ def configure(window: MainWindow) -> None:
     def hook_enter() -> bool:
         # returning `True` hooks (skips) default action.
 
-        pane = CPane(window)
+        pane = CPane()
         if pane.isBlank:
             pane.focusOther()
             return True
@@ -944,7 +943,7 @@ def configure(window: MainWindow) -> None:
     }
 
     def open_with() -> None:
-        pane = CPane(window)
+        pane = CPane()
         if pane.isBlank or pane.focusedItem.isdir():
             return
 
@@ -980,27 +979,27 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(open_with, "C-O")
 
     def quick_move() -> None:
-        if not CPane(window).hasSelection:
+        if not CPane().hasSelection:
             window.command_Select(None)
         window.command_Move(None)
 
     Keybinder().bind(quick_move, "M")
 
     def quick_copy() -> None:
-        if not CPane(window).hasSelection:
+        if not CPane().hasSelection:
             window.command_Select(None)
         window.command_Copy(None)
 
     Keybinder().bind(quick_copy, "C")
 
     def swap_pane() -> None:
-        active = CPane(window, True)
+        active = CPane(True)
         active_selects = active.selectedItemNames
         active_path = active.currentPath
         active_focus_name = None if active.isBlank else active.focusedItem.getName()
         active_sorter = active.fileList.getSorter()
 
-        inactive = CPane(window, False)
+        inactive = CPane(False)
         inactive_selects = inactive.selectedItemNames
         inactive_path = inactive.currentPath
         inactive_sorter = inactive.fileList.getSorter()
@@ -1017,7 +1016,7 @@ def configure(window: MainWindow) -> None:
         inactive.selectByNames(active_selects)
         inactive.setSorter(active_sorter)
 
-        LeftPane(window).activate()
+        LeftPane().activate()
 
     Keybinder().bind(swap_pane, "S")
 
@@ -1027,15 +1026,14 @@ def configure(window: MainWindow) -> None:
     class BookmarkAlias:
         ini_section = "BOOKMARK_ALIAS"
 
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
+        def __init__(self) -> None:
             try:
-                self._window.ini.add_section(self.ini_section)
+                window.ini.add_section(self.ini_section)
             except configparser.DuplicateSectionError:
                 pass
 
         def register(self, name: str, path: str) -> None:
-            self._window.ini.set(self.ini_section, name, path)
+            window.ini.set(self.ini_section, name, path)
 
         @staticmethod
         def to_leaf(path: str) -> str:
@@ -1047,11 +1045,11 @@ def configure(window: MainWindow) -> None:
 
         def to_dict(self) -> dict:
             d = {}
-            for opt in self._window.ini.items(self.ini_section):
+            for opt in window.ini.items(self.ini_section):
                 name = "{}[{}]".format(opt[0], self.to_leaf(opt[1]))
                 d[name] = opt[1]
             paths_with_alias = d.values()
-            for path in self._window.bookmark.getItems():
+            for path in window.bookmark.getItems():
                 if path not in paths_with_alias:
                     name = self.to_leaf(path)
                     d[name] = path
@@ -1059,8 +1057,8 @@ def configure(window: MainWindow) -> None:
 
     class FuzzyBookmark:
 
-        def __init__(self, window: MainWindow) -> None:
-            self._table = BookmarkAlias(window).to_dict()
+        def __init__(self) -> None:
+            self._table = BookmarkAlias().to_dict()
 
         def fzf(self) -> str:
             table = self._table
@@ -1086,10 +1084,10 @@ def configure(window: MainWindow) -> None:
             Kiritori.log("fzf.exe not found.")
             return
 
-        pane = CPane(window)
+        pane = CPane()
 
         def _get_path(job_item: ckit.JobItem) -> None:
-            fb = FuzzyBookmark(window)
+            fb = FuzzyBookmark()
             job_item.path = fb.fzf()
 
         def _open(job_item: ckit.JobItem) -> None:
@@ -1124,7 +1122,7 @@ def configure(window: MainWindow) -> None:
         Kiritori().wrap(_display)
 
     def set_bookmark_alias() -> None:
-        pane = CPane(window)
+        pane = CPane()
         target = pane.currentPath
         if pane.hasSelection:
             if 1 < len(pane.selectedItems):
@@ -1139,7 +1137,7 @@ def configure(window: MainWindow) -> None:
         if len(alias) < 1:
             return
 
-        BookmarkAlias(window).register(alias, target)
+        BookmarkAlias().register(alias, target)
 
         if target not in window.bookmark.getItems():
             window.bookmark.append(target)
@@ -1192,7 +1190,7 @@ def configure(window: MainWindow) -> None:
             job = ckit.JobItem(__read, __write)
             window.taskEnqueue(job, create_new_queue=False)
 
-        pane = CPane(window)
+        pane = CPane()
         paths = pane.selectedItemPaths
         if len(paths) < 1:
             paths = [pane.focusedItemPath]
@@ -1252,7 +1250,7 @@ def configure(window: MainWindow) -> None:
         def get_index(self) -> str:
             idxs = []
             width = 1
-            pane = CPane(window)
+            pane = CPane()
             reg = re.compile(r"^\d+")
             for d in pane.dirs:
                 name = d.getName()
@@ -1279,7 +1277,7 @@ def configure(window: MainWindow) -> None:
             Kiritori.log("fzf.exe not found.")
             return
 
-        pane = CPane(window)
+        pane = CPane()
 
         def _get_name(job_item: ckit.JobItem) -> None:
             job_item.name = ""
@@ -1335,7 +1333,7 @@ def configure(window: MainWindow) -> None:
 
             def _open(job_item: ckit.JobItem) -> None:
                 if job_item.result:
-                    pane = CPane(window)
+                    pane = CPane()
                     pane.openPath(job_item.result)
 
             def _wrapper() -> None:
@@ -1367,7 +1365,7 @@ def configure(window: MainWindow) -> None:
                 if not self.check():
                     Kiritori.log("Exe not found: '{}'".format(self._exe_path))
                     return
-                pane = CPane(window)
+                pane = CPane()
                 cmd = self._cmd + [
                     "-all={}".format(search_all),
                     "-offset={}".format(offset),
@@ -1386,7 +1384,7 @@ def configure(window: MainWindow) -> None:
             def _open(job_item: ckit.JobItem) -> None:
                 result = job_item.result
                 if result:
-                    pane = CPane(window)
+                    pane = CPane()
                     pane.openPath(result)
 
             def _wrapper() -> None:
@@ -1411,7 +1409,7 @@ def configure(window: MainWindow) -> None:
         if not smart_check_path(exe_path):
             return
 
-        pane = CPane(window)
+        pane = CPane()
         if not pane.hasSelection:
             return
         for path in pane.selectedItemPaths:
@@ -1481,9 +1479,7 @@ def configure(window: MainWindow) -> None:
         lines.append("URL={}".format(url))
         if not name.endswith(".url"):
             name = name + ".url"
-        Path(CPane(window).currentPath, name).write_text(
-            "\n".join(lines), encoding="utf-8"
-        )
+        Path(CPane().currentPath, name).write_text("\n".join(lines), encoding="utf-8")
 
     def on_paste() -> None:
         c = ckit.getClipboardText()
@@ -1493,15 +1489,15 @@ def configure(window: MainWindow) -> None:
         if c.startswith("http"):
             make_internet_shortcut(c)
             return
-        CPane(window).openPath(c.strip().strip('"'))
+        CPane().openPath(c.strip().strip('"'))
 
     Keybinder().bind(on_paste, "C-V")
 
     class DriveHandler:
         wrapper = "<>"
 
-        def __init__(self, window: MainWindow) -> None:
-            pane = CPane(window)
+        def __init__(self) -> None:
+            pane = CPane()
             self._current_drive = Path(pane.currentPath).drive
 
         def listup(self, include_current: bool = False) -> List[str]:
@@ -1525,9 +1521,9 @@ def configure(window: MainWindow) -> None:
             return s
 
     def smart_jump_input() -> None:
-        pane = CPane(window)
+        pane = CPane()
 
-        drive_handler = DriveHandler(window)
+        drive_handler = DriveHandler()
         drives = drive_handler.listup()
 
         def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
@@ -1558,7 +1554,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(smart_jump_input, "F")
 
     def eject_current_drive() -> None:
-        pane = CPane(window)
+        pane = CPane()
         current = pane.currentPath
         if current.startswith("C:"):
             return
@@ -1596,7 +1592,7 @@ def configure(window: MainWindow) -> None:
         window.taskEnqueue(job, create_new_queue=False)
 
     def smart_extract() -> None:
-        active_pane = CPane(window)
+        active_pane = CPane()
 
         for item in active_pane.selectedItems:
             ext = Path(item.getFullpath()).suffix
@@ -1618,7 +1614,7 @@ def configure(window: MainWindow) -> None:
         active_pane.mkdir(result, False)
         extract_path = os.path.join(active_pane.currentPath, result)
 
-        inactive_pane = CPane(window, False)
+        inactive_pane = CPane(False)
         inactive_pane.openPath(extract_path)
         window.command_ExtractArchive(None)
 
@@ -1628,7 +1624,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(recylcebin, "Delete")
 
     def copy_current_path() -> None:
-        pane = CPane(window)
+        pane = CPane()
         p = pane.currentPath
         ckit.setClipboardText(p)
         window.setStatusMessage("copied current path: '{}'".format(p), 3000)
@@ -1641,7 +1637,7 @@ def configure(window: MainWindow) -> None:
             window.command_SetClipboard_LogSelected(None)
             return
 
-        pane = CPane(window)
+        pane = CPane()
 
         targets = []
         if pane.isBlank:
@@ -1682,28 +1678,24 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(on_copy, "C-C")
 
     class Selector:
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
+        @staticmethod
+        def allItems() -> None:
+            CPane().selectAll()
 
-        @property
-        def pane(self) -> CPane:
-            return CPane(self._window)
-
-        def allItems(self) -> None:
-            pane = self.pane
-            pane.selectAll()
-
-        def clear(self) -> None:
-            pane = self.pane
+        @staticmethod
+        def clear() -> None:
+            pane = CPane()
             pane.unSelect(pane.cursor)
 
-        def toggleAll(self) -> None:
-            pane = self.pane
+        @staticmethod
+        def toggleAll() -> None:
+            pane = CPane()
             for i in range(pane.count):
                 pane.toggleSelection(i)
 
-        def toTop(self) -> None:
-            pane = self.pane
+        @staticmethod
+        def toTop() -> None:
+            pane = CPane()
             if pane.cursor < pane.selectionTop:
                 for i in range(pane.count):
                     if i <= pane.cursor:
@@ -1714,14 +1706,16 @@ def configure(window: MainWindow) -> None:
                     if i <= pane.cursor:
                         pane.toggleSelection(i)
 
-        def clearToTop(self) -> None:
-            pane = self.pane
+        @staticmethod
+        def clearToTop() -> None:
+            pane = CPane()
             for i in range(pane.count):
                 if i <= pane.cursor:
                     pane.unSelect(i)
 
-        def toBottom(self) -> None:
-            pane = self.pane
+        @staticmethod
+        def toBottom() -> None:
+            pane = CPane()
             if pane.selectionBottom < pane.cursor:
                 for i in range(pane.count):
                     if pane.cursor <= i:
@@ -1732,94 +1726,102 @@ def configure(window: MainWindow) -> None:
                     if pane.cursor <= i:
                         pane.toggleSelection(i)
 
-        def clearToBottom(self) -> None:
-            pane = self.pane
+        @staticmethod
+        def clearToBottom() -> None:
+            pane = CPane()
             for i in range(pane.count):
                 if pane.cursor < i:
                     pane.unSelect(i)
 
-        def files(self) -> None:
-            pane = self.pane
+        @staticmethod
+        def files() -> None:
+            pane = CPane()
             for item in pane.selectedOrAllItems:
                 name = item.getName()
                 if not item.isdir():
                     pane.toggleSelection(pane.byName(name))
 
-        def dirs(self) -> None:
-            pane = self.pane
+        @staticmethod
+        def dirs() -> None:
+            pane = CPane()
             for item in pane.selectedOrAllItems:
                 name = item.getName()
                 if item.isdir():
                     pane.toggleSelection(pane.byName(name))
 
-        def clearAll(self) -> None:
-            pane = self.pane
-            pane.unSelectAll()
+        @staticmethod
+        def clearAll() -> None:
+            CPane().unSelectAll()
 
-        def byFunction(self, func: Callable, negative: bool = False) -> None:
-            pane = self.pane
+        @staticmethod
+        def byFunction(func: Callable, negative: bool = False) -> None:
+            pane = CPane()
             for item in pane.selectedOrAllItems:
                 path = item.getFullpath()
                 if (negative and not func(path)) or (not negative and func(path)):
                     name = item.getName()
                     pane.toggleSelection(pane.byName(name))
 
-        def byExtension(self, s: str, negative: bool = False) -> None:
+        @classmethod
+        def byExtension(cls, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
                 return Path(path).suffix == s
 
-            self.byFunction(_checkPath, negative)
+            cls.byFunction(_checkPath, negative)
 
-        def stemContains(self, s: str, negative: bool = False) -> None:
+        @classmethod
+        def stemContains(cls, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
                 return s in Path(path).stem
 
-            self.byFunction(_checkPath, negative)
+            cls.byFunction(_checkPath, negative)
 
-        def stemStartsWith(self, s: str, negative: bool = False) -> None:
+        @classmethod
+        def stemStartsWith(cls, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
                 return Path(path).stem.startswith(s)
 
-            self.byFunction(_checkPath, negative)
+            cls.byFunction(_checkPath, negative)
 
-        def stemEndsWith(self, s: str, negative: bool = False) -> None:
+        @classmethod
+        def stemEndsWith(cls, s: str, negative: bool = False) -> None:
             def _checkPath(path: str) -> bool:
                 return Path(path).stem.endswith(s)
 
-            self.byFunction(_checkPath, negative)
+            cls.byFunction(_checkPath, negative)
 
-        def stemMatches(self, s: str, case: bool, negative: bool = False) -> None:
+        @classmethod
+        def stemMatches(cls, s: str, case: bool, negative: bool = False) -> None:
             reg = re.compile(s) if case else re.compile(s, re.IGNORECASE)
 
             def _checkPath(path: str) -> bool:
                 return reg.search(Path(path).stem) is not None
 
-            self.byFunction(_checkPath, negative)
+            cls.byFunction(_checkPath, negative)
 
-        def apply(self) -> None:
+        @classmethod
+        def apply(cls) -> None:
             for k, v in {
-                "C-A": self.allItems,
-                "U": self.clearAll,
-                "A-F": self.files,
-                "A-D": self.dirs,
-                "S-Home": self.toTop,
-                "S-A": self.toTop,
-                "S-End": self.toBottom,
-                "S-E": self.toBottom,
+                "C-A": cls.allItems,
+                "U": cls.clearAll,
+                "A-F": cls.files,
+                "A-D": cls.dirs,
+                "S-Home": cls.toTop,
+                "S-A": cls.toTop,
+                "S-End": cls.toBottom,
+                "S-E": cls.toBottom,
             }.items():
                 Keybinder().bind(v, k)
 
-    Selector(window).apply()
+    Selector().apply()
 
     def unselect_panes() -> None:
-        CPane(window).unSelectAll()
-        CPane(window, False).unSelectAll()
+        CPane().unSelectAll()
+        CPane(False).unSelectAll()
 
     Keybinder().bind(unselect_panes, "C-U")
 
     class SmartJumper:
-        def __init__(self, window: MainWindow) -> None:
-            self._pane = CPane(window)
 
         @staticmethod
         def getBlockEdges(idxs: List[int]) -> List[int]:
@@ -1846,12 +1848,12 @@ def configure(window: MainWindow) -> None:
 
         @property
         def jumpable(self) -> List[int]:
-            pane = self._pane
+            pane = CPane()
             if pane.isBlank:
                 return []
             stack = []
             for i in range(pane.count):
-                item = self._pane.byIndex(i)
+                item = pane.byIndex(i)
                 if item.bookmark() or item.selected():
                     stack.append(i)
             stack = self.getBlockEdges(stack)
@@ -1867,7 +1869,7 @@ def configure(window: MainWindow) -> None:
             targets = self.jumpable
             if len(targets) < 1:
                 return
-            pane = self._pane
+            pane = CPane()
             cur = pane.cursor
             idx = -1
             for t in targets:
@@ -1886,7 +1888,7 @@ def configure(window: MainWindow) -> None:
             targets = self.jumpable
             if len(targets) < 1:
                 return
-            pane = self._pane
+            pane = CPane()
             cur = pane.cursor
             idx = -1
             for t in targets:
@@ -1901,8 +1903,10 @@ def configure(window: MainWindow) -> None:
             pane.focus(idx)
 
     def smart_jumpDown(selecting: bool = False) -> Callable:
+        jumper = SmartJumper()
+
         def _jumper() -> None:
-            SmartJumper(window).down(selecting)
+            jumper.down(selecting)
 
         return _jumper
 
@@ -1912,8 +1916,10 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(smart_jumpDown(True), "S-C-Down")
 
     def smart_jumpUp(selecting: bool = False) -> None:
+        jumper = SmartJumper()
+
         def _jumper() -> None:
-            SmartJumper(window).up(selecting)
+            jumper.up(selecting)
 
         return _jumper
 
@@ -1924,30 +1930,30 @@ def configure(window: MainWindow) -> None:
 
     def duplicate_pane() -> None:
         window.command_ChdirInactivePaneToOther(None)
-        pane = CPane(window)
+        pane = CPane()
         pane.focusOther()
 
     Keybinder().bind(duplicate_pane, "W", "D")
 
     def open_on_explorer() -> None:
-        pane = CPane(window, True)
+        pane = CPane(True)
         shell_exec(pane.currentPath)
 
     Keybinder().bind(open_on_explorer, "C-S-E")
 
     def open_to_other() -> None:
-        active_pane = CPane(window, True)
+        active_pane = CPane(True)
         if not active_pane.isBlank:
-            inactive_pane = CPane(window, False)
+            inactive_pane = CPane(False)
             inactive_pane.openPath(active_pane.focusedItemPath)
             active_pane.focusOther()
 
     Keybinder().bind(open_to_other, "S-L")
 
     def open_parent_to_other() -> None:
-        active_pane = CPane(window, True)
+        active_pane = CPane(True)
         parent, current_name = os.path.split(active_pane.currentPath)
-        inactive_pane = CPane(window, False)
+        inactive_pane = CPane(False)
         inactive_pane.openPath(parent, current_name)
         active_pane.focusOther()
 
@@ -1956,15 +1962,14 @@ def configure(window: MainWindow) -> None:
     def on_vscode() -> None:
         vscode_path = TEXT_EDITORS["vscode"]
         if smart_check_path(vscode_path):
-            pane = CPane(window)
+            pane = CPane()
             shell_exec(vscode_path, pane.currentPath)
 
     Keybinder().bind(on_vscode, "V")
 
     class Renamer:
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
-            self._pane = CPane(self._window)
+        def __init__(self) -> None:
+            self._pane = CPane()
 
         @staticmethod
         def renamable(item) -> bool:
@@ -1994,7 +1999,7 @@ def configure(window: MainWindow) -> None:
                     print("'{}' already exists!".format(new_name))
                     return
             try:
-                self._window.subThreadCall(org_path.rename, (str(new_path),))
+                window.subThreadCall(org_path.rename, (str(new_path),))
                 print("Renamed: {}\n     ==> {}\n".format(org_path.name, new_name))
                 self._pane.refresh()
                 if focus:
@@ -2005,21 +2010,20 @@ def configure(window: MainWindow) -> None:
     class RenameConfig:
         ini_section = "RENAME_CONFIG"
 
-        def __init__(self, window: MainWindow, option_name: str) -> None:
-            self._window = window
+        def __init__(self, option_name: str) -> None:
             try:
-                self._window.ini.add_section(self.ini_section)
+                window.ini.add_section(self.ini_section)
             except configparser.DuplicateSectionError:
                 pass
             self._option_name = option_name
 
         def register(self, value: str) -> None:
-            self._window.ini.set(self.ini_section, self._option_name, value)
+            window.ini.set(self.ini_section, self._option_name, value)
 
         @property
         def value(self) -> str:
             try:
-                return self._window.ini.get(self.ini_section, self._option_name)
+                return window.ini.get(self.ini_section, self._option_name)
             except:
                 return ""
 
@@ -2028,7 +2032,7 @@ def configure(window: MainWindow) -> None:
         newName: str
 
     def rename_substr() -> None:
-        renamer = Renamer(window)
+        renamer = Renamer()
 
         targets = renamer.candidate
         if len(targets) < 1:
@@ -2037,7 +2041,7 @@ def configure(window: MainWindow) -> None:
         placeholder = ";-1"
         sel_end = 0
 
-        rename_config_substr = RenameConfig(window, "substr")
+        rename_config_substr = RenameConfig("substr")
         if 0 < len(last := rename_config_substr.value):
             placeholder = last
             sel_end = last.find(";")
@@ -2107,7 +2111,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(rename_substr, "S-S")
 
     def rename_insert() -> None:
-        renamer = Renamer(window)
+        renamer = Renamer()
 
         targets = renamer.candidate
         if len(targets) < 1:
@@ -2116,7 +2120,7 @@ def configure(window: MainWindow) -> None:
         placeholder = "@-1"
         sel_end = 0
 
-        rename_config_insert = RenameConfig(window, "insert")
+        rename_config_insert = RenameConfig("insert")
         last_insert = rename_config_insert.value
         if 0 < len(last_insert):
             placeholder = last_insert
@@ -2171,7 +2175,7 @@ def configure(window: MainWindow) -> None:
 
             lines.append("\ninsert: {}\nat: {}\nOK? (Enter / Esc)".format(ins, pos))
 
-            return infos, popResultWindow(window, "Preview", "\n".join(lines))
+            return infos, popResultWindow("Preview", "\n".join(lines))
 
         infos, ok = _confirm()
         if len(infos) < 1 or not ok:
@@ -2187,14 +2191,14 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(rename_insert, "S-I")
 
     def rename_index() -> None:
-        renamer = Renamer(window)
+        renamer = Renamer()
 
         targets = renamer.candidate
         if len(targets) < 1:
             return
 
         placeholder = "01@-1,1;"
-        rename_config_index = RenameConfig(window, "index")
+        rename_config_index = RenameConfig("index")
         last_value = rename_config_index.value
         if 0 < len(last_value):
             placeholder = last_value
@@ -2318,7 +2322,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(rename_index, "A-S-I")
 
     def rename_regexp() -> None:
-        renamer = Renamer(window)
+        renamer = Renamer()
 
         targets = renamer.candidate
         if len(targets) < 1:
@@ -2327,7 +2331,7 @@ def configure(window: MainWindow) -> None:
         placeholder = "/"
         sel_end = 0
 
-        rename_config_regexp = RenameConfig(window, "regexp")
+        rename_config_regexp = RenameConfig("regexp")
         last_regexp = rename_config_regexp.value
         if 0 < len(last_regexp):
             placeholder = last_regexp
@@ -2412,8 +2416,8 @@ def configure(window: MainWindow) -> None:
     class Prefixer:
         sep = "_"
 
-        def __init__(self, window: MainWindow) -> None:
-            pane = CPane(window)
+        def __init__(self) -> None:
+            pane = CPane()
             self.names = []
             for item in pane.selectedOrAllItems:
                 name = item.getName()
@@ -2449,11 +2453,10 @@ def configure(window: MainWindow) -> None:
 
         def __init__(
             self,
-            window: MainWindow,
             with_timestamp: bool = False,
             additional: List[str] = [],
         ) -> None:
-            pane = CPane(window)
+            pane = CPane()
             self.timestamp = ""
             if with_timestamp:
                 self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
@@ -2501,10 +2504,10 @@ def configure(window: MainWindow) -> None:
             return self.candidates(update_info.text), 0
 
     def invoke_renamer() -> None:
-        pane = CPane(window)
+        pane = CPane()
         item = pane.focusedItem
 
-        renamer = Renamer(window)
+        renamer = Renamer()
         if not renamer.renamable(item) or pane.isBlank:
             return
 
@@ -2523,7 +2526,7 @@ def configure(window: MainWindow) -> None:
         placeholder = org_path.stem
         sel = [offset, offset]
 
-        other_pane = CPane(window, False)
+        other_pane = CPane(False)
         for p in [pane, other_pane]:
             if p.hasSelection and len(p.selectedItems) == 1:
                 new_stem = Path(p.selectedItemPaths[0]).stem
@@ -2536,7 +2539,7 @@ def configure(window: MainWindow) -> None:
             title="NewStem",
             text=placeholder,
             selection=sel,
-            candidate_handler=Suffixer(window, True, additional_suffix),
+            candidate_handler=Suffixer(True, additional_suffix),
             return_modkey=True,
         )
 
@@ -2554,7 +2557,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(invoke_renamer, "N")
 
     def duplicate_file() -> None:
-        pane = CPane(window)
+        pane = CPane()
 
         src_path = Path(pane.focusedItemPath)
         if pane.hasSelection:
@@ -2573,7 +2576,7 @@ def configure(window: MainWindow) -> None:
             window.commandLine(
                 title=prompt,
                 text=placeholder,
-                candidate_handler=Suffixer(window, True),
+                candidate_handler=Suffixer(True),
                 selection=[sel_start, sel_end],
             )
         )
@@ -2604,7 +2607,7 @@ def configure(window: MainWindow) -> None:
     def smart_copy_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
 
-        pane = CPane(window)
+        pane = CPane()
 
         items = []
         for item in pane.selectedItems:
@@ -2655,13 +2658,13 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(lambda: smart_copy_to_dir(False), "S-C")
 
     def smart_mkdir() -> None:
-        pane = CPane(window)
+        pane = CPane()
         ts = datetime.datetime.today().strftime("%Y%m%d")
         result, mod = window.commandLine(
             "DirName",
             text=ts,
             selection=[0, len(ts)],
-            candidate_handler=Suffixer(window, False),
+            candidate_handler=Suffixer(False),
             return_modkey=True,
         )
 
@@ -2674,62 +2677,56 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(smart_mkdir, "C-S-N")
 
-    class Toucher:
-        def __init__(self, window: MainWindow) -> None:
-            self._window = window
+    def invoke_toucher(extension: str = "") -> Callable:
+        def _func() -> None:
+            pane = CPane()
+            if not hasattr(pane.fileList.getLister(), "touch"):
+                return
 
-        def invoke(self, extension: str = "") -> None:
-            def _func() -> None:
-                pane = CPane(self._window)
-                if not hasattr(pane.fileList.getLister(), "touch"):
-                    return
+            prompt = "NewFileName"
+            ext = "." + extension if 0 < len(extension) else ""
+            if ext:
+                prompt += " ({})".format(ext)
+            else:
+                prompt += " (with extension)"
 
-                prompt = "NewFileName"
-                ext = "." + extension if 0 < len(extension) else ""
-                if ext:
-                    prompt += " ({})".format(ext)
-                else:
-                    prompt += " (with extension)"
+            placeholder = ""
+            sel = [0, 0]
 
-                placeholder = ""
-                sel = [0, 0]
+            other_pane = CPane(False)
+            for p in [pane, other_pane]:
+                if p.hasSelection and len(p.selectedItems) == 1:
+                    placeholder = Path(p.selectedItemPaths[0]).stem
+                    sel[1] = len(placeholder)
+                    break
 
-                other_pane = CPane(self._window, False)
-                for p in [pane, other_pane]:
-                    if p.hasSelection and len(p.selectedItems) == 1:
-                        placeholder = Path(p.selectedItemPaths[0]).stem
-                        sel[1] = len(placeholder)
-                        break
+            result, mod = window.commandLine(
+                prompt,
+                text=placeholder,
+                selection=sel,
+                candidate_handler=Suffixer(True),
+                return_modkey=True,
+            )
 
-                result, mod = window.commandLine(
-                    prompt,
-                    text=placeholder,
-                    selection=sel,
-                    candidate_handler=Suffixer(window, True),
-                    return_modkey=True,
-                )
+            filename = stringify(result)
+            if len(filename) < 1:
+                return
 
-                filename = stringify(result)
-                if len(filename) < 1:
-                    return
+            if ext and not filename.endswith(ext):
+                filename += ext
+            new_path = os.path.join(pane.currentPath, filename)
+            if smart_check_path(new_path):
+                Kiritori.log("'{}' already exists.".format(filename))
+                return
+            pane.touch(filename)
+            if mod == ckit.MODKEY_SHIFT:
+                shell_exec(new_path)
 
-                if ext and not filename.endswith(ext):
-                    filename += ext
-                new_path = os.path.join(pane.currentPath, filename)
-                if smart_check_path(new_path):
-                    Kiritori.log("'{}' already exists.".format(filename))
-                    return
-                pane.touch(filename)
-                if mod == ckit.MODKEY_SHIFT:
-                    shell_exec(new_path)
+        return _func
 
-            return _func
-
-    TOUCHER = Toucher(window)
-
-    Keybinder().bind(TOUCHER.invoke("txt"), "T")
-    Keybinder().bind(TOUCHER.invoke("md"), "A-T")
-    Keybinder().bind(TOUCHER.invoke(""), "C-N")
+    Keybinder().bind(invoke_toucher("txt"), "T")
+    Keybinder().bind(invoke_toucher("md"), "A-T")
+    Keybinder().bind(invoke_toucher(""), "C-N")
 
     class Rect(NamedTuple):
         left: int
@@ -2779,31 +2776,28 @@ def configure(window: MainWindow) -> None:
 
             items.sort(key=_sort_key, reverse=self.order == -1)
 
-    class SorterHandler:
-        def __init__(self, window: MainWindow) -> None:
-            if len(window.sorter_list) == 4:
-                window.sorter_list = [
-                    (
-                        "U : Underscore First",
-                        sorter_UnderscoreFirst(),
-                        sorter_UnderscoreFirst(order=-1),
-                    ),
-                ] + window.sorter_list
-            self._window = window
+    def setup_sorter() -> None:
+        if len(window.sorter_list) == 4:
+            window.sorter_list = [
+                (
+                    "U : Underscore First",
+                    sorter_UnderscoreFirst(),
+                    sorter_UnderscoreFirst(order=-1),
+                ),
+            ] + window.sorter_list
 
-        def apply(self) -> None:
-            name = None
-            if focus := CPane(self._window).focusedItem:
-                name = focus.getName()
+        name = None
+        if focus := CPane().focusedItem:
+            name = focus.getName()
 
-            sorter = self._window.sorter_list[0][1]
-            LeftPane(self._window).setSorter(sorter)
-            RightPane(self._window).setSorter(sorter)
+        sorter = window.sorter_list[0][1]
+        LeftPane().setSorter(sorter)
+        RightPane().setSorter(sorter)
 
-            if name:
-                CPane(window).focusByName(name)
+        if name:
+            CPane().focusByName(name)
 
-    SorterHandler(window).apply()
+    setup_sorter()
 
     def reload_config() -> None:
         window.configure()
@@ -2814,8 +2808,8 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(reload_config, "C-R", "F5")
 
     def open_desktop_to_other() -> None:
-        pane = CPane(window)
-        other = CPane(window, False)
+        pane = CPane()
+        other = CPane(False)
         if DESKTOP_PATH not in [pane.currentPath, other.currentPath]:
             other.openPath(DESKTOP_PATH)
         else:
@@ -2825,12 +2819,12 @@ def configure(window: MainWindow) -> None:
 
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
-        pane = CPane(window, True)
+        pane = CPane()
         if pane.currentPath != DESKTOP_PATH:
             pane.openPath(DESKTOP_PATH)
         if both_pane:
             window.command_ChdirInactivePaneToOther(None)
-            LeftPane(window).activate()
+            LeftPane().activate()
 
     Keybinder().bind(lambda: starting_position(False), "0")
     Keybinder().bind(lambda: starting_position(True), "S-0")
@@ -2846,8 +2840,8 @@ def configure(window: MainWindow) -> None:
             if result != cfiler_msgbox.MessageBox.RESULT_YES:
                 return
 
-        left = LeftPane(window)
-        right = RightPane(window)
+        left = LeftPane()
+        right = RightPane()
         for pane in [left, right]:
             if not pane.currentPath.startswith("C:"):
                 pane.openPath(DESKTOP_PATH)
@@ -2930,8 +2924,8 @@ def configure(window: MainWindow) -> None:
         _inactive_pane: CPane
 
         def __init__(self) -> None:
-            self._active_pane = CPane(window, True)
-            self._inactive_pane = CPane(window, False)
+            self._active_pane = CPane()
+            self._inactive_pane = CPane(False)
 
         @staticmethod
         def to_hash(path: str) -> str:
@@ -3018,7 +3012,7 @@ def configure(window: MainWindow) -> None:
             Kiritori.log("cannnot find diffinity.exe...")
             return
 
-        left_pane = LeftPane(window)
+        left_pane = LeftPane()
         left_selcted = left_pane.selectedItemPaths
         if len(left_selcted) != 1:
             Kiritori.log("select just 1 file on left pane.")
@@ -3027,9 +3021,9 @@ def configure(window: MainWindow) -> None:
         if not left_path.is_file():
             Kiritori.log("selected item on left pane is not comparable.")
             return
-        left_pane = LeftPane(window)
+        left_pane = LeftPane()
 
-        right_pane = RightPane(window)
+        right_pane = RightPane()
         right_selcted = right_pane.selectedItemPaths
         if len(right_selcted) != 1:
             Kiritori.log("select just 1 file on right pane.")
@@ -3042,19 +3036,19 @@ def configure(window: MainWindow) -> None:
         shell_exec(exe_path, str(left_path), str(right_path))
 
     def from_inactive_names() -> None:
-        pane = CPane(window)
+        pane = CPane()
         pane.unSelectAll()
         active_names = pane.names
-        inactive = CPane(window, False)
+        inactive = CPane(False)
         inactive_names = [item.getName() for item in inactive.selectedOrAllItems]
         for name in active_names:
             if name in inactive_names:
                 pane.selectByName(name)
 
     def from_active_names() -> None:
-        pane = CPane(window)
+        pane = CPane()
         active_names = [item.getName() for item in pane.selectedOrAllItems]
-        inactive = CPane(window, False)
+        inactive = CPane(False)
         inactive.unSelectAll()
         inactive_names = inactive.names
         for name in inactive_names:
@@ -3066,18 +3060,18 @@ def configure(window: MainWindow) -> None:
             result, mod = window.commandLine("Regexp", return_modkey=True)
 
             if result:
-                Selector(window).stemMatches(result, case, mod == ckit.MODKEY_SHIFT)
+                Selector().stemMatches(result, case, mod == ckit.MODKEY_SHIFT)
 
         return _selector
 
     Keybinder().bind(invoke_regex_selector(True), "S-Colon")
 
     def select_same_name() -> None:
-        pane = CPane(window)
+        pane = CPane()
         active_names = pane.selectedItemNames
         if len(active_names) < 1:
             active_names = [pane.focusedItem.getName()]
-        inactive = CPane(window, False)
+        inactive = CPane(False)
         inactive.unSelectAll()
 
         for name in inactive.names:
@@ -3085,10 +3079,10 @@ def configure(window: MainWindow) -> None:
                 inactive.selectByName(name)
 
     def select_name_common() -> None:
-        pane = CPane(window)
+        pane = CPane()
         pane.unSelectAll()
         active_names = pane.names
-        inactive = CPane(window, False)
+        inactive = CPane(False)
         inactive.unSelectAll()
         inactive_names = inactive.names
 
@@ -3100,10 +3094,10 @@ def configure(window: MainWindow) -> None:
                 inactive.selectByName(name)
 
     def select_name_unique() -> None:
-        pane = CPane(window)
+        pane = CPane()
         pane.unSelectAll()
         active_names = pane.names
-        inactive = CPane(window, False)
+        inactive = CPane(False)
         inactive.unSelectAll()
         inactive_names = inactive.names
 
@@ -3118,10 +3112,10 @@ def configure(window: MainWindow) -> None:
         result, mod = window.commandLine(
             "StartsWith",
             return_modkey=True,
-            candidate_handler=Prefixer(window),
+            candidate_handler=Prefixer(),
         )
         if result:
-            Selector(window).stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
+            Selector().stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
     Keybinder().bind(select_stem_startswith, "Caret")
 
@@ -3130,22 +3124,22 @@ def configure(window: MainWindow) -> None:
             "EndsWith",
             return_modkey=True,
             text=Suffixer.sep,
-            candidate_handler=Suffixer(window),
+            candidate_handler=Suffixer(),
         )
         if result:
-            Selector(window).stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
+            Selector().stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
     Keybinder().bind(select_stem_endswith, "S-4")
 
     def select_stem_contains() -> None:
         result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
-            Selector(window).stemContains(result, mod == ckit.MODKEY_SHIFT)
+            Selector().stemContains(result, mod == ckit.MODKEY_SHIFT)
 
     Keybinder().bind(select_stem_contains, "Colon")
 
     def select_byext() -> None:
-        pane = CPane(window)
+        pane = CPane()
         exts = []
         for item in pane.selectedOrAllItems:
             ext = Path(item.getFullpath()).suffix
@@ -3166,18 +3160,19 @@ def configure(window: MainWindow) -> None:
         if result < 0:
             return
 
-        Selector(window).byExtension(exts[result], mod == ckit.MODKEY_SHIFT)
+        Selector().byExtension(exts[result], mod == ckit.MODKEY_SHIFT)
 
     Keybinder().bind(select_byext, "S-X")
 
     class PseudoVoicing:
+        voicables = "かきくけこさしすせそたちつてとはひふへほカキクケコサシスセソタチツテトハヒフヘホ"
+
         def __init__(self, s) -> None:
             self._formatted = s
-            self._voicables = "かきくけこさしすせそたちつてとはひふへほカキクケコサシスセソタチツテトハヒフヘホ"
 
         def _replace(self, s: str, offset: int) -> str:
             c = s[0]
-            if c not in self._voicables:
+            if c not in self.voicables:
                 return s
             if offset == 1:
                 if c == "う":
@@ -3205,8 +3200,8 @@ def configure(window: MainWindow) -> None:
             return self._formatted
 
     def rename_pseudo_voicing() -> None:
-        pane = CPane(window)
-        renamer = Renamer(window)
+        pane = CPane()
+        renamer = Renamer()
         items = pane.selectedItems
         for item in items:
             if not renamer.renamable(item):
@@ -3220,7 +3215,7 @@ def configure(window: MainWindow) -> None:
             renamer.execute(org_path, new_name)
 
     def save_clipboard_image_as_file() -> None:
-        pane = CPane(window)
+        pane = CPane()
 
         def _save(job_item: ckit.JobItem) -> None:
             job_item.file_name = ""
@@ -3263,7 +3258,7 @@ def configure(window: MainWindow) -> None:
             return "[FILTERING {}]".format(self.root)
 
     def hide_unselected() -> None:
-        pane = CPane(window)
+        pane = CPane()
         if pane.hasSelection:
             names = pane.selectedItemNames
             window.subThreadCall(
@@ -3272,10 +3267,10 @@ def configure(window: MainWindow) -> None:
             pane.refresh()
             pane.focus(0)
             pane.repaint(PO.Focused)
-            CPane(window).unSelectAll()
+            CPane().unSelectAll()
 
     def clear_filter() -> None:
-        pane = CPane(window)
+        pane = CPane()
         window.subThreadCall(pane.fileList.setFilter, (filter_Default("*"),))
         pane.refresh()
         pane.repaint(PO.Focused)
@@ -3283,11 +3278,11 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(clear_filter, "Q")
 
     def make_junction() -> None:
-        active_pane = CPane(window)
+        active_pane = CPane()
         if not active_pane.hasSelection:
             return
 
-        inactive_pane = CPane(window, False)
+        inactive_pane = CPane(False)
         dest = inactive_pane.currentPath
         for src_path in active_pane.selectedItemPaths:
             junction_path = Path(dest, Path(src_path).name)
@@ -3304,7 +3299,7 @@ def configure(window: MainWindow) -> None:
                 return
 
     def bookmark_here() -> None:
-        path = CPane(window).currentPath
+        path = CPane().currentPath
         bookmarks = [p for p in window.bookmark.getItems()]
         if path in bookmarks:
             window.bookmark.remove(path)
