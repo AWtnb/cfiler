@@ -2193,23 +2193,23 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        placeholder = "01@-1,1"
+        placeholder = "01@-1,1;"
         rename_config_index = RenameConfig(window, "index")
         last_value = rename_config_index.value
         if 0 < len(last_value):
             placeholder = last_value
 
         print("Rename insert index:")
-        result = stringify(
+        command = stringify(
             window.commandLine(
-                "Index[@position,step,skips1,skips2,...]",
+                "Index[@position,step,skips1,skips2,...;newstem]",
                 text=placeholder,
                 selection=[0, 2],
             ),
             trim=False,
         )
 
-        if len(result) < 1:
+        if len(command) < 1:
             print("Canceled.\n")
             return
 
@@ -2261,13 +2261,20 @@ def configure(window: MainWindow) -> None:
                         i += self.step
                 return i
 
-        ni = NameIndex(result)
+        sep = ";"
+        if sep not in command:
+            command += sep
+
+        command_index = command[: command.find(sep)]
+        command_newstem = command[command.find(sep) + 1 :]
+
+        ni = NameIndex(command_index)
         if not ni.is_valid():
             print("Canceled (Invalid format).\n")
             return
 
-        print(result)
-        rename_config_index.register(result)
+        print(command)
+        rename_config_index.register(command)
 
         def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
@@ -2275,14 +2282,14 @@ def configure(window: MainWindow) -> None:
             idx = ni.start
             for item in targets:
                 org_path = Path(item.getFullpath())
-                org_stem = org_path.stem
+                stem = org_path.stem if len(command_newstem) < 1 else command_newstem
                 pos = ni.position
                 if ni.position < 0:
-                    pos = len(org_stem) + 1 + ni.position
+                    pos = len(stem) + 1 + ni.position
                 new_name = (
-                    org_stem[:pos]
+                    stem[:pos]
                     + str(idx).rjust(ni.width, ni.filler)
-                    + org_stem[pos:]
+                    + stem[pos:]
                     + org_path.suffix
                 )
                 idx = ni.increment(idx)
