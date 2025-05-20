@@ -102,7 +102,8 @@ PO = PaintOption()
 
 
 def delay(msec: int = 50) -> None:
-    time.sleep(msec / 1000)
+    if 0 < msec:
+        time.sleep(msec / 1000)
 
 
 def stringify(x: Union[str, None], trim: bool = True) -> str:
@@ -123,41 +124,6 @@ def smart_check_path(
         return future.result(timeout_sec)
     except:
         return False
-
-
-def invoke_listwindow(
-    window: ckit.TextWindow, prompt: str, items, ini_pos: int = 0
-) -> Tuple[int, int]:
-    pos = (
-        window.main_window.centerOfWindowInPixel()
-        if type(window) is TextViewer
-        else window.centerOfFocusedPaneInPixel()
-    )
-    list_window = ListWindow(
-        x=pos[0],
-        y=pos[1],
-        min_width=40,
-        min_height=1,
-        max_width=window.width() - 5,
-        max_height=window.height() - 3,
-        parent_window=window,
-        ini=window.ini,
-        title=prompt,
-        items=items,
-        initial_select=ini_pos,
-        onekey_search=False,
-        onekey_decide=False,
-        return_modkey=True,
-        keydown_hook=None,
-        statusbar_handler=None,
-    )
-    window.enable(False)
-    list_window.messageLoop()
-    result, mod = list_window.getResult()
-    window.enable(True)
-    window.activate()
-    list_window.destroy()
-    return result, mod
 
 
 DESKTOP_PATH = os.path.expandvars(r"${USERPROFILE}\Desktop")
@@ -847,6 +813,34 @@ def configure(window: MainWindow) -> None:
                     return True
         return False
 
+    def invoke_listwindow(prompt: str, items: list) -> Tuple[int, int]:
+        pos = window.centerOfFocusedPaneInPixel()
+        list_window = ListWindow(
+            x=pos[0],
+            y=pos[1],
+            min_width=40,
+            min_height=1,
+            max_width=window.width() - 5,
+            max_height=window.height() - 3,
+            parent_window=window,
+            ini=window.ini,
+            title=prompt,
+            items=items,
+            initial_select=0,
+            onekey_search=False,
+            onekey_decide=False,
+            return_modkey=True,
+            keydown_hook=None,
+            statusbar_handler=None,
+        )
+        window.enable(False)
+        list_window.messageLoop()
+        result, mod = list_window.getResult()
+        window.enable(True)
+        window.activate()
+        list_window.destroy()
+        return result, mod
+
     def hook_enter() -> bool:
         # returning `True` hooks (skips) default action.
 
@@ -877,7 +871,7 @@ def configure(window: MainWindow) -> None:
 
         if is_extractable(ext):
             menu = ["Peek", "Extract"]
-            result, _ = invoke_listwindow(window, "Archived file:", menu)
+            result, _ = invoke_listwindow("Archived file:", menu)
             if result == 0:
                 window.command_InfoArchive(None)
             elif result == 1:
@@ -902,7 +896,7 @@ def configure(window: MainWindow) -> None:
 
         if ext == ".docx":
             menu = ["Open", "Copy content"]
-            result, _ = invoke_listwindow(window, "docx file:", menu)
+            result, _ = invoke_listwindow("docx file:", menu)
             if result == 0:
                 window.command_Execute(None)
             elif result == 1:
@@ -975,7 +969,7 @@ def configure(window: MainWindow) -> None:
 
         result = 0
         if 1 < len(names):
-            result, _ = invoke_listwindow(window, "open with:", names)
+            result, _ = invoke_listwindow("open with:", names)
             if result < 0:
                 return
 
@@ -1661,7 +1655,7 @@ def configure(window: MainWindow) -> None:
                     targets.append(pane.focusedItemPath)
 
         menu = ["Fullpath", "Name", "Basename"]
-        result, _ = invoke_listwindow(window, "Copy", menu)
+        result, _ = invoke_listwindow("Copy", menu)
         if result < 0:
             return
 
@@ -2856,8 +2850,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(safe_quit, "C-Q", "A-F4")
 
     def open_doc() -> None:
-        help_path = os.path.join(ckit.getAppExePath(), "doc", "index.html")
-        shell_exec(help_path)
+        shell_exec("https://github.dev/crftwr/cfiler/blob/master/cfiler_mainwindow.py")
 
     Keybinder().bind(open_doc, "C-F1")
 
@@ -3161,7 +3154,7 @@ def configure(window: MainWindow) -> None:
         if (cur := Path(pane.focusedItemPath).suffix) in exts:
             sel = exts.index(cur)
 
-        result, mod = invoke_listwindow(window, "Select Extension", exts, sel)
+        result, mod = invoke_listwindow("Select Extension", exts, sel)
 
         if result < 0:
             return
@@ -3512,7 +3505,33 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
             "binary": None,
         }
         names = list(encodes.keys())
-        result, _ = invoke_listwindow(window, "encoding", names)
+        pos = window.main_window.centerOfWindowInPixel()
+
+        list_window = ListWindow(
+            x=pos[0],
+            y=pos[1],
+            min_width=40,
+            min_height=1,
+            max_width=window.width() - 5,
+            max_height=window.height() - 3,
+            parent_window=window,
+            ini=window.ini,
+            title="encoding",
+            items=names,
+            initial_select=0,
+            onekey_search=False,
+            onekey_decide=False,
+            return_modkey=False,
+            keydown_hook=None,
+            statusbar_handler=None,
+        )
+        window.enable(False)
+        list_window.messageLoop()
+        result = list_window.getResult()
+        window.enable(True)
+        window.activate()
+        list_window.destroy()
+
         if result < 0:
             return
 
