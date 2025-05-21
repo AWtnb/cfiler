@@ -913,12 +913,25 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(toggle_hidden, "C-S-H")
 
+    class PdfViewer:
+        sumatra = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
+        adobe = r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
+        xedit = r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
+
+    class TextEditor:
+        notepad = r"C:\Windows\System32\notepad.exe"
+        mery = os.path.expandvars(r"${LOCALAPPDATA}\Programs\Mery\Mery.exe")
+        vscode = os.path.expandvars(
+            r"${USERPROFILE}\scoop\apps\vscode\current\Code.exe"
+        )
+
     class LocalApps:
-        def __init__(self, app_dict: dict) -> None:
+        def __init__(self, apps: Union[PdfViewer, TextEditor]) -> None:
             d = {}
-            for name, path in app_dict.items():
-                if smart_check_path(path):
-                    d[name] = path
+            for k, v in vars(apps).items():
+                if not k.startswith("__"):
+                    if smart_check_path(v):
+                        d[k] = v
             self._dict = d
 
         @property
@@ -927,20 +940,6 @@ def configure(window: MainWindow) -> None:
 
         def get_path(self, name: str) -> str:
             return self._dict.get(name, "")
-
-    PDF_VIEWERS = {
-        "sumatra": r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
-        "adobe": r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe",
-        "xchange editor": r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe",
-    }
-
-    TEXT_EDITORS = {
-        "notepad": r"C:\Windows\System32\notepad.exe",
-        "mery": os.path.expandvars(r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"),
-        "vscode": os.path.expandvars(
-            r"${USERPROFILE}\scoop\apps\vscode\current\Code.exe"
-        ),
-    }
 
     def open_with() -> None:
         pane = CPane()
@@ -956,8 +955,7 @@ def configure(window: MainWindow) -> None:
             if not path.endswith(".pdf"):
                 with_pdf_viewer = False
 
-        d = PDF_VIEWERS if with_pdf_viewer else TEXT_EDITORS
-        apps = LocalApps(d)
+        apps = LocalApps(PdfViewer) if with_pdf_viewer else LocalApps(TextEditor)
 
         if not with_pdf_viewer and 1 < len(paths):
             return
@@ -1960,7 +1958,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(open_parent_to_other, "S-U", "S-H")
 
     def on_vscode() -> None:
-        vscode_path = TEXT_EDITORS["vscode"]
+        vscode_path = TextEditor.vscode
         if smart_check_path(vscode_path):
             pane = CPane()
             shell_exec(vscode_path, pane.currentPath)
@@ -2863,7 +2861,7 @@ def configure(window: MainWindow) -> None:
         dir_path = config_dir
         if (real_path := os.path.realpath(config_dir)) != config_dir:
             dir_path = os.path.dirname(real_path)
-        vscode_path = TEXT_EDITORS["vscode"]
+        vscode_path = TextEditor.vscode
         if smart_check_path(vscode_path):
             shell_exec(vscode_path, dir_path)
         else:
