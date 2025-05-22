@@ -2513,9 +2513,6 @@ def configure(window: MainWindow) -> None:
         if not renamer.renamable(item) or pane.isBlank:
             return
 
-        org_path = Path(item.getFullpath())
-        offset = len(org_path.stem)
-
         ts = item.time()
         item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
         additional_suffix = [item_timestamp]
@@ -2525,7 +2522,9 @@ def configure(window: MainWindow) -> None:
             if ts != additional_suffix[0]:
                 additional_suffix.append(ts)
 
-        placeholder = org_path.stem
+        org_path = Path(item.getFullpath())
+        placeholder = org_path.name if org_path.is_dir() else org_path.stem
+        offset = len(placeholder)
         sel = [offset, offset]
 
         other_pane = CPane(False)
