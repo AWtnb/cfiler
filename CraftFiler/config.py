@@ -2045,31 +2045,31 @@ def configure(window: MainWindow) -> None:
             sel_end = last.find(";")
 
         print("Rename substring (extract part of filename):")
-        result = stringify(
+        rename_command = stringify(
             window.commandLine(
                 "Offset[;Length]", text=placeholder, selection=[0, sel_end]
             )
         )
 
-        if len(result) < 1:
+        if len(rename_command) < 1:
             print("Canceled.\n")
             return
 
         sep = ";"
-        if sep not in result:
-            result += ";-1"
+        if sep not in rename_command:
+            rename_command += ";-1"
         else:
-            if result.startswith(sep):
-                result = "0" + result
+            if rename_command.startswith(sep):
+                rename_command = "0" + rename_command
 
-        offset = int(result[: result.find(sep)])
-        length = int(result[result.rfind(sep) + 1 :])
+        offset = int(rename_command[: rename_command.find(sep)])
+        length = int(rename_command[rename_command.rfind(sep) + 1 :])
 
         if offset == 0 and length == -1:
             print("Canceled.\n")
             return
 
-        rename_config_substr.register(result)
+        rename_config_substr.register(rename_command)
 
         def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
@@ -2125,32 +2125,32 @@ def configure(window: MainWindow) -> None:
             sel_end = last_insert.find("@")
 
         print("Rename insert:")
-        result = stringify(
+        rename_command = stringify(
             window.commandLine(
                 "Text[@position]", text=placeholder, selection=[0, sel_end]
             ),
             False,
         ).rstrip()
 
-        if len(result) < 1:
+        if len(rename_command) < 1:
             print("Canceled.\n")
             return
 
         sep = "@"
-        if result.startswith(sep):
+        if rename_command.startswith(sep):
             print("Canceled.\n")
             return
 
-        if sep not in result:
-            result += "@-1"
+        if sep not in rename_command:
+            rename_command += "@-1"
         else:
-            if result.endswith(sep):
-                result += "-1"
+            if rename_command.endswith(sep):
+                rename_command += "-1"
 
-        rename_config_insert.register(result)
+        rename_config_insert.register(rename_command)
 
-        ins = result[: result.rfind(sep)]
-        pos = int(result[result.rfind(sep) + 1 :])
+        ins = rename_command[: rename_command.rfind(sep)]
+        pos = int(rename_command[rename_command.rfind(sep) + 1 :])
 
         def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
@@ -2173,7 +2173,7 @@ def configure(window: MainWindow) -> None:
 
             lines.append("\ninsert: {}\nat: {}\nOK? (Enter / Esc)".format(ins, pos))
 
-            return infos, popResultWindow("Preview", "\n".join(lines))
+            return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
         infos, ok = _confirm()
         if len(infos) < 1 or not ok:
@@ -2202,7 +2202,7 @@ def configure(window: MainWindow) -> None:
             placeholder = last_value
 
         print("Rename insert index:")
-        command = stringify(
+        rename_command = stringify(
             window.commandLine(
                 "Index[@position,step,skips1,skips2,...;newstem]",
                 text=placeholder,
@@ -2211,7 +2211,7 @@ def configure(window: MainWindow) -> None:
             trim=False,
         )
 
-        if len(command) < 1:
+        if len(rename_command) < 1:
             print("Canceled.\n")
             return
 
@@ -2264,19 +2264,19 @@ def configure(window: MainWindow) -> None:
                 return i
 
         sep = ";"
-        if sep not in command:
-            command += sep
+        if sep not in rename_command:
+            rename_command += sep
 
-        command_index = command[: command.find(sep)]
-        command_newstem = command[command.find(sep) + 1 :]
+        command_index = rename_command[: rename_command.find(sep)]
+        command_newstem = rename_command[rename_command.find(sep) + 1 :]
 
         ni = NameIndex(command_index)
         if not ni.is_valid():
             print("Canceled (Invalid format).\n")
             return
 
-        print(command)
-        rename_config_index.register(command)
+        print(rename_command)
+        rename_config_index.register(rename_command)
 
         def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
@@ -2336,11 +2336,11 @@ def configure(window: MainWindow) -> None:
             sel_end = last_regexp.find("/")
 
         print("Rename with regexp-replace. Trailing `/c` enables case-sensitive-mode")
-        result = window.commandLine(
+        rename_command = window.commandLine(
             "[regexp]/[replace with](/c)", text=placeholder, selection=[0, sel_end]
         )
 
-        if not result:
+        if not rename_command:
             print("Canceled.\n")
             return
 
@@ -2367,12 +2367,12 @@ def configure(window: MainWindow) -> None:
             def to_str(self) -> str:
                 return self.args[1]
 
-        rc = RegCommand(result)
+        rc = RegCommand(rename_command)
         if not rc.is_valid():
             print("Canceled (Invalid command).\n")
             return
 
-        rename_config_regexp.register(result)
+        rename_config_regexp.register(rename_command)
         reg = rc.from_reg
 
         def _confirm() -> Tuple[List[RenameInfo], bool]:
