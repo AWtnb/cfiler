@@ -2454,18 +2454,22 @@ def configure(window: MainWindow) -> None:
             with_timestamp: bool = False,
             additional: List[str] = [],
         ) -> None:
-            pane = CPane()
             self.timestamp = ""
             if with_timestamp:
                 self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
+
             self._additional = [self.sep + a for a in additional]
+
             self.names = []
+            pane = CPane()
             for item in pane.selectedOrAllItems:
                 name = item.getName()
                 if self.sep not in name or name.startswith(self.sep):
                     continue
-                p = Path(pane.currentPath, name)
-                self.names.append(p.stem)
+                if (p := Path(pane.currentPath, name)).is_dir():
+                    self.names.append(p.name)
+                else:
+                    self.names.append(p.stem)
 
         @property
         def possible_suffix(self) -> List[str]:
