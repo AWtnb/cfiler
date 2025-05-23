@@ -1292,57 +1292,6 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(ruled_mkdir, "S-A-N")
 
-    class zyl:
-        def __init__(self) -> None:
-            self._exe_path = os.path.expandvars(
-                r"${USERPROFILE}\Personal\tools\bin\zyl.exe"
-            )
-            self._src_path = os.path.expandvars(r"${USERPROFILE}\Personal\launch.yaml")
-            self._cmd = [
-                self._exe_path,
-                "-src={}".format(self._src_path),
-                "-exclude=_obsolete,node_modules",
-                "-stdout=True",
-            ]
-
-        def check(self) -> bool:
-            for p in [self._exe_path, self._src_path]:
-                if not smart_check_path(p):
-                    return False
-            return True
-
-        def invoke(self, search_all: bool = False) -> Callable:
-            cmd = self._cmd + ["-all={}".format(search_all)]
-
-            def _find(job_item: ckit.JobItem) -> None:
-                job_item.result = None
-                if not self.check():
-                    Kiritori.log("Exe not found: '{}'".format(self._exe_path))
-                    return
-                delay()
-                proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
-                result = proc.stdout.strip()
-                if result:
-                    if proc.returncode != 0:
-                        if result:
-                            Kiritori.log(result)
-                        return
-                    job_item.result = result
-
-            def _open(job_item: ckit.JobItem) -> None:
-                if job_item.result:
-                    pane = CPane()
-                    pane.openPath(job_item.result)
-
-            def _wrapper() -> None:
-                job = ckit.JobItem(_find, _open)
-                window.taskEnqueue(job, create_new_queue=False)
-
-            return _wrapper
-
-    Keybinder().bind(zyl().invoke(), "C-Space")
-    Keybinder().bind(zyl().invoke(True), "C-S-Space")
-
     class zyw:
         exe_path = os.path.expandvars(r"${USERPROFILE}\Personal\tools\bin\zyw.exe")
 
