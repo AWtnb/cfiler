@@ -1347,10 +1347,16 @@ def configure(window: MainWindow) -> None:
 
             return _wrapper
 
-    Keybinder().bind(zyw().invoke(False, False), "Z")
-    Keybinder().bind(zyw().invoke(False, True), "A-Z")
-    Keybinder().bind(zyw().invoke(True, False), "S-F")
-    Keybinder().bind(zyw().invoke(True, True), "C-F")
+    def setup_zyw():
+        for params, key in {
+            (False, False): "Z",
+            (False, True): "A-Z",
+            (True, False): "S-F",
+            (True, True): "C-F",
+        }.items():
+            Keybinder().bind(zyw().invoke(*params), key)
+
+    setup_zyw()
 
     def concatenate_pdf() -> None:
         exe_path = os.path.expandvars(
