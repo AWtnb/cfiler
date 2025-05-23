@@ -115,7 +115,7 @@ def stringify(x: Union[str, None], trim: bool = True) -> str:
 
 
 def smart_check_path(
-    path: Union[str, Path], timeout_sec: Union[int, float, None] = None
+    path: Union[str, Path], timeout_sec: Union[float, None] = 2.0
 ) -> bool:
     """CASE-INSENSITIVE path check with timeout"""
     p = path if type(path) is Path else Path(path)
@@ -643,7 +643,7 @@ def configure(window: MainWindow) -> None:
             if self.currentPath == path:
                 return
             target = Path(path)
-            if not smart_check_path(target, 2.0):
+            if not smart_check_path(target):
                 Kiritori.log("invalid path: '{}'".format(path))
                 return
             if target.is_file():
@@ -1344,30 +1344,37 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(zyl().invoke(True), "C-S-Space")
 
     class zyw:
-        def __init__(self) -> None:
-            self._exe_path = os.path.expandvars(
-                r"${USERPROFILE}\Personal\tools\bin\zyw.exe"
-            )
-            self._cmd = [
-                self._exe_path,
-                "-exclude=_obsolete,node_modules",
-            ]
+        exe_path = os.path.expandvars(r"${USERPROFILE}\Personal\tools\bin\zyw.exe")
 
-        def check(self) -> bool:
-            return smart_check_path(self._exe_path)
+        @classmethod
+        def check(cls) -> bool:
+            return smart_check_path(cls.exe_path)
 
-        def invoke(self, search_all: bool, offset: int) -> Callable:
+        @staticmethod
+        def get_root(src: str) -> str:
+            for path in Path(src).parents:
+                p = os.path.join(path, ".root")
+                if smart_check_path(p, 0.5):
+                    return path
+            return src
 
-            def _find(job_item: ckit.JobItem) -> None:
+        @classmethod
+        def invoke(cls, current_dir: bool, search_all: bool) -> Callable:
+
+            def __find(job_item: ckit.JobItem) -> None:
                 job_item.result = None
-                if not self.check():
-                    Kiritori.log("Exe not found: '{}'".format(self._exe_path))
+                if not cls.check():
+                    Kiritori.log("Exe not found: '{}'".format(cls.exe_path))
                     return
                 pane = CPane()
-                cmd = self._cmd + [
+                root = (
+                    pane.currentPath if current_dir else cls.get_root(pane.currentPath)
+                )
+                cmd = [
+                    cls.exe_path,
+                    "-exclude=_obsolete,node_modules",
                     "-all={}".format(search_all),
-                    "-offset={}".format(offset),
-                    "-src={}".format(pane.currentPath),
+                    "-root={}".format(root),
                 ]
                 delay()
                 proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
@@ -1379,26 +1386,22 @@ def configure(window: MainWindow) -> None:
                         return
                     job_item.result = result
 
-            def _open(job_item: ckit.JobItem) -> None:
+            def __open(job_item: ckit.JobItem) -> None:
                 result = job_item.result
                 if result:
                     pane = CPane()
                     pane.openPath(result)
 
             def _wrapper() -> None:
-                job = ckit.JobItem(_find, _open)
+                job = ckit.JobItem(__find, __open)
                 window.taskEnqueue(job, create_new_queue=False)
 
             return _wrapper
 
-        def apply(self, key: str) -> None:
-            for alt, search_all in {"": False, "A-": True}.items():
-                for shift, offset in {"": -1, "S-": 1}.items():
-                    Keybinder().bind(self.invoke(search_all, offset), alt + shift + key)
-
-    zyw().apply("Z")
-    Keybinder().bind(zyw().invoke(False, 0), "S-F")
-    Keybinder().bind(zyw().invoke(True, 0), "C-F")
+    Keybinder().bind(zyw().invoke(False, False), "Z")
+    Keybinder().bind(zyw().invoke(False, True), "A-Z")
+    Keybinder().bind(zyw().invoke(True, False), "S-F")
+    Keybinder().bind(zyw().invoke(True, True), "C-F")
 
     def concatenate_pdf() -> None:
         exe_path = os.path.expandvars(
