@@ -2948,35 +2948,25 @@ def configure(window: MainWindow) -> None:
             window.taskEnqueue(job, create_new_queue=False)
 
     def diffinity() -> None:
-        exe_path = os.path.expandvars(
-            r"${USERPROFILE}\scoop\apps\diffinity\current\Diffinity.exe"
-        )
-        if not smart_check_path(exe_path):
+        exe_path = shutil.which("Diffinity.exe")
+        if not exe_path:
             Kiritori.log("cannnot find diffinity.exe...")
             return
 
-        left_pane = LeftPane()
-        left_selcted = left_pane.selectedItemPaths
-        if len(left_selcted) != 1:
-            Kiritori.log("select just 1 file on left pane.")
-            return
-        left_path = Path(left_selcted[0])
-        if not left_path.is_file():
-            Kiritori.log("selected item on left pane is not comparable.")
-            return
-        left_pane = LeftPane()
+        pane = CPane()
+        if pane.hasSelection and len(pane.selectedItems) == 2:
+            left_path, right_path = pane.selectedItemPaths
+        else:
+            left_pane = LeftPane()
+            right_pane = RightPane()
+            for _name, _pane in {"left": left_pane, "right": right_pane}.items():
+                if len(_pane.selectedItemPaths) != 1:
+                    Kiritori.log("Select 1 file on {} pane.".format(_name))
+                    return
+            left_path = left_pane.selectedItemPaths[0]
+            right_path = right_pane.selectedItemPaths[0]
 
-        right_pane = RightPane()
-        right_selcted = right_pane.selectedItemPaths
-        if len(right_selcted) != 1:
-            Kiritori.log("select just 1 file on right pane.")
-            return
-        right_path = Path(right_selcted[0])
-        if not right_path.is_file():
-            Kiritori.log("selected item on right pane is not comparable.")
-            return
-
-        shell_exec(exe_path, str(left_path), str(right_path))
+        shell_exec(exe_path, left_path, right_path)
 
     def from_inactive_names() -> None:
         pane = CPane()
