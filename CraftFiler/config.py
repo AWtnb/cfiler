@@ -2375,7 +2375,7 @@ def configure(window: MainWindow) -> None:
         def __init__(self) -> None:
             pane = CPane()
             self.names = []
-            for item in pane.selectedOrAllItems:
+            for item in pane.items:
                 name = item.getName()
                 if self.sep not in name or name.startswith(self.sep):
                     continue
@@ -2420,7 +2420,7 @@ def configure(window: MainWindow) -> None:
 
             self.names = []
             pane = CPane()
-            for item in pane.selectedOrAllItems:
+            for item in pane.items:
                 name = item.getName()
                 if self.sep not in name or name.startswith(self.sep):
                     continue
