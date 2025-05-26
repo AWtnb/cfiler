@@ -2879,12 +2879,6 @@ def configure(window: MainWindow) -> None:
                         print("", filler, n)
 
     class ItemsDiff:
-        _active_pane: CPane
-        _inactive_pane: CPane
-
-        def __init__(self) -> None:
-            self._active_pane = CPane()
-            self._inactive_pane = CPane(False)
 
         @staticmethod
         def to_hash(path: str) -> str:
@@ -2894,23 +2888,14 @@ def configure(window: MainWindow) -> None:
                 digest = hashlib.md5(f.read(read_size)).hexdigest()
             return digest
 
-        @property
-        def targets(self) -> list:
-            if self._active_pane.hasSelection:
-                items = []
-                for item in self._active_pane.selectedItems:
-                    if not item.isdir():
-                        items.append(item)
-                return items
-            return self._active_pane.files
-
-        def unselect_inactive_pane(self) -> None:
-            for i in range(self._inactive_pane.count):
-                self._inactive_pane.unSelect(i)
-
-        def compare(self) -> None:
+        @classmethod
+        def compare(cls) -> None:
             def _scan(job_item: ckit.JobItem) -> None:
-                targets = self.targets
+                pane = CPane()
+                targets = []
+                for item in pane.selectedOrAllItems:
+                    if not item.isdir():
+                        targets.append(item)
 
                 job_item.comparable = 0 < len(targets)
                 if not job_item.comparable:
@@ -2920,30 +2905,32 @@ def configure(window: MainWindow) -> None:
 
                 window.setProgressValue(None)
 
+                inactive_pane = CPane(False)
+                inactive_pane.unSelectAll()
+
                 table = {}
-                for path in self._inactive_pane.traverse():
+                for path in inactive_pane.traverse():
                     if job_item.isCanceled():
                         return
-                    rel = Path(path).relative_to(self._inactive_pane.currentPath)
-                    digest = self.to_hash(path)
+                    rel = Path(path).relative_to(inactive_pane.currentPath)
+                    digest = cls.to_hash(path)
                     table[digest] = table.get(digest, []) + [str(rel)]
 
-                self.unselect_inactive_pane()
-                compare_with_selected_items = self._active_pane.hasSelection
+                compare_with_selected_items = pane.hasSelection
                 cloned_items = ClonedItems()
 
                 for file in targets:
                     if job_item.isCanceled():
                         return
-                    digest = self.to_hash(file.getFullpath())
+                    digest = cls.to_hash(file.getFullpath())
                     if digest in table:
                         name = file.getName()
                         if not compare_with_selected_items:
-                            self._active_pane.selectByName(name)
+                            pane.selectByName(name)
                         cloned_items.register(name, table[digest])
 
                         for n in table[digest]:
-                            self._inactive_pane.selectByName(n)
+                            inactive_pane.selectByName(n)
 
                 cloned_items.show()
 
