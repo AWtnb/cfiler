@@ -2878,7 +2878,7 @@ def configure(window: MainWindow) -> None:
                         filler = " " * w + "=" * (buffer_width - w)
                         print("", filler, n)
 
-    class ItemsDiff:
+    class FilesHashDiff:
 
         @staticmethod
         def to_hash(path: str) -> str:
@@ -2946,9 +2946,6 @@ def configure(window: MainWindow) -> None:
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
-
-    def find_same_file() -> None:
-        ItemsDiff().compare()
 
     def diffinity() -> None:
         exe_path = os.path.expandvars(
@@ -3280,7 +3277,7 @@ def configure(window: MainWindow) -> None:
                 ckit.getClipboardText().strip()
             ),
             "RenamePseudoVoicing": rename_pseudo_voicing,
-            "FindSameFile": find_same_file,
+            "FindSameFile": FilesHashDiff().compare,
             "FromInactiveNames": from_inactive_names,
             "FromActiveNames": from_active_names,
             "SelectSameName": select_same_name,
