@@ -1144,8 +1144,8 @@ def configure(window: MainWindow) -> None:
         Kiritori.log("Registered '{}' as alias for '{}'".format(alias, target))
 
     def read_docx(path: str) -> str:
-        exe_path = os.path.expandvars(r"${USERPROFILE}\Personal\tools\bin\docxr.exe")
-        if not smart_check_path(exe_path):
+        exe_path = shutil.which("docxr.exe")
+        if not exe_path:
             Kiritori.log("'{}' not found...".format(exe_path))
             return ""
         try:
@@ -1293,11 +1293,11 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(ruled_mkdir, "S-A-N")
 
     class zyw:
-        exe_path = os.path.expandvars(r"${USERPROFILE}\Personal\tools\bin\zyw.exe")
+        exe_path = shutil.which("zyw.exe")
 
         @classmethod
         def check(cls) -> bool:
-            return smart_check_path(cls.exe_path)
+            return cls.exe_path is not None
 
         @staticmethod
         def get_root(src: str) -> str:
@@ -1359,10 +1359,8 @@ def configure(window: MainWindow) -> None:
     setup_zyw()
 
     def concatenate_pdf() -> None:
-        exe_path = os.path.expandvars(
-            r"${USERPROFILE}\Personal\tools\bin\go-pdfconc.exe"
-        )
-        if not smart_check_path(exe_path):
+        exe_path = shutil.which("go-pdfconc.exe")
+        if not exe_path:
             return
 
         pane = CPane()
@@ -2425,7 +2423,7 @@ def configure(window: MainWindow) -> None:
                 if self.sep not in name or name.startswith(self.sep):
                     continue
                 if (p := Path(pane.currentPath, name)).is_dir():
-                    self.names.append(p.name) # for directory with dot in name
+                    self.names.append(p.name)  # for directory with dot in name
                 else:
                     self.names.append(p.stem)
 
