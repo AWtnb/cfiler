@@ -2425,7 +2425,7 @@ def configure(window: MainWindow) -> None:
                 if self.sep not in name or name.startswith(self.sep):
                     continue
                 if (p := Path(pane.currentPath, name)).is_dir():
-                    self.names.append(p.name)
+                    self.names.append(p.name) # for directory with dot in name
                 else:
                     self.names.append(p.stem)
 
