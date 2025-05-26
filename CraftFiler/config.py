@@ -2948,8 +2948,11 @@ def configure(window: MainWindow) -> None:
             window.taskEnqueue(job, create_new_queue=False)
 
     def diffinity() -> None:
-        exe_path = shutil.which("Diffinity.exe")
-        if not exe_path:
+        exe_path = os.path.expandvars(
+            r"${USERPROFILE}\scoop\apps\diffinity\current\Diffinity.exe"
+        )
+
+        if not smart_check_path(exe_path):
             Kiritori.log("cannnot find diffinity.exe...")
             return
 
