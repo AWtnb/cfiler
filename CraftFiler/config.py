@@ -2459,7 +2459,13 @@ def configure(window: MainWindow) -> None:
         def __call__(
             self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
         ) -> Tuple[List[str], int]:
-            return self.candidates(update_info.text), 0
+            found = self.candidates(update_info.text)
+            for path in CPane(False).selectedItemPaths:
+                if (p := Path(path)).is_dir():
+                    found.append(p.name)
+                else:
+                    found.append(p.stem)
+            return found, 0
 
     def invoke_renamer() -> None:
         pane = CPane()
@@ -2482,15 +2488,6 @@ def configure(window: MainWindow) -> None:
         placeholder = org_path.name if org_path.is_dir() else org_path.stem
         offset = len(placeholder)
         sel = [offset, offset]
-
-        other_pane = CPane(False)
-        for p in [pane, other_pane]:
-            if p.hasSelection and len(p.selectedItems) == 1:
-                new_stem = Path(p.selectedItemPaths[0]).stem
-                if new_stem != placeholder:
-                    placeholder = placeholder + new_stem
-                    sel[0] = 0
-                    break
 
         new_stem, mod = window.commandLine(
             title="NewStem",
@@ -2649,13 +2646,6 @@ def configure(window: MainWindow) -> None:
 
             placeholder = ""
             sel = [0, 0]
-
-            other_pane = CPane(False)
-            for p in [pane, other_pane]:
-                if p.hasSelection and len(p.selectedItems) == 1:
-                    placeholder = Path(p.selectedItemPaths[0]).stem
-                    sel[1] = len(placeholder)
-                    break
 
             result, mod = window.commandLine(
                 prompt,
