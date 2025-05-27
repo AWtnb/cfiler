@@ -997,22 +997,20 @@ def configure(window: MainWindow) -> None:
         active_focus_name = None if active.isBlank else active.focusedItem.getName()
         active_sorter = active.fileList.getSorter()
 
-        inactive = CPane(False)
-        inactive_selects = inactive.selectedItemNames
-        inactive_path = inactive.currentPath
-        inactive_sorter = inactive.fileList.getSorter()
+        other = CPane(False)
+        ogther_selects = other.selectedItemNames
+        other_path = other.currentPath
+        other_sorter = other.fileList.getSorter()
 
-        inactive_focus_name = (
-            None if inactive.isBlank else inactive.focusedItem.getName()
-        )
+        other_focus_name = None if other.isBlank else other.focusedItem.getName()
 
-        active.openPath(inactive_path, inactive_focus_name)
-        active.selectByNames(inactive_selects)
-        active.setSorter(inactive_sorter)
+        active.openPath(other_path, other_focus_name)
+        active.selectByNames(ogther_selects)
+        active.setSorter(other_sorter)
 
-        inactive.openPath(active_path, active_focus_name)
-        inactive.selectByNames(active_selects)
-        inactive.setSorter(active_sorter)
+        other.openPath(active_path, active_focus_name)
+        other.selectByNames(active_selects)
+        other.setSorter(active_sorter)
 
         LeftPane().activate()
 
@@ -1568,8 +1566,7 @@ def configure(window: MainWindow) -> None:
         active_pane.mkdir(result, False)
         extract_path = os.path.join(active_pane.currentPath, result)
 
-        inactive_pane = CPane(False)
-        inactive_pane.openPath(extract_path)
+        CPane(False).openPath(extract_path)
         window.command_ExtractArchive(None)
 
     def recylcebin() -> None:
@@ -1896,20 +1893,18 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(open_on_explorer, "C-S-E")
 
     def open_to_other() -> None:
-        active_pane = CPane(True)
-        if not active_pane.isBlank:
-            inactive_pane = CPane(False)
-            inactive_pane.openPath(active_pane.focusedItemPath)
-            active_pane.focusOther()
+        pane = CPane(True)
+        if not pane.isBlank:
+            CPane(False).openPath(pane.focusedItemPath)
+            pane.focusOther()
 
     Keybinder().bind(open_to_other, "S-L")
 
     def open_parent_to_other() -> None:
-        active_pane = CPane(True)
-        parent, current_name = os.path.split(active_pane.currentPath)
-        inactive_pane = CPane(False)
-        inactive_pane.openPath(parent, current_name)
-        active_pane.focusOther()
+        pane = CPane(True)
+        parent, current_name = os.path.split(pane.currentPath)
+        CPane(False).openPath(parent, current_name)
+        pane.focusOther()
 
     Keybinder().bind(open_parent_to_other, "S-U", "S-H")
 
@@ -2893,14 +2888,14 @@ def configure(window: MainWindow) -> None:
 
                 window.setProgressValue(None)
 
-                inactive_pane = CPane(False)
-                inactive_pane.unSelectAll()
+                other_pane = CPane(False)
+                other_pane.unSelectAll()
 
                 table = {}
-                for path in inactive_pane.traverse():
+                for path in other_pane.traverse():
                     if job_item.isCanceled():
                         return
-                    rel = Path(path).relative_to(inactive_pane.currentPath)
+                    rel = Path(path).relative_to(other_pane.currentPath)
                     digest = cls.to_hash(path)
                     table[digest] = table.get(digest, []) + [str(rel)]
 
@@ -2918,7 +2913,7 @@ def configure(window: MainWindow) -> None:
                         cloned_items.register(name, table[digest])
 
                         for n in table[digest]:
-                            inactive_pane.selectByName(n)
+                            other_pane.selectByName(n)
 
                 cloned_items.show()
 
@@ -2959,25 +2954,25 @@ def configure(window: MainWindow) -> None:
 
         shell_exec(exe_path, left_path, right_path)
 
-    def from_inactive_names() -> None:
+    def from_other_names() -> None:
         pane = CPane()
         pane.unSelectAll()
         active_names = pane.names
-        inactive = CPane(False)
-        inactive_names = [item.getName() for item in inactive.selectedOrAllItems]
+        other = CPane(False)
+        other_names = [item.getName() for item in other.selectedOrAllItems]
         for name in active_names:
-            if name in inactive_names:
+            if name in other_names:
                 pane.selectByName(name)
 
     def from_active_names() -> None:
         pane = CPane()
         active_names = [item.getName() for item in pane.selectedOrAllItems]
-        inactive = CPane(False)
-        inactive.unSelectAll()
-        inactive_names = inactive.names
-        for name in inactive_names:
+        other = CPane(False)
+        other.unSelectAll()
+        other_names = other.names
+        for name in other_names:
             if name in active_names:
-                inactive.selectByName(name)
+                other.selectByName(name)
 
     def invoke_regex_selector(case: bool) -> Callable:
         def _selector() -> None:
@@ -2995,42 +2990,42 @@ def configure(window: MainWindow) -> None:
         active_names = pane.selectedItemNames
         if len(active_names) < 1:
             active_names = [pane.focusedItem.getName()]
-        inactive = CPane(False)
-        inactive.unSelectAll()
+        other = CPane(False)
+        other.unSelectAll()
 
-        for name in inactive.names:
+        for name in other.names:
             if name in active_names:
-                inactive.selectByName(name)
+                other.selectByName(name)
 
     def select_name_common() -> None:
         pane = CPane()
         pane.unSelectAll()
         active_names = pane.names
-        inactive = CPane(False)
-        inactive.unSelectAll()
-        inactive_names = inactive.names
+        other = CPane(False)
+        other.unSelectAll()
+        other_names = other.names
 
         for name in active_names:
-            if name in inactive_names:
+            if name in other_names:
                 pane.selectByName(name)
-        for name in inactive_names:
+        for name in other_names:
             if name in active_names:
-                inactive.selectByName(name)
+                other.selectByName(name)
 
     def select_name_unique() -> None:
         pane = CPane()
         pane.unSelectAll()
         active_names = pane.names
-        inactive = CPane(False)
-        inactive.unSelectAll()
-        inactive_names = inactive.names
+        other = CPane(False)
+        other.unSelectAll()
+        other_names = other.names
 
         for name in active_names:
-            if name not in inactive_names:
+            if name not in other_names:
                 pane.selectByName(name)
-        for name in inactive_names:
+        for name in other_names:
             if name not in active_names:
-                inactive.selectByName(name)
+                other.selectByName(name)
 
     def select_stem_startswith() -> None:
         result, mod = window.commandLine(
@@ -3206,8 +3201,8 @@ def configure(window: MainWindow) -> None:
         if not active_pane.hasSelection:
             return
 
-        inactive_pane = CPane(False)
-        dest = inactive_pane.currentPath
+        other_pane = CPane(False)
+        dest = other_pane.currentPath
         for src_path in active_pane.selectedItemPaths:
             junction_path = Path(dest, Path(src_path).name)
             if smart_check_path(junction_path):
@@ -3259,7 +3254,7 @@ def configure(window: MainWindow) -> None:
             ),
             "RenamePseudoVoicing": rename_pseudo_voicing,
             "FindSameFile": FilesHashDiff().compare,
-            "FromInactiveNames": from_inactive_names,
+            "FromOtherNames": from_other_names,
             "FromActiveNames": from_active_names,
             "SelectSameName": select_same_name,
             "SelectNameUnique": select_name_unique,
