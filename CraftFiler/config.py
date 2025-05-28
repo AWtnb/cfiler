@@ -2455,7 +2455,8 @@ def configure(window: MainWindow) -> None:
             self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
         ) -> Tuple[List[str], int]:
             found = self.candidates(update_info.text)
-            for path in CPane(False).selectedItemPaths:
+            selected = CPane().selectedItemPaths + CPane(False).selectedItemPaths
+            for path in selected:
                 if (p := Path(path)).is_dir():
                     found.append(p.name)
                 else:
