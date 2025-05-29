@@ -1602,6 +1602,16 @@ def configure(window: MainWindow) -> None:
                     targets.append(pane.focusedItemPath)
 
         menu = ["Fullpath", "Name", "Basename"]
+
+        root = None
+        for path in Path(pane.currentPath).parents:
+            p = os.path.join(path, ".root")
+            if smart_check_path(p, 0.5):
+                root = path
+                break
+        if root is not None:
+            menu.append("Relpath")
+
         result, _ = invoke_listwindow("Copy", menu)
         if result < 0:
             return
@@ -1612,6 +1622,10 @@ def configure(window: MainWindow) -> None:
         elif result == 1:
             for p in targets:
                 lines.append(Path(p).name)
+        elif result == 3:
+            for p in targets:
+                rel = Path(p).relative_to(root)
+                lines.append(str(rel))
         else:
             for p in targets:
                 lines.append(Path(p).stem)
