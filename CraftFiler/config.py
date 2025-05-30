@@ -2196,16 +2196,18 @@ def configure(window: MainWindow) -> None:
                     if 2 < len(args):
                         self.skips = [int(a) for a in args[2:]]
 
-            @property
-            def width(self) -> int:
-                return len(self.index_template)
-
-            @property
-            def filler(self) -> str:
                 c = self.index_template[0]
                 if c in "123456789":
-                    return ""
-                return c
+                    self.filler = ""
+                else:
+                    self.filler = c
+
+            def fill(self, i: int) -> str:
+                s = str(i)
+                w = len(self.index_template)
+                if len(self.filler) < 1:
+                    return s
+                return s.rjust(w, self.filler)
 
             @property
             def start(self) -> Union[int, None]:
@@ -2219,13 +2221,10 @@ def configure(window: MainWindow) -> None:
 
             def increment(self, i: int) -> int:
                 i += self.step
-                if len(self.skips) < 1:
-                    return i
                 while 1:
                     if i not in self.skips:
                         break
-                    else:
-                        i += self.step
+                    i += self.step
                 return i
 
         sep = ";"
@@ -2253,12 +2252,7 @@ def configure(window: MainWindow) -> None:
                 pos = ni.position
                 if ni.position < 0:
                     pos = len(stem) + 1 + ni.position
-                new_name = (
-                    stem[:pos]
-                    + str(idx).rjust(ni.width, ni.filler)
-                    + stem[pos:]
-                    + org_path.suffix
-                )
+                new_name = stem[:pos] + ni.fill(idx) + stem[pos:] + org_path.suffix
                 idx = ni.increment(idx)
                 infos.append(RenameInfo(org_path, new_name))
                 lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
