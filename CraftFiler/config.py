@@ -812,7 +812,9 @@ def configure(window: MainWindow) -> None:
                     return True
         return False
 
-    def invoke_listwindow(prompt: str, items: list) -> Tuple[int, int]:
+    def invoke_listwindow(
+        prompt: str, items: list, ini_pos: int = 0
+    ) -> Tuple[int, int]:
         pos = window.centerOfFocusedPaneInPixel()
         list_window = ListWindow(
             x=pos[0],
@@ -825,7 +827,7 @@ def configure(window: MainWindow) -> None:
             ini=window.ini,
             title=prompt,
             items=items,
-            initial_select=0,
+            initial_select=ini_pos,
             onekey_search=False,
             onekey_decide=False,
             return_modkey=True,
