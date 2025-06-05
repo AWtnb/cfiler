@@ -2768,8 +2768,7 @@ def configure(window: MainWindow) -> None:
         other = CPane(False)
         if DESKTOP_PATH not in [pane.currentPath, other.currentPath]:
             other.openPath(DESKTOP_PATH)
-        else:
-            pane.focusOther()
+        pane.focusOther()
 
     Keybinder().bind(open_desktop_to_other, "A-O")
 
