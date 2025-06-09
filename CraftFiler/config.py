@@ -1060,7 +1060,7 @@ def configure(window: MainWindow) -> None:
             table = self._table
             src = "\n".join(sorted(table.keys(), reverse=True))
             try:
-                cmd = ["fzf.exe"]
+                cmd = ["fzf.exe", "--no-color"]
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
