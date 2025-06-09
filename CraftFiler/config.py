@@ -1598,8 +1598,8 @@ def configure(window: MainWindow) -> None:
                 item = pane.byIndex(i)
                 if item.selected():
                     targets.append(item.getFullpath())
-                if len(targets) < 1:
-                    targets.append(pane.focusedItemPath)
+            if len(targets) < 1:
+                targets.append(pane.focusedItemPath)
 
         menu = ["Fullpath", "Name", "Basename"]
 
