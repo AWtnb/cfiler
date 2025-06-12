@@ -1060,7 +1060,7 @@ def configure(window: MainWindow) -> None:
             table = self._table
             src = "\n".join(sorted(table.keys(), reverse=True))
             try:
-                cmd = ["fzf.exe", "--no-color"]
+                cmd = ["fzf.exe", "--margin=1", "--no-color", "--input-border=sharp"]
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
@@ -1228,7 +1228,7 @@ def configure(window: MainWindow) -> None:
                 return ""
             src = "\n".join(self.filter_src())
             try:
-                cmd = ["fzf.exe", "--no-sort"]
+                cmd = ["fzf.exe", "--margin=1", "--no-sort"]
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
