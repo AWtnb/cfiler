@@ -1481,7 +1481,7 @@ def configure(window: MainWindow) -> None:
         def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
             found = []
             for name in drives + pane.names:
-                if name.lower().startswith(update_info.text.lower()):
+                if name.startswith(update_info.text):
                     found.append(name)
             return found, 0
 
