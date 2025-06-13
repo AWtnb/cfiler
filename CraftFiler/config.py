@@ -1033,6 +1033,11 @@ def configure(window: MainWindow) -> None:
         def register(self, name: str, path: str) -> None:
             window.ini.set(self.ini_section, name, path)
 
+        def clear_by_path(self, path: str) -> None:
+            for opt in window.ini.items(self.ini_section):
+                if opt[1] == path:
+                    window.ini.remove_option(self.ini_section, opt[0])
+
         @staticmethod
         def to_leaf(path: str) -> str:
             path = path.rstrip(os.sep)
@@ -1050,6 +1055,8 @@ def configure(window: MainWindow) -> None:
             for path in window.bookmark.getItems():
                 if path not in paths_with_alias:
                     name = self.to_leaf(path)
+                    if name in d.keys():
+                        name = "{}[{}]".format(name, path)
                     d[name] = path
             return d
 
@@ -1131,11 +1138,15 @@ def configure(window: MainWindow) -> None:
             else:
                 target = pane.selectedItemPaths[0]
 
+        ba = BookmarkAlias()
+
         alias = stringify(window.commandLine("Bookmark alias"))
         if len(alias) < 1:
+            ba.clear_by_path(target)
+            Kiritori.log("Removed all alias for '{}'".format(target))
             return
 
-        BookmarkAlias().register(alias, target)
+        ba.register(alias, target)
 
         if target not in window.bookmark.getItems():
             window.bookmark.append(target)
