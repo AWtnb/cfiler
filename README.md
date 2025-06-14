@@ -4,9 +4,7 @@
 
 ## Install
 
-```PowerShell
-$d = "CraftFiler"; New-Item -Path ($env:APPDATA | Join-Path -ChildPath $d) -Value ($pwd.Path | Join-Path -ChildPath $d) -ItemType Junction
-```
+Run [`install.ps1`](./install.ps1) to create junction of `CraftFiler` to AppData.
 
 With [Syncthing](https://syncthing.net/), append below on `.stignore` to skip syncing local history.
 
