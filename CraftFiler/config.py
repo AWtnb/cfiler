@@ -445,10 +445,13 @@ def configure(window: MainWindow) -> None:
                 return left_width
             return window.width() - left_width
 
+        def adjustWidth(self) -> None:
+            if window.width() - self.width < self.min_width:
+                window.command_MoveSeparatorCenter(None)
+
         def focusOther(self, adjust: bool = True) -> None:
             if adjust:
-                if window.width() - self.width < self.min_width:
-                    window.command_MoveSeparatorCenter(None)
+                self.adjustWidth()
             window.command_FocusOther(None)
 
         @property
@@ -979,15 +982,19 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(open_with, "C-O")
 
     def quick_move() -> None:
-        if not CPane().hasSelection:
+        pane = CPane()
+        if not pane.hasSelection:
             window.command_Select(None)
+        pane.adjustWidth()
         window.command_Move(None)
 
     Keybinder().bind(quick_move, "M")
 
     def quick_copy() -> None:
-        if not CPane().hasSelection:
+        pane = CPane()
+        if not pane.hasSelection:
             window.command_Select(None)
+        pane.adjustWidth()
         window.command_Copy(None)
 
     Keybinder().bind(quick_copy, "C")
