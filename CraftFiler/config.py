@@ -2745,7 +2745,7 @@ def configure(window: MainWindow) -> None:
                 return (
                     dir_upper_flag,
                     not starts_with_underscore,
-                    underscore_count,
+                    (-1 * underscore_count),
                     lower_name,
                 )
 
