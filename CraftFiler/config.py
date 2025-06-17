@@ -3267,6 +3267,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "ZipSelections": window.command_CreateArchive,
             "SetBookmarkAlias": set_bookmark_alias,
             "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
             "BookmarkHere": bookmark_here,
