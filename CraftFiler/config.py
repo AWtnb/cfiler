@@ -138,10 +138,8 @@ def configure(window: MainWindow) -> None:
         def _datestr(self) -> str:
             t = self._time
             if t[0] == self._now[0]:
-                if t[1] == self._now[1]:
-                    if t[2] == self._now[2]:
-                        return " " * 10
-                    return " " * 8 + "{:02}".format(t[2])
+                if t[1] == self._now[1] and t[2] == self._now[2]:
+                    return " " * 10
                 return " " * 5 + "{:02}-{:02}".format(t[1], t[2])
             return "{}-{:02}-{:02}".format(t[0], t[1], t[2])
 
