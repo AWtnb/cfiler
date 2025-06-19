@@ -1571,8 +1571,28 @@ def configure(window: MainWindow) -> None:
         if not active_pane.hasSelection:
             return
 
-        placeholder = datetime.datetime.today().strftime("unzip_%Y%m%d%H%M%S")
-        result = stringify(window.commandLine("Extract as", text=placeholder))
+        def _listup_stems(
+            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+        ) -> tuple:
+            found = []
+            for path in active_pane.selectedItemPaths:
+                stem = Path(path).stem
+                if stem.lower().startswith(update_info.text.lower()):
+                    found.append(stem)
+            return found, 0
+
+        placeholder = sorted(
+            [Path(p).stem for p in active_pane.selectedItemPaths], key=len
+        )[0]
+
+        result = stringify(
+            window.commandLine(
+                "Extract as",
+                text=placeholder,
+                candidate_handler=_listup_stems,
+                auto_complete=True,
+            )
+        )
         if len(result) < 1:
             return
 
