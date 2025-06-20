@@ -343,13 +343,14 @@ def configure(window: MainWindow) -> None:
         min_width = 20
 
         def __init__(self, active: bool = True) -> None:
-            self._active = active
-            if self._active:
+            if active:
                 self._pane = window.activePane()
                 self._items = window.activeItems()
+                self._other = window.inactivePane()
             else:
                 self._pane = window.inactivePane()
                 self._items = window.inactiveItems()
+                self._other = window.activePane()
 
         @property
         def entity(self):
@@ -437,9 +438,9 @@ def configure(window: MainWindow) -> None:
         def width(self) -> int:
             left_width = window.left_window_width
             left_focused = window.focus == MainWindow.FOCUS_LEFT
-            if (left_focused and self._active) or (
-                not left_focused and not self._active
-            ):
+            if left_focused and self.entity == window.activePane():
+                return left_width
+            if not left_focused and self.entity == window.inactivePane():
                 return left_width
             return window.width() - left_width
 
@@ -654,13 +655,20 @@ def configure(window: MainWindow) -> None:
                 focus_name = target.name
             else:
                 if focus_name is None:
-                    for hist in self.entity.history.items:
-                        if (d := hist[0]).startswith(path):
-                            if d == path:
-                                focus_name = hist[1]
-                            else:
-                                focus_name = d[len(path) + 1 :].split(os.sep)[0]
+
+                    def _last_focused_name(hist_item: list) -> Union[str, None]:
+                        dir_path = hist_item[0]
+                        if dir_path.startswith(path):
+                            if dir_path == path:
+                                return hist_item[1]
+                            return dir_path[len(path) + 1 :].split(os.sep)[0]
+                        return None
+
+                    for hist_item in self.entity.history.items:
+                        focus_name = _last_focused_name(hist_item)
+                        if focus_name is not None:
                             break
+
             lister = lister_Default(window, path)
             window.jumpLister(self.entity, lister, focus_name)
 
