@@ -664,7 +664,9 @@ def configure(window: MainWindow) -> None:
                             return dir_path[len(path) + 1 :].split(os.sep)[0]
                         return None
 
-                    for hist_item in self.entity.history.items:
+                    for hist_item in (
+                        self.entity.history.items + self._other.history.items
+                    ):
                         focus_name = _last_focused_name(hist_item)
                         if focus_name is not None:
                             break
