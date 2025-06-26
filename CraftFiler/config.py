@@ -1606,6 +1606,8 @@ def configure(window: MainWindow) -> None:
         if len(result) < 1:
             return
 
+        active_pane.adjustWidth()
+
         if active_pane.byName(result) != -1:
             Kiritori.log("'{}' already exists.".format(result))
             return
