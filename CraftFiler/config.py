@@ -825,7 +825,9 @@ def configure(window: MainWindow) -> None:
                     return True
         return False
 
-    def invoke_listwindow(prompt: str, items: list) -> Tuple[int, int]:
+    def invoke_listwindow(
+        prompt: str, items: list, cursor_pos: int = 0
+    ) -> Tuple[int, int]:
         pos = window.centerOfFocusedPaneInPixel()
         list_window = ListWindow(
             x=pos[0],
@@ -838,7 +840,7 @@ def configure(window: MainWindow) -> None:
             ini=window.ini,
             title=prompt,
             items=items,
-            initial_select=0,
+            initial_select=cursor_pos,
             onekey_search=False,
             onekey_decide=False,
             return_modkey=True,
@@ -3130,11 +3132,14 @@ def configure(window: MainWindow) -> None:
         if len(exts) < 1:
             return
 
-        exts.sort(
-            key=lambda ext: (Path(pane.focusedItemPath).suffix != ext, ext.lower())
-        )
+        exts.sort(key=lambda ext: ext.lower())
 
-        result, mod = invoke_listwindow("Select Extension", exts)
+        cursor_pos = 0
+        if 0 < len(focused := Path(pane.focusedItemPath).suffix):
+            if focused in exts:
+                cursor_pos = exts.index(focused)
+
+        result, mod = invoke_listwindow("Select Extension", exts, cursor_pos)
 
         if result < 0:
             return
