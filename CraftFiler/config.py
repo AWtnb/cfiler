@@ -2516,10 +2516,11 @@ def configure(window: MainWindow) -> None:
             found = self.candidates(update_info.text)
             selected = CPane().selectedItemPaths + CPane(False).selectedItemPaths
             for path in selected:
-                if (p := Path(path)).is_dir():
-                    found.append(p.name)
-                else:
-                    found.append(p.stem)
+                p = Path(path)
+                s = p.name if p.is_dir() else p.stem
+                for i, c in enumerate(s):
+                    if c == self.sep:
+                        found.append(s[: i + 1])
             return found, 0
 
     def invoke_renamer() -> None:
