@@ -2514,13 +2514,6 @@ def configure(window: MainWindow) -> None:
             self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
         ) -> Tuple[List[str], int]:
             found = self.candidates(update_info.text)
-            selected = CPane().selectedItemPaths + CPane(False).selectedItemPaths
-            for path in selected:
-                p = Path(path)
-                s = p.name if p.is_dir() else p.stem
-                for i, c in enumerate(s):
-                    if c == self.sep:
-                        found.append(s[: i + 1])
             return found, 0
 
     def invoke_renamer() -> None:
@@ -2540,10 +2533,19 @@ def configure(window: MainWindow) -> None:
             if ts != additional_suffix[0]:
                 additional_suffix.append(ts)
 
-        org_path = Path(item.getFullpath())
-        placeholder = org_path.name if org_path.is_dir() else org_path.stem
-        offset = len(placeholder)
-        sel = [offset, offset]
+        focused_path = Path(item.getFullpath())
+        selected = pane.selectedItemNames + CPane(False).selectedItemNames
+        path = focused_path if len(selected) != 1 else Path(selected[0])
+        placeholder = path.name if path.is_dir() else path.stem
+
+        sel = [0, 0]
+        if len(selected) == 1:
+            if -1 < (i := placeholder.rfind(Suffixer.sep)):
+                sel[0] = i + 1
+            sel[1] = len(placeholder)
+        else:
+            offset = len(placeholder)
+            sel[0] = sel[1] = offset
 
         new_stem, mod = window.commandLine(
             title="NewStem",
@@ -2557,10 +2559,10 @@ def configure(window: MainWindow) -> None:
         if len(new_stem) < 1:
             return
 
-        new_name = new_stem + org_path.suffix
+        new_name = new_stem + focused_path.suffix
 
         def _func() -> None:
-            renamer.execute(org_path, new_name, mod == ckit.MODKEY_SHIFT)
+            renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
 
         Kiritori.wrap(_func)
 
