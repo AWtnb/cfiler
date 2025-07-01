@@ -2534,12 +2534,12 @@ def configure(window: MainWindow) -> None:
                 additional_suffix.append(ts)
 
         focused_path = Path(item.getFullpath())
-        selected = pane.selectedItemNames + CPane(False).selectedItemNames
-        path = focused_path if len(selected) != 1 else Path(selected[0])
+        other_selected = CPane(False).selectedItemNames
+        path = focused_path if len(other_selected) != 1 else Path(other_selected[0])
         placeholder = path.name if path.is_dir() else path.stem
 
         sel = [0, 0]
-        if len(selected) == 1:
+        if len(other_selected) == 1:
             if -1 < (i := placeholder.rfind(Suffixer.sep)):
                 sel[0] = i + 1
             sel[1] = len(placeholder)
