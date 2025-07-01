@@ -2474,24 +2474,36 @@ def configure(window: MainWindow) -> None:
 
             self._additional = [self.sep + a for a in additional]
 
-            self.names = []
-            pane = CPane()
-            for item in pane.items:
-                name = item.getName()
-                if self.sep not in name or name.startswith(self.sep):
-                    continue
-                if (p := Path(pane.currentPath, name)).is_dir():
-                    self.names.append(p.name)  # for directory with dot in name
-                else:
-                    self.names.append(p.stem)
+        @classmethod
+        def from_name(cls, s: str) -> List[str]:
+            sufs = []
+            for i, c in enumerate(s):
+                if 0 < i and c == cls.sep:
+                    sufs.append(s[i:])
+            return sufs
+
+        @staticmethod
+        def to_base(path: str) -> str:
+            p = Path(path)
+            if p.is_dir():
+                return p.name
+            return p.stem
+
+        def from_other_selection(self) -> List[str]:
+            sufs = []
+            other = CPane(False)
+            if other.hasSelection:
+                for path in other.selectedItemPaths:
+                    s = self.to_base(path)
+                    sufs += self.from_name(s)
+            return sufs
 
         @property
         def possible_suffix(self) -> List[str]:
-            sufs = []
-            for name in self.names:
-                for i, c in enumerate(name):
-                    if c == self.sep:
-                        sufs.append(name[i:])
+            sufs = self.from_other_selection()
+            pane = CPane()
+            for path in pane.paths:
+                sufs += self.from_name(self.to_base(path))
             sufs = sorted(list(set(sufs)), key=len)
             if 0 < len(self._additional):
                 sufs = self._additional + sufs
@@ -2538,18 +2550,9 @@ def configure(window: MainWindow) -> None:
                 additional_suffix.append(ts)
 
         focused_path = Path(item.getFullpath())
-        other_selected = CPane(False).selectedItemNames
-        path = focused_path if len(other_selected) != 1 else Path(other_selected[0])
-        placeholder = path.name if path.is_dir() else path.stem
-
-        sel = [0, 0]
-        if len(other_selected) == 1:
-            if -1 < (i := placeholder.rfind(Suffixer.sep)):
-                sel[0] = i + 1
-            sel[1] = len(placeholder)
-        else:
-            offset = len(placeholder)
-            sel[0] = sel[1] = offset
+        placeholder = focused_path.name if focused_path.is_dir() else focused_path.stem
+        offset = len(placeholder)
+        sel = [offset, offset]
 
         new_stem, mod = window.commandLine(
             title="NewStem",
