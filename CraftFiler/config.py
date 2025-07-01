@@ -12,6 +12,8 @@ import urllib
 from concurrent.futures import ThreadPoolExecutor
 
 from PIL import ImageGrab
+from PIL import Image as PILImage
+from PIL.ExifTags import TAGS
 
 from pathlib import Path
 from typing import List, Tuple, Callable, Union, NamedTuple
@@ -2208,6 +2210,62 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(rename_insert, "S-I")
 
+    def get_exif_date(path: str) -> Union[str, None]:
+        try:
+            with PILImage.open(path) as img:
+                exif_data = img._getexif()
+                if not exif_data:
+                    return None
+                for tag_id, value in exif_data.items():
+                    tag = TAGS.get(tag_id, tag_id)
+                    if tag == "DateTimeOriginal":
+                        dt = datetime.datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
+                        return dt.strftime("%Y_%m%d_%H%M%S") + "00"
+                return None
+        except Exception as e:
+            print(e)
+            return None
+
+    def rename_exif_date() -> None:
+        renamer = Renamer()
+
+        targets = []
+        for item in renamer.candidate:
+            if not item.isdir():
+                targets.append(item)
+
+        if len(targets) < 1:
+            return
+
+        def _confirm() -> Tuple[List[RenameInfo], bool]:
+            infos = []
+            lines = []
+            for item in targets:
+                path = item.getFullpath()
+                timestamp = get_exif_date(path)
+                p = Path(path)
+                if timestamp is None:
+                    lines.append("Skip  : {}\n    => No exif date.".format(p.name))
+                else:
+                    new_name = timestamp + "_" + p.name
+                    infos.append(RenameInfo(p, new_name))
+                    lines.append("Rename: {}\n    ==> {}\n".format(p.name, new_name))
+
+            lines.append("\ninsert exif timestamp:\nOK? (Enter / Esc)")
+
+            return infos, popResultWindow(window, "Preview", "\n".join(lines))
+
+        infos, ok = _confirm()
+        if len(infos) < 1 or not ok:
+            print("Canceled.\n")
+            return
+
+        def _func() -> None:
+            for info in infos:
+                renamer.execute(info.orgPath, info.newName)
+
+        Kiritori.wrap(_func)
+
     def rename_index() -> None:
         renamer = Renamer()
 
@@ -3312,6 +3370,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "RenameExifDate": rename_exif_date,
             "ZipSelections": window.command_CreateArchive,
             "SetBookmarkAlias": set_bookmark_alias,
             "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
