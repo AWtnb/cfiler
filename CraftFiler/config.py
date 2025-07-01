@@ -1541,6 +1541,10 @@ def configure(window: MainWindow) -> None:
             return
 
         current_drive = Path(current).drive
+        other = CPane(False)
+        if other.currentPath.startswith(current_drive):
+            other.openPath(DESKTOP_PATH)
+
         pane.openPath(DESKTOP_PATH)
 
         def _eject(job_item: ckit.JobItem) -> None:
