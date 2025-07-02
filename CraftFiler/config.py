@@ -131,6 +131,17 @@ def smart_check_path(
 DESKTOP_PATH = os.path.expandvars(r"${USERPROFILE}\Desktop")
 
 
+def check_fzf() -> bool:
+    return shutil.which("fzf.exe") is not None
+
+
+def get_vscode_path() -> str:
+    code_cmd_path = shutil.which("code.cmd")
+    if code_cmd_path is not None:
+        return os.path.join(Path(code_cmd_path).parents[1], "code.exe")
+    return ""
+
+
 def configure(window: MainWindow) -> None:
     class ItemTimestamp:
         def __init__(self, item) -> None:
@@ -773,9 +784,6 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(smart_cursorDown, "J", "Down")
 
     def shell_exec(path: str, *args) -> None:
-        if not smart_check_path(path):
-            Kiritori.log("invalid path: '{}'".format(path))
-            return
         if type(path) is not str:
             path = str(path)
         params = []
@@ -933,12 +941,6 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(toggle_hidden, "C-S-H")
 
-    def get_vscode_path() -> str:
-        code_cmd_path = shutil.which("code.cmd")
-        if code_cmd_path is not None:
-            return os.path.join(Path(code_cmd_path).parents[1], "code.cmd")
-        return ""
-
     def open_with() -> None:
         pane = CPane()
         if pane.isBlank or pane.focusedItem.isdir():
@@ -1032,9 +1034,6 @@ def configure(window: MainWindow) -> None:
         LeftPane().activate()
 
     Keybinder().bind(swap_pane, "S")
-
-    def check_fzf() -> bool:
-        return shutil.which("fzf.exe") is not None
 
     class BookmarkAlias:
         ini_section = "BOOKMARK_ALIAS"
