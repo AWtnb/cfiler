@@ -930,6 +930,12 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(toggle_hidden, "C-S-H")
 
+    def get_vscode_path() -> str:
+        code_cmd_path = shutil.which("code.cmd")
+        if code_cmd_path is not None:
+            return os.path.join(Path(code_cmd_path).parents[1], "code.cmd")
+        return ""
+
     class PdfViewer:
         sumatra = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
         adobe = r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
@@ -938,9 +944,7 @@ def configure(window: MainWindow) -> None:
     class TextEditor:
         notepad = r"C:\Windows\System32\notepad.exe"
         mery = os.path.expandvars(r"${LOCALAPPDATA}\Programs\Mery\Mery.exe")
-        vscode = os.path.expandvars(
-            r"${USERPROFILE}\scoop\apps\vscode\current\Code.exe"
-        )
+        vscode = get_vscode_path()
 
     class LocalApps:
         def __init__(self, apps: Union[PdfViewer, TextEditor]) -> None:
