@@ -773,6 +773,9 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(smart_cursorDown, "J", "Down")
 
     def shell_exec(path: str, *args) -> None:
+        if not smart_check_path(path):
+            Kiritori.log("invalid path: '{}'".format(path))
+            return
         if type(path) is not str:
             path = str(path)
         params = []
@@ -784,8 +787,8 @@ def configure(window: MainWindow) -> None:
                     params.append(arg)
         try:
             pyauto.shellExecute(None, path, " ".join(params), "")
-        except:
-            Kiritori.log("invalid path: '{}'".format(path))
+        except Exception as e:
+            Kiritori.log(e)
 
     def toggle_pane_width() -> None:
         half = (window.width() - 1) // 2
@@ -936,32 +939,6 @@ def configure(window: MainWindow) -> None:
             return os.path.join(Path(code_cmd_path).parents[1], "code.cmd")
         return ""
 
-    class PdfViewer:
-        sumatra = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
-        adobe = r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
-        xedit = r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
-
-    class TextEditor:
-        notepad = r"C:\Windows\System32\notepad.exe"
-        mery = os.path.expandvars(r"${LOCALAPPDATA}\Programs\Mery\Mery.exe")
-        vscode = get_vscode_path()
-
-    class LocalApps:
-        def __init__(self, apps: Union[PdfViewer, TextEditor]) -> None:
-            d = {}
-            for k, v in vars(apps).items():
-                if not k.startswith("__"):
-                    if smart_check_path(v):
-                        d[k] = v
-            self._dict = d
-
-        @property
-        def names(self) -> list:
-            return list(self._dict.keys())
-
-        def get_path(self, name: str) -> str:
-            return self._dict.get(name, "")
-
     def open_with() -> None:
         pane = CPane()
         if pane.isBlank or pane.focusedItem.isdir():
@@ -976,12 +953,27 @@ def configure(window: MainWindow) -> None:
             if not path.endswith(".pdf"):
                 with_pdf_viewer = False
 
-        apps = LocalApps(PdfViewer) if with_pdf_viewer else LocalApps(TextEditor)
-
         if not with_pdf_viewer and 1 < len(paths):
             return
 
-        names = apps.names
+        app_table = {}
+        if with_pdf_viewer:
+            app_table["sumatra"] = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
+            app_table["adobe"] = (
+                r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
+            )
+            app_table["xedit"] = (
+                r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
+            )
+        else:
+            app_table["notepad"] = r"C:\Windows\System32\notepad.exe"
+            app_table["mery"] = os.path.expandvars(
+                r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"
+            )
+            if 0 < len(v := get_vscode_path()):
+                app_table["vscode"] = v
+
+        names = list(app_table.keys())
         if len(names) < 1:
             return
 
@@ -991,7 +983,7 @@ def configure(window: MainWindow) -> None:
             if result < 0:
                 return
 
-        exe_path = apps.get_path(names[result])
+        exe_path = app_table[names[result]]
         for path in paths:
             shell_exec(exe_path, path)
 
@@ -1984,7 +1976,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(open_parent_to_other, "S-U", "S-H")
 
     def on_vscode() -> None:
-        vscode_path = TextEditor.vscode
+        vscode_path = get_vscode_path()
         if smart_check_path(vscode_path):
             pane = CPane()
             shell_exec(vscode_path, pane.currentPath)
@@ -2941,7 +2933,7 @@ def configure(window: MainWindow) -> None:
         dir_path = config_dir
         if (real_path := os.path.realpath(config_dir)) != config_dir:
             dir_path = os.path.dirname(real_path)
-        vscode_path = TextEditor.vscode
+        vscode_path = get_vscode_path()
         if smart_check_path(vscode_path):
             shell_exec(vscode_path, dir_path)
         else:
