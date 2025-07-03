@@ -3067,17 +3067,25 @@ def configure(window: MainWindow) -> None:
             return
 
         pane = CPane()
-        if pane.hasSelection and len(pane.selectedItems) == 2:
+        left_path = ""
+        right_path = ""
+
+        if (
+            pane.hasSelection
+            and len(pane.selectedItems) == 2
+            and not CPane(False).hasSelection
+        ):
             left_path, right_path = pane.selectedItemPaths
         else:
             left_pane = LeftPane()
             right_pane = RightPane()
-            for _name, _pane in {"left": left_pane, "right": right_pane}.items():
-                if len(_pane.selectedItemPaths) != 1:
-                    Kiritori.log("Select 1 file on {} pane.".format(_name))
-                    return
-            left_path = left_pane.selectedItemPaths[0]
-            right_path = right_pane.selectedItemPaths[0]
+            if len(left_pane.selectedItems) == 1 and len(right_pane.selectedItems) == 1:
+                left_path = left_pane.selectedItemPaths[0]
+                right_path = right_pane.selectedItemPaths[0]
+
+        if not left_path or not right_path:
+            Kiritori.log("Select 1 item for each pane to compare.")
+            return
 
         shell_exec(exe_path, left_path, right_path)
 
