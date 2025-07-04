@@ -1821,6 +1821,7 @@ def configure(window: MainWindow) -> None:
             for k, v in {
                 "C-A": cls.allItems,
                 "U": cls.clearAll,
+                "Esc": cls.clearAll,
                 "A-F": cls.files,
                 "A-D": cls.dirs,
                 "S-Home": cls.toTop,
@@ -1836,7 +1837,7 @@ def configure(window: MainWindow) -> None:
         CPane().unSelectAll()
         CPane(False).unSelectAll()
 
-    Keybinder().bind(unselect_panes, "C-U")
+    Keybinder().bind(unselect_panes, "C-U", "S-Esc")
 
     class SmartJumper:
 
