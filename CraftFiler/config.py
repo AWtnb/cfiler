@@ -2527,6 +2527,15 @@ def configure(window: MainWindow) -> None:
 
             self._additional = [self.sep + a for a in additional]
 
+            self.possible_suffix = []
+            for path in CPane().paths:
+                self.possible_suffix += self.from_name(self.to_base(path))
+            if 0 < len(self._additional):
+                self.possible_suffix = self._additional + self.possible_suffix
+            if self.timestamp:
+                if (s := self.sep + self.timestamp) not in self.possible_suffix:
+                    self.possible_suffix = [s] + self.possible_suffix
+
         @classmethod
         def from_name(cls, s: str) -> List[str]:
             sufs = []
@@ -2542,18 +2551,6 @@ def configure(window: MainWindow) -> None:
                 return p.name
             return p.stem
 
-        @property
-        def possible_suffix(self) -> List[str]:
-            sufs = []
-            for path in CPane().paths:
-                sufs += self.from_name(self.to_base(path))
-            if 0 < len(self._additional):
-                sufs = self._additional + sufs
-            if self.timestamp:
-                if (s := self.sep + self.timestamp) not in sufs:
-                    sufs = [s] + sufs
-            return sufs
-
         def candidates(self, s: str) -> List[str]:
             sufs = self.possible_suffix
             if self.sep not in s:
@@ -2568,12 +2565,21 @@ def configure(window: MainWindow) -> None:
                     found.append(s[:sep_pos] + suf)
             return found
 
+        def from_selection(self) -> List[str]:
+            sufs = self.possible_suffix
+            found = []
+            for sel in CPane().selectedItemPaths + CPane(False).selectedItemPaths:
+                name = self.to_base(sel)
+                found.append(name)
+                for suf in sufs:
+                    if not name.endswith(suf):
+                        found.append(name + suf)
+            return found
+
         def __call__(
             self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
         ) -> Tuple[List[str], int]:
-            found = self.candidates(update_info.text)
-            for sel in CPane().selectedItemPaths + CPane(False).selectedItemPaths:
-                found.append(self.to_base(sel))
+            found = self.candidates(update_info.text) + self.from_selection()
             return sorted(list(set(found)), key=len), 0
 
     def invoke_renamer() -> None:
