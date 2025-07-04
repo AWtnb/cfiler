@@ -2542,22 +2542,11 @@ def configure(window: MainWindow) -> None:
                 return p.name
             return p.stem
 
-        def from_other_selection(self) -> List[str]:
-            sufs = []
-            other = CPane(False)
-            if other.hasSelection:
-                for path in other.selectedItemPaths:
-                    s = self.to_base(path)
-                    sufs += self.from_name(s)
-            return sufs
-
         @property
         def possible_suffix(self) -> List[str]:
-            sufs = self.from_other_selection()
-            pane = CPane()
-            for path in pane.paths:
+            sufs = []
+            for path in CPane().paths:
                 sufs += self.from_name(self.to_base(path))
-            sufs = sorted(list(set(sufs)), key=len)
             if 0 < len(self._additional):
                 sufs = self._additional + sufs
             if self.timestamp:
@@ -2583,7 +2572,9 @@ def configure(window: MainWindow) -> None:
             self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
         ) -> Tuple[List[str], int]:
             found = self.candidates(update_info.text)
-            return found, 0
+            for sel in CPane().selectedItemPaths + CPane(False).selectedItemPaths:
+                found.append(self.to_base(sel))
+            return sorted(list(set(found)), key=len), 0
 
     def invoke_renamer() -> None:
         pane = CPane()
