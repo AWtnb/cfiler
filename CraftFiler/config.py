@@ -1547,7 +1547,7 @@ def configure(window: MainWindow) -> None:
         def _eject(job_item: ckit.JobItem) -> None:
             job_item.result = None
             cmd = (
-                "PowerShell -Command "
+                "PowerShell -NoProfile -Command "
                 '$driveEject = New-Object -comObject Shell.Application; $driveEject.Namespace(17).ParseName("""{}\\""").InvokeVerb("""Eject""");Start-Sleep -Seconds 2'.format(
                     current_drive
                 )
@@ -3676,7 +3676,7 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
             item = window.items[window.cursor]
             path = item.getFullpath()
             cmd = (
-                "PowerShell -Command "
+                "PowerShell -NoProfile -Command "
                 "Add-Type -AssemblyName System.Windows.Forms;"
                 "[Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('{}'));".format(
                     path
