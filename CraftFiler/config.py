@@ -1839,27 +1839,33 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(unselect_panes, "C-U", "S-Esc")
 
-    def to_deepest_dir() -> None:
+    def to_edge_dir() -> None:
         pane = CPane()
-        if pane.isBlank:
-            return
 
-        paths = []
-        for items in pane.dirs:
-            paths.append(items.getFullpath())
-            for _, dirs, _ in items.walk():
-                for d in dirs:
-                    paths.append(d.getFullpath())
+        def _traverse(job_item: ckit.JobItem) -> None:
+            job_item.result = None
+            if pane.isBlank:
+                return
 
-        if len(paths) < 1:
-            return
+            paths = []
+            for items in pane.dirs:
+                paths.append(items.getFullpath())
+                for _, dirs, _ in items.walk():
+                    for d in dirs:
+                        paths.append(d.getFullpath())
 
-        paths.sort(reverse=True)
+            if 0 < len(paths):
+                paths.sort(reverse=True)
+                job_item.result = paths[0]
 
-        deepest = paths[0]
-        pane.openPath(*os.path.split(deepest))
+        def _open(job_item: ckit.JobItem) -> None:
+            if job_item.result:
+                pane.openPath(*os.path.split(job_item.result))
 
-    Keybinder().bind(to_deepest_dir, "A-L")
+        job = ckit.JobItem(_traverse, _open)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    Keybinder().bind(to_edge_dir, "A-L")
 
     class SmartJumper:
 
