@@ -658,6 +658,8 @@ def configure(window: MainWindow) -> None:
 
         def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
             if self.currentPath == path:
+                if focus_name is not None:
+                    self.focusByName(focus_name)
                 return
             target = Path(path)
             if not smart_check_path(target):
@@ -1847,11 +1849,19 @@ def configure(window: MainWindow) -> None:
             if pane.isBlank:
                 return
 
+            def _is_skippable(item) -> bool:
+                name = item.getName()
+                return name.startswith(".") or name == "_obsolete"
+
             paths = []
-            for items in pane.dirs:
-                paths.append(items.getFullpath())
-                for _, dirs, _ in items.walk():
+            for item in pane.dirs:
+                if _is_skippable(item):
+                    continue
+                paths.append(item.getFullpath())
+                for _, dirs, _ in item.walk():
                     for d in dirs:
+                        if _is_skippable(d):
+                            continue
                         paths.append(d.getFullpath())
 
             if 0 < len(paths):
