@@ -1839,6 +1839,28 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(unselect_panes, "C-U", "S-Esc")
 
+    def to_deepest_dir() -> None:
+        pane = CPane()
+        if pane.isBlank:
+            return
+
+        paths = []
+        for items in pane.dirs:
+            paths.append(items.getFullpath())
+            for _, dirs, _ in items.walk():
+                for d in dirs:
+                    paths.append(d.getFullpath())
+
+        if len(paths) < 1:
+            return
+
+        paths.sort(reverse=True)
+
+        deepest = paths[0]
+        pane.openPath(*os.path.split(deepest))
+
+    Keybinder().bind(to_deepest_dir, "A-L")
+
     class SmartJumper:
 
         @staticmethod
