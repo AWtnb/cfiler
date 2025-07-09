@@ -54,6 +54,7 @@ from cfiler_mainwindow import (
 from cfiler_filelist import (
     FileList,
     item_Base,
+    item_Default,
     lister_Default,
     item_Empty,
     filter_Default,
@@ -1849,20 +1850,20 @@ def configure(window: MainWindow) -> None:
             if pane.isBlank:
                 return
 
-            def _is_skippable(item) -> bool:
-                name = item.getName()
-                return name.startswith(".") or name == "_obsolete"
-
+            count = 0
             paths = []
-            for item in pane.dirs:
-                if _is_skippable(item):
-                    continue
-                paths.append(item.getFullpath())
-                for _, dirs, _ in item.walk():
-                    for d in dirs:
-                        if _is_skippable(d):
-                            continue
-                        paths.append(d.getFullpath())
+            parent, name = os.path.split(pane.currentPath)
+            root = item_Default(parent, name)
+            for _, dirs, _ in root.walk():
+                for d in dirs:
+                    count += 1
+                    if 100 < count:
+                        Kiritori.log("Too many directories found, stopping search.")
+                        return
+                    n = d.getName()
+                    if n.startswith(".") or n == "_obsolete":
+                        continue
+                    paths.append(d.getFullpath())
 
             if 0 < len(paths):
                 paths.sort(reverse=True)
