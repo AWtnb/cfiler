@@ -1860,8 +1860,8 @@ def configure(window: MainWindow) -> None:
                     if 100 < count:
                         Kiritori.log("Too many directories found, stopping search.")
                         return
-                    n = d.getName()
-                    if n.startswith(".") or n == "_obsolete":
+                    _, n = os.path.split(d.getName())
+                    if n[0] in (".", "_", "~"):
                         continue
                     paths.append(d.getFullpath())
 
