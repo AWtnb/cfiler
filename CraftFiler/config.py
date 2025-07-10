@@ -1338,38 +1338,43 @@ def configure(window: MainWindow) -> None:
         @classmethod
         def invoke(cls, current_dir: bool, search_all: bool) -> Callable:
 
-            def __find(job_item: ckit.JobItem) -> None:
-                job_item.result = None
-                if not cls.check():
-                    Kiritori.log("Exe not found: '{}'".format(cls.exe_path))
-                    return
-                pane = CPane()
-                root = (
-                    pane.currentPath if current_dir else cls.get_root(pane.currentPath)
-                )
-                cmd = [
-                    cls.exe_path,
-                    "-exclude=_obsolete,node_modules",
-                    "-all={}".format(search_all),
-                    "-root={}".format(root),
-                ]
-                delay()
-                proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
-                result = proc.stdout.strip()
-                if result:
-                    if proc.returncode != 0:
-                        if result:
-                            Kiritori.log(result)
-                        return
-                    job_item.result = result
-
-            def __open(job_item: ckit.JobItem) -> None:
-                result = job_item.result
-                if result:
-                    pane = CPane()
-                    pane.openPath(result)
-
             def _wrapper() -> None:
+                pane = CPane()
+                if pane.isBlank:
+                    return
+
+                def __find(job_item: ckit.JobItem) -> None:
+                    job_item.result = None
+                    if not cls.check():
+                        Kiritori.log("Exe not found: '{}'".format(cls.exe_path))
+                        return
+                    root = (
+                        pane.currentPath
+                        if current_dir
+                        else cls.get_root(pane.currentPath)
+                    )
+                    cmd = [
+                        cls.exe_path,
+                        "-exclude=_obsolete,node_modules",
+                        "-all={}".format(search_all),
+                        "-root={}".format(root),
+                    ]
+                    delay()
+                    proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
+                    result = proc.stdout.strip()
+                    if result:
+                        if proc.returncode != 0:
+                            if result:
+                                Kiritori.log(result)
+                            return
+                        job_item.result = result
+
+                def __open(job_item: ckit.JobItem) -> None:
+                    result = job_item.result
+                    if result:
+                        pane = CPane()
+                        pane.openPath(result)
+
                 job = ckit.JobItem(__find, __open)
                 window.taskEnqueue(job, create_new_queue=False)
 
