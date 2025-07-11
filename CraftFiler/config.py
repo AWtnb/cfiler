@@ -2365,7 +2365,7 @@ def configure(window: MainWindow) -> None:
             @property
             def start(self) -> Union[int, None]:
                 try:
-                    return int(self.index_template.lstrip(self.filler))
+                    return int(self.index_template)
                 except:
                     return None
 
