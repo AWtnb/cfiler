@@ -2250,23 +2250,64 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(rename_insert, "S-I")
 
-    def get_exif_date(path: str) -> Union[str, None]:
-        try:
-            with PILImage.open(path) as img:
-                exif_data = img._getexif()
-                if not exif_data:
-                    return None
-                for tag_id, value in exif_data.items():
-                    tag = TAGS.get(tag_id, tag_id)
-                    if tag == "DateTimeOriginal":
-                        dt = datetime.datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
-                        return dt.strftime("%Y_%m%d_%H%M%S") + "00"
-                return None
-        except Exception as e:
-            print(e)
-            return None
+    class PhotoInfo(NamedTuple):
+        Name: str
+        Timestamp: str
 
-    def rename_exif_date() -> None:
+    class PhotoFile:
+        def __init__(self, path: str):
+            self.path = path
+            _, self.name = os.path.split(self.path)
+            _, self.ext = os.path.splitext(self.name)
+            self.filler = datetime.datetime(1111, 11, 11, 11, 11, 11, 111111)
+
+        def get_byte_offset(self) -> int:
+            ext = self.ext.lower()
+            if ext == ".jpeg" or ext == ".jpg":
+                return 0
+            if ext == ".raf":
+                if self.name.startswith("_DSF"):
+                    return 0x19E
+                return 0x17A
+            if ext == ".cr2":
+                return 0x144
+            if self.name.startswith("MVI_") and ext == ".mp4":
+                return 0x160
+            return -1
+
+        def from_exif(self) -> datetime.datetime:
+            try:
+                with PILImage.open(self.path) as img:
+                    exif_data = img._getexif()
+                    if not exif_data:
+                        return self.filler
+                    for tag_id, value in exif_data.items():
+                        tag = TAGS.get(tag_id, tag_id)
+                        if tag == "DateTimeOriginal":
+                            dt = datetime.datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
+                            return dt
+                    return self.filler
+            except Exception as e:
+                print(e)
+                return self.filler
+
+        def get_timestamp(self) -> datetime.datetime:
+            offset = self.get_byte_offset()
+            if offset < 1:
+                if offset == 0:
+                    return self.from_exif()
+                return self.filler
+            with open(self.path, "rb") as f:
+                f.seek(offset)
+                bytes_read = f.read(19)
+            decoded = bytes_read.decode("ascii")
+            return datetime.datetime.strptime(decoded, "%Y:%m:%d %H:%M:%S")
+
+        def parse(self, fmt: str) -> PhotoInfo:
+            ts = self.get_timestamp().strftime(fmt)
+            return PhotoInfo(self.name, ts)
+
+    def rename_photo_file() -> None:
         renamer = Renamer()
 
         targets = []
@@ -2282,16 +2323,60 @@ def configure(window: MainWindow) -> None:
             lines = []
             for item in targets:
                 path = item.getFullpath()
-                timestamp = get_exif_date(path)
-                p = Path(path)
-                if timestamp is None:
-                    lines.append("Skip  : {}\n    => No exif date.".format(p.name))
-                else:
-                    new_name = timestamp + "_" + p.name
-                    infos.append(RenameInfo(p, new_name))
-                    lines.append("Rename: {}\n    ==> {}\n".format(p.name, new_name))
+                photo = PhotoFile(path)
+                info = photo.parse("%Y_%m%d_%H%M%S00")
+                new_name = info.Timestamp + "_" + info.Name
+                infos.append(RenameInfo(Path(path), new_name))
+                lines.append(
+                    "Rename: {}\n    ==> {}\n".format(item.getName(), new_name)
+                )
 
-            lines.append("\ninsert exif timestamp:\nOK? (Enter / Esc)")
+            lines.append("\ninsert timestamp:\nOK? (Enter / Esc)")
+
+            return infos, popResultWindow(window, "Preview", "\n".join(lines))
+
+        infos, ok = _confirm()
+        if len(infos) < 1 or not ok:
+            print("Canceled.\n")
+            return
+
+        def _func() -> None:
+            for info in infos:
+                renamer.execute(info.orgPath, info.newName)
+
+        Kiritori.wrap(_func)
+
+    def rename_lightroom_photo_from_dropbox() -> None:
+        renamer = Renamer()
+
+        targets = []
+        for item in renamer.candidate:
+            if not item.isdir():
+                targets.append(item)
+
+        if len(targets) < 1:
+            return
+
+        def _confirm() -> Tuple[List[RenameInfo], bool]:
+            infos = []
+            lines = []
+            for item in targets:
+                path = item.getFullpath()
+                p = Path(path)
+                elems = p.stem.replace("写真 ", "").split(" ")
+                date_ts = elems[0].replace("-", "")
+                time_ts = "".join([str(n).rjust(2, "0") for n in elems[1:4]])
+                if 4 < len(elems):
+                    time_ts = (
+                        time_ts + "-" + elems[-1].replace("(", "").replace(")", "")
+                    )
+                new_name = date_ts + "-IMG_" + time_ts + p.suffix
+                infos.append(RenameInfo(p, new_name))
+                lines.append(
+                    "Rename: {}\n    ==> {}\n".format(item.getName(), new_name)
+                )
+
+            lines.append("\ninsert timestamp:\nOK? (Enter / Esc)")
 
             return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
@@ -3414,7 +3499,8 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
-            "RenameExifDate": rename_exif_date,
+            "RenamePhotoFile": rename_photo_file,
+            "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
             "ZipSelections": window.command_CreateArchive,
             "SetBookmarkAlias": set_bookmark_alias,
             "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
