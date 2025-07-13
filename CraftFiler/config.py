@@ -2259,7 +2259,7 @@ def configure(window: MainWindow) -> None:
             self.path = path
             _, self.name = os.path.split(self.path)
             _, self.ext = os.path.splitext(self.name)
-            self.filler = datetime.datetime(1111, 11, 11, 11, 11, 11, 111111)
+            self.filler = datetime.datetime.fromtimestamp(0)
 
         def get_byte_offset(self) -> int:
             ext = self.ext.lower()
