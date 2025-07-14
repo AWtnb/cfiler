@@ -2262,16 +2262,16 @@ def configure(window: MainWindow) -> None:
             self.filler = datetime.datetime.fromtimestamp(0)
 
         def get_byte_offset(self) -> int:
-            ext = self.ext.lower()
-            if ext == ".jpeg" or ext == ".jpg":
+            ext = self.ext.lower()[1:]
+            if ext in ["jpeg", "jpg", "webp"]:
                 return 0
-            if ext == ".raf":
+            if ext == "raf":
                 if self.name.startswith("_DSF"):
                     return 0x19E
                 return 0x17A
-            if ext == ".cr2":
+            if ext == "cr2":
                 return 0x144
-            if self.name.startswith("MVI_") and ext == ".mp4":
+            if self.name.startswith("MVI_") and ext == "mp4":
                 return 0x160
             return -1
 
