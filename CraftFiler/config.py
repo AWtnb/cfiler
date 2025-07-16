@@ -1876,7 +1876,7 @@ def configure(window: MainWindow) -> None:
 
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.result:
-                pane.openPath(*os.path.split(job_item.result))
+                pane.openPath(job_item.result)
 
         job = ckit.JobItem(_traverse, _open)
         window.taskEnqueue(job, create_new_queue=False)
