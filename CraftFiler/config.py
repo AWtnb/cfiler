@@ -1883,6 +1883,21 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(to_edge_dir, "A-L")
 
+    def to_root_of_index() -> None:
+        pane = CPane()
+        reg = re.compile(r"^\d+_")
+        root = ""
+        path = (
+            Path(pane.currentPath, "_") if pane.isBlank else Path(pane.focusedItemPath)
+        )
+        for parent in path.parents:
+            if not reg.match(parent.name):
+                if (root := str(parent)) != pane.currentPath:
+                    pane.openPath(root)
+                return
+
+    Keybinder().bind(to_root_of_index, "A-H")
+
     class SmartJumper:
 
         @staticmethod
