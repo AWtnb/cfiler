@@ -2413,7 +2413,7 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        placeholder = "01@-1,1;"
+        placeholder = "01@-1,1;_;"
         rename_config_index = RenameConfig("index")
         last_value = rename_config_index.value
         if 0 < len(last_value):
@@ -2422,7 +2422,7 @@ def configure(window: MainWindow) -> None:
         print("Rename insert index:")
         rename_command = stringify(
             window.commandLine(
-                "Index[@position,step,skips1,skips2,...;newstem]",
+                "Index[@position,step,skips1,skips2,...;connector;newstem]",
                 text=placeholder,
                 selection=[0, 2],
             ),
@@ -2433,13 +2433,22 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
+        sep = ";"
+        if sep not in rename_command:
+            rename_command += sep * 2
+        else:
+            if len(rename_command.split(sep)) < 3:
+                rename_command += sep
+
+        command_index, connector, command_newstem = rename_command.split(sep)[:3]
+
         class NameIndex:
             position = -1
             step = 1
             skips = []
 
-            def __init__(self, s: str) -> None:
-                commands = s.split("@")
+            def __init__(self) -> None:
+                commands = command_index.split("@")
                 self.index_template = commands[0].rstrip()
                 if 1 < len(commands):
                     args = [a.strip() for a in commands[1].split(",")]
@@ -2458,9 +2467,10 @@ def configure(window: MainWindow) -> None:
             def fill(self, i: int) -> str:
                 s = str(i)
                 w = len(self.index_template)
-                if len(self.filler) < 1:
-                    return s
-                return s.rjust(w, self.filler)
+                filled = s if len(self.filler) < 1 else s.rjust(w, self.filler)
+                if self.position < 0:
+                    return connector + filled
+                return filled + connector
 
             @property
             def start(self) -> Union[int, None]:
@@ -2480,14 +2490,7 @@ def configure(window: MainWindow) -> None:
                     i += self.step
                 return i
 
-        sep = ";"
-        if sep not in rename_command:
-            rename_command += sep
-
-        command_index = rename_command[: rename_command.find(sep)]
-        command_newstem = rename_command[rename_command.find(sep) + 1 :]
-
-        ni = NameIndex(command_index)
+        ni = NameIndex()
         if not ni.is_valid():
             print("Canceled (Invalid format).\n")
             return
