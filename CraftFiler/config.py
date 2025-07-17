@@ -9,6 +9,7 @@ import subprocess
 import time
 import unicodedata
 import urllib
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 from PIL import ImageGrab
@@ -1452,21 +1453,47 @@ def configure(window: MainWindow) -> None:
         if not url.startswith("http"):
             Kiritori.log("invalid url: '{}'".format(url))
             return
-        print("Making shortcut for:\n{}".format(url))
-        lines = ["[InternetShortcut]"]
-        domain = urllib.parse.urlparse(url).netloc
-        name = stringify(
-            window.commandLine(
-                "Shortcut title", text=" - {}".format(domain), selection=[0, 0]
+
+        def _access(job_item: ckit.JobItem) -> None:
+            job_item.body = None
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req) as res:
+                body = res.read()
+                try:
+                    text = body.decode("utf-8", errors="ignore")
+                except Exception:
+                    text = body.decode("cp932", errors="ignore")
+                job_item.body = text
+
+        def _make_shortcut(job_item: ckit.JobItem) -> None:
+            title = ""
+            if job_item.body is not None:
+                m = re.search(
+                    r"<title.*?>(.*?)</title>", job_item.body, re.IGNORECASE | re.DOTALL
+                )
+                title = m.group(1).strip() if m else ""
+
+            lines = ["[InternetShortcut]"]
+            domain = urllib.parse.urlparse(url).netloc
+            name = stringify(
+                window.commandLine(
+                    "Shortcut title",
+                    text="{} - {}".format(title, domain),
+                    selection=[0, len(title)],
+                )
             )
-        )
-        if len(name) < 1:
-            print("Canceled.\n")
-            return
-        lines.append("URL={}".format(url))
-        if not name.endswith(".url"):
-            name = name + ".url"
-        Path(CPane().currentPath, name).write_text("\n".join(lines), encoding="utf-8")
+            if len(name) < 1:
+                print("Canceled.\n")
+                return
+            lines.append("URL={}".format(url))
+            if not name.endswith(".url"):
+                name = name + ".url"
+            Path(CPane().currentPath, name).write_text(
+                "\n".join(lines), encoding="utf-8"
+            )
+
+        job = ckit.JobItem(_access, _make_shortcut)
+        window.taskEnqueue(job, create_new_queue=False)
 
     def on_paste() -> None:
         c = ckit.getClipboardText()
