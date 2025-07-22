@@ -2871,16 +2871,59 @@ def configure(window: MainWindow) -> None:
             return
 
         def _copy_as(new_path: str) -> None:
-            if Path(src_path).is_dir():
+            if src_path.is_dir():
                 shutil.copytree(src_path, new_path)
             else:
                 shutil.copy(src_path, new_path)
 
         window.subThreadCall(_copy_as, (new_path,))
         pane.refresh()
-        pane.focusByName(Path(new_path).name)
+        pane.focusByName(new_path.name)
 
     Keybinder().bind(duplicate_file, "S-D")
+
+    def duplicate_with_new_extension() -> None:
+        pane = CPane()
+
+        src_path = Path(pane.focusedItemPath)
+        if pane.hasSelection:
+            if 1 < len(pane.selectedItems):
+                Kiritori.log("Caneled. (Select nothing or just 1 item)")
+                return
+            src_path = Path(pane.selectedItemPaths[0])
+
+        if src_path.is_dir():
+            Kiritori.log("Caneled. (Dirctory has no extension)")
+            return
+
+        sel_start = len(src_path.stem) + 1
+        sel_end = len(src_path.name)
+        prompt = "NewName"
+        result = stringify(
+            window.commandLine(
+                title=prompt,
+                text=src_path.name,
+                selection=[sel_start, sel_end],
+            )
+        )
+
+        if len(result) < 1:
+            return
+
+        new_path = src_path.with_name(result)
+
+        if smart_check_path(new_path):
+            Kiritori.log("Canceled. (Same item exists)")
+            return
+
+        def _copy_as(new_path: str) -> None:
+            shutil.copy(src_path, new_path)
+
+        window.subThreadCall(_copy_as, (new_path,))
+        pane.refresh()
+        pane.focusByName(new_path.name)
+
+    Keybinder().bind(duplicate_with_new_extension, "A-S-D")
 
     def smart_copy_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
