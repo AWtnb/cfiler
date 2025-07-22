@@ -1,5 +1,6 @@
 import configparser
 import datetime
+import fnmatch
 import hashlib
 import inspect
 import os
@@ -1260,99 +1261,120 @@ def configure(window: MainWindow) -> None:
         for path in paths:
             _convert(path)
 
-    class DirRule:
-        def __init__(self, current_path: str, src_name: str = ".dirnames") -> None:
-            self._current_path = current_path
-            self._src_name = src_name
+    class BookProject:
+        main_items = (
+            "_legacy",
+            "_wiki",
+            "appendix_付き物",
+            "design_装幀",
+            "donation_献本",
+            "galley_本文ゲラ",
+            "letter_手紙",
+            "meeting_会合",
+            "payment_印税",
+            "permission_許諾",
+            "projectpaper_企画書",
+            "promote_販宣",
+            "websupport",
+            "written_お原稿",
+        )
 
-        def read_src(self) -> str:
-            p = Path(self._current_path)
-            for path in p.parents:
-                f = Path(path, self._src_name)
-                if smart_check_path(f):
-                    return f.read_text("utf-8").strip()
-            return ""
+        appendix_items = (
+            "author_著者紹介",
+            "toc_目次",
+            "intro_はしがき",
+            "intro_まえがき",
+            "intro_はじめに",
+            "postscript_あとがき",
+            "postscript_おわりに",
+            "reference_文献リスト",
+            "index_索引",
+            "endroll_奥付",
+        )
+        galley_items = (
+            "#_layout_割付",
+            "#_初校",
+            "#_再校",
+            "#_三校",
+            "#_念校",
+        )
 
-        def filter_src(self) -> List[str]:
-            existing = [
-                d.name.lstrip("0123456789") for d in Path(self._current_path).iterdir()
-            ]
-            lines = []
-            for s in self.read_src().splitlines():
-                if not s.lstrip("#").split("|")[0] in existing:
-                    lines.append(s)
-
-            def _sort_key(line) -> Tuple[int]:
-                return (len(line), line)
-
-            return sorted(lines, key=_sort_key)
-
-        def fzf(self) -> str:
-            src = self.read_src()
-            if len(src) < 1:
-                Kiritori.log("src file '{}' not found...".format(self._src_name))
-                return ""
-            src = "\n".join(self.filter_src())
-            try:
-                cmd = ["fzf.exe", "--margin=1", "--no-sort"]
-                proc = subprocess.run(
-                    cmd, input=src, capture_output=True, encoding="utf-8"
-                )
-                if proc.returncode != 0:
-                    if o := proc.stdout:
-                        Kiritori.log(o)
-                    if e := proc.stderr:
-                        Kiritori.log(e)
-                    return ""
-                return proc.stdout
-            except Exception as e:
-                Kiritori.log(e)
-                return ""
-
-        def get_index(self) -> str:
-            idxs = []
-            width = 1
+        def __init__(self) -> None:
             pane = CPane()
-            reg = re.compile(r"^\d+")
-            for d in pane.dirs:
-                name = d.getName()
-                if m := reg.match(name):
-                    s = m.group(0)
-                    idxs.append(int(s))
-                    width = max(width, len(s))
-            if len(idxs) < 1:
-                return "0"
-            idxs.sort()
-            return str(idxs[-1] + 1).rjust(width, "0")
+            self.current_name = Path(pane.currentPath).name
+            self.reg = re.compile(r"^[0-9]+")
+            self.dirs = [d.getName() for d in pane.dirs]
 
-        def get_name(self) -> str:
-            result = self.fzf().strip()
-            if -1 < (i := result.find("|")):
-                result = result[:i].strip()
-            if result.startswith("#"):
-                idx = self.get_index()
-                return idx + result[1:]
-            return result
+        def _menuitems(self) -> Tuple[str]:
+            mapping = {
+                "galley_*": self.galley_items,
+                "*_galley_*": self.galley_items,
+                "*_?校": (
+                    "#_plain",
+                    "#_proofed",
+                    "#_send_to_author",
+                    "#_proofed_by_author",
+                    "#_send_to_printshop",
+                ),
+                "meeting_*": (
+                    "#_事前資料",
+                    "#_会合メモ",
+                    "#_議事録",
+                ),
+                "appendix_*": self.appendix_items,
+                "*_layout_*": (
+                    "document_入稿書類",
+                    "scan_入稿原稿",
+                ),
+                "written_*": (
+                    "document_依頼書類",
+                    "outline_執筆要領",
+                ),
+            }
+            if self.current_name in self.appendix_items:
+                return self.galley_items
+            for pattern, names in mapping.items():
+                if fnmatch.fnmatch(self.current_name, pattern):
+                    return names
+            return self.main_items
+
+        def _selectables(self) -> List[str]:
+            menu = []
+            existing = [self.reg.sub("#", d) for d in self.dirs]
+            for m in self._menuitems():
+                if m not in existing:
+                    menu.append(m)
+            return menu
+
+        def _increment(self) -> str:
+            idx = -1
+            idx_width = 1
+            for d in self.dirs:
+                if m := self.reg.match(d):
+                    n = m.group(0)
+                    idx = max(idx, int(n))
+                    idx_width = max(idx_width, len(n))
+            idx += 1
+            return str(idx).rjust(idx_width, "0")
+
+        def listup(self) -> List[str]:
+            menu = self._selectables()
+            if any([dn.startswith("#") for dn in menu]):
+                idx = self._increment()
+                return [idx + dn[1:] for dn in menu]
+            return menu
 
     def ruled_mkdir() -> None:
-        if not check_fzf():
-            Kiritori.log("fzf.exe not found.")
+        menu = BookProject().listup()
+        if len(menu) < 1:
+            return
+
+        result, _ = invoke_listwindow("DirName", menu)
+        if result < 0:
             return
 
         pane = CPane()
-
-        def _get_name(job_item: ckit.JobItem) -> None:
-            job_item.name = ""
-            dr = DirRule(pane.currentPath)
-            job_item.name = dr.get_name()
-
-        def _mkdir(job_item: ckit.JobItem) -> None:
-            name = job_item.name
-            if 0 < len(name):
-                pane.mkdir(name)
-
-        job = ckit.JobItem(_get_name, _mkdir)
-        window.taskEnqueue(job, create_new_queue=False)
+        pane.mkdir(menu[result])
 
     Keybinder().bind(ruled_mkdir, "S-A-N")
 
