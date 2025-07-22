@@ -821,6 +821,22 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(focus_latest, "A-N")
 
+    def focus_by_timestamp() -> None:
+        pane = CPane()
+        if pane.isBlank:
+            return
+        focused = pane.focusedItem
+        older = []
+        for item in pane.items:
+            if item.time() < focused.time():
+                older.append(item)
+
+        if 0 < len(older):
+            last = sorted(older, key=lambda x: x.time())[-1]
+            pane.focusByName(last.getName())
+
+    Keybinder().bind(focus_by_timestamp, "A-Back")
+
     def toggle_pane_width() -> None:
         half = (window.width() - 1) // 2
         if window.focus == MainWindow.FOCUS_LEFT:
