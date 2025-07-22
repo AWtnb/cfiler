@@ -144,7 +144,24 @@ def get_vscode_path() -> str:
     return ""
 
 
+def shell_exec(path: str, *args) -> None:
+    if type(path) is not str:
+        path = str(path)
+    params = []
+    for arg in args:
+        if len(arg.strip()):
+            if " " in arg:
+                params.append('"{}"'.format(arg))
+            else:
+                params.append(arg)
+    try:
+        pyauto.shellExecute(None, path, " ".join(params), "")
+    except Exception as e:
+        print(e)
+
+
 def configure(window: MainWindow) -> None:
+
     class ItemTimestamp:
         def __init__(self, item) -> None:
             self._time = item.time()
@@ -787,20 +804,22 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(smart_cursorDown, "J", "Down")
 
-    def shell_exec(path: str, *args) -> None:
-        if type(path) is not str:
-            path = str(path)
-        params = []
-        for arg in args:
-            if len(arg.strip()):
-                if " " in arg:
-                    params.append('"{}"'.format(arg))
-                else:
-                    params.append(arg)
-        try:
-            pyauto.shellExecute(None, path, " ".join(params), "")
-        except Exception as e:
-            Kiritori.log(e)
+    def focus_latest() -> None:
+        pane = CPane()
+        if pane.isBlank:
+            return
+        latest = None
+        for item in pane.items:
+            if latest is None:
+                latest = item
+                continue
+            if latest.time() <= item.time():
+                latest = item
+
+        if latest:
+            pane.focusByName(latest.getName())
+
+    Keybinder().bind(focus_latest, "A-N")
 
     def toggle_pane_width() -> None:
         half = (window.width() - 1) // 2
