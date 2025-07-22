@@ -2373,10 +2373,6 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(rename_insert, "S-I")
 
-    class PhotoInfo(NamedTuple):
-        Name: str
-        Timestamp: str
-
     class PhotoFile:
         def __init__(self, path: str):
             self.path = path
@@ -2426,9 +2422,9 @@ def configure(window: MainWindow) -> None:
             decoded = bytes_read.decode("ascii")
             return datetime.datetime.strptime(decoded, "%Y:%m:%d %H:%M:%S")
 
-        def parse(self, fmt: str) -> PhotoInfo:
+        def rename(self, fmt: str) -> str:
             ts = self.get_timestamp().strftime(fmt)
-            return PhotoInfo(self.name, ts)
+            return ts + "_" + self.name
 
     def rename_photo_file() -> None:
         renamer = Renamer()
@@ -2447,8 +2443,7 @@ def configure(window: MainWindow) -> None:
             for item in targets:
                 path = item.getFullpath()
                 photo = PhotoFile(path)
-                info = photo.parse("%Y_%m%d_%H%M%S00")
-                new_name = info.Timestamp + "_" + info.Name
+                new_name = photo.rename("%Y_%m%d_%H%M%S00")
                 infos.append(RenameInfo(Path(path), new_name))
                 lines.append(
                     "Rename: {}\n    ==> {}\n".format(item.getName(), new_name)
