@@ -1298,6 +1298,7 @@ def configure(window: MainWindow) -> None:
             "#_三校",
             "#_念校",
         )
+        sep = "_"
 
         def __init__(self) -> None:
             pane = CPane()
@@ -1306,6 +1307,8 @@ def configure(window: MainWindow) -> None:
             self.dirs = [d.getName() for d in pane.dirs]
 
         def _menuitems(self) -> Tuple[str]:
+            if self.current_name in self.appendix_items:
+                return self.galley_items
             mapping = {
                 "galley_*": self.galley_items,
                 "*_galley_*": self.galley_items,
@@ -1331,19 +1334,40 @@ def configure(window: MainWindow) -> None:
                     "outline_執筆要領",
                 ),
             }
-            if self.current_name in self.appendix_items:
-                return self.galley_items
             for pattern, names in mapping.items():
                 if fnmatch.fnmatch(self.current_name, pattern):
                     return names
             return self.main_items
 
+        @classmethod
+        def _to_prefix(cls, s: str) -> str:
+            if cls.sep in s:
+                return s[: s.rfind(cls.sep)] + cls.sep
+            return s
+
+        def _prefixes(self) -> List[str]:
+            return [self._to_prefix(d) for d in self.dirs]
+
+        @classmethod
+        def _to_suffix(cls, s: str) -> str:
+            if cls.sep in s:
+                return s[s.find(cls.sep) :]
+            return s
+
+        def _suffixes(self) -> List[str]:
+            return [self._to_suffix(d) for d in self.dirs]
+
         def _selectables(self) -> List[str]:
             menu = []
-            existing = [self.reg.sub("#", d) for d in self.dirs]
+            existing_suffix = self._suffixes()
+            existing_prefixes = self._prefixes()
             for m in self._menuitems():
-                if m not in existing:
-                    menu.append(m)
+                if (
+                    self._to_prefix(m) in existing_prefixes
+                    or self._to_suffix(m) in existing_suffix
+                ):
+                    continue
+                menu.append(m)
             return menu
 
         def _increment(self) -> str:
