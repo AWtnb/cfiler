@@ -1364,9 +1364,14 @@ def configure(window: MainWindow) -> None:
             super().__init__()
 
         def candidates(self) -> Tuple[str]:
-            current_name = Path(self.pane.currentPath).name
+            path = self.pane.currentPath
+            if smart_check_path(os.path.join(path, ".root")):
+                return self.main_items
+
+            current_name = Path(path).name
             if current_name in self.appendix_items:
                 return self.galley_items
+
             mapping = {
                 "galley_*": self.galley_items,
                 "*_?校": (
@@ -1394,11 +1399,12 @@ def configure(window: MainWindow) -> None:
             for pattern, names in mapping.items():
                 if fnmatch.fnmatch(current_name, pattern):
                     return names
-            return self.main_items
+            return []
 
     def ruled_mkdir() -> None:
         menu = BookProjectDir().listup()
         if len(menu) < 1:
+            smart_mkdir()
             return
 
         result, _ = invoke_listwindow("DirName", menu)
