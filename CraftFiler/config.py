@@ -1311,7 +1311,6 @@ def configure(window: MainWindow) -> None:
                 return self.galley_items
             mapping = {
                 "galley_*": self.galley_items,
-                "*_galley_*": self.galley_items,
                 "*_?校": (
                     "#_plain",
                     "#_proofed",
