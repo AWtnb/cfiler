@@ -1261,7 +1261,68 @@ def configure(window: MainWindow) -> None:
         for path in paths:
             _convert(path)
 
-    class BookProject:
+    class RuledDir:
+        sep = "_"
+
+        def __init__(self) -> None:
+            self.pane = CPane()
+            self.reg = re.compile(r"^[0-9]+")
+            self.dirnames = [d.getName() for d in self.pane.dirs]
+
+        def candidates(self) -> Tuple[str]:
+            return (
+                "#_prepare",
+                "#_main",
+                "#_finished",
+            )
+
+        @classmethod
+        def _to_prefix(cls, s: str) -> str:
+            if cls.sep in s:
+                return s[: s.rfind(cls.sep)] + cls.sep
+            return s
+
+        def _prefixes(self) -> List[str]:
+            return [self._to_prefix(d) for d in self.dirnames]
+
+        @classmethod
+        def _to_suffix(cls, s: str) -> str:
+            if cls.sep in s:
+                return s[s.find(cls.sep) :]
+            return s
+
+        def _suffixes(self) -> List[str]:
+            return [self._to_suffix(d) for d in self.dirnames]
+
+        def _selectables(self) -> List[str]:
+            menu = []
+            sufs = self._suffixes()
+            pres = self._prefixes()
+            for m in self.candidates():
+                if self._to_prefix(m) in pres or self._to_suffix(m) in sufs:
+                    continue
+                menu.append(m)
+            return menu
+
+        def _increment(self) -> str:
+            idx = -1
+            idx_width = 1
+            for d in self.dirnames:
+                if m := self.reg.match(d):
+                    n = m.group(0)
+                    idx = max(idx, int(n))
+                    idx_width = max(idx_width, len(n))
+            idx += 1
+            return str(idx).rjust(idx_width, "0")
+
+        def listup(self) -> List[str]:
+            menu = self._selectables()
+            if any([dn.startswith("#") for dn in menu]):
+                idx = self._increment()
+                return [idx + dn[1:] for dn in menu]
+            return menu
+
+    class BookProjectDir(RuledDir):
         main_items = (
             "_legacy",
             "_wiki",
@@ -1298,16 +1359,13 @@ def configure(window: MainWindow) -> None:
             "#_三校",
             "#_念校",
         )
-        sep = "_"
 
-        def __init__(self) -> None:
-            pane = CPane()
-            self.current_name = Path(pane.currentPath).name
-            self.reg = re.compile(r"^[0-9]+")
-            self.dirs = [d.getName() for d in pane.dirs]
+        def __init__(self):
+            super().__init__()
 
-        def _menuitems(self) -> Tuple[str]:
-            if self.current_name in self.appendix_items:
+        def candidates(self) -> Tuple[str]:
+            current_name = Path(self.pane.currentPath).name
+            if current_name in self.appendix_items:
                 return self.galley_items
             mapping = {
                 "galley_*": self.galley_items,
@@ -1334,61 +1392,12 @@ def configure(window: MainWindow) -> None:
                 ),
             }
             for pattern, names in mapping.items():
-                if fnmatch.fnmatch(self.current_name, pattern):
+                if fnmatch.fnmatch(current_name, pattern):
                     return names
             return self.main_items
 
-        @classmethod
-        def _to_prefix(cls, s: str) -> str:
-            if cls.sep in s:
-                return s[: s.rfind(cls.sep)] + cls.sep
-            return s
-
-        def _prefixes(self) -> List[str]:
-            return [self._to_prefix(d) for d in self.dirs]
-
-        @classmethod
-        def _to_suffix(cls, s: str) -> str:
-            if cls.sep in s:
-                return s[s.find(cls.sep) :]
-            return s
-
-        def _suffixes(self) -> List[str]:
-            return [self._to_suffix(d) for d in self.dirs]
-
-        def _selectables(self) -> List[str]:
-            menu = []
-            existing_suffix = self._suffixes()
-            existing_prefixes = self._prefixes()
-            for m in self._menuitems():
-                if (
-                    self._to_prefix(m) in existing_prefixes
-                    or self._to_suffix(m) in existing_suffix
-                ):
-                    continue
-                menu.append(m)
-            return menu
-
-        def _increment(self) -> str:
-            idx = -1
-            idx_width = 1
-            for d in self.dirs:
-                if m := self.reg.match(d):
-                    n = m.group(0)
-                    idx = max(idx, int(n))
-                    idx_width = max(idx_width, len(n))
-            idx += 1
-            return str(idx).rjust(idx_width, "0")
-
-        def listup(self) -> List[str]:
-            menu = self._selectables()
-            if any([dn.startswith("#") for dn in menu]):
-                idx = self._increment()
-                return [idx + dn[1:] for dn in menu]
-            return menu
-
     def ruled_mkdir() -> None:
-        menu = BookProject().listup()
+        menu = BookProjectDir().listup()
         if len(menu) < 1:
             return
 
