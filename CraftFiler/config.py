@@ -270,7 +270,7 @@ def configure(window: MainWindow) -> None:
         @classmethod
         def _draw_header(cls) -> None:
             ts = datetime.datetime.today().strftime(
-                " %Y-%m-%d %H:%M:%S.%f {}".format(cls.sep * 2)
+                " %Y-%m-%d %H:%M:%S {}".format(cls.sep * 2)
             )
             print("\n{}".format(ts.rjust(cls.get_width(), cls.sep)))
 
