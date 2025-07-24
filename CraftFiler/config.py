@@ -2008,15 +2008,15 @@ def configure(window: MainWindow) -> None:
     def to_root_of_index() -> None:
         pane = CPane()
         reg = re.compile(r"^\d+_")
-        root = ""
-        path = (
-            Path(pane.currentPath, "_") if pane.isBlank else Path(pane.focusedItemPath)
-        )
-        for parent in path.parents:
-            if not reg.match(parent.name):
-                if (root := str(parent)) != pane.currentPath:
-                    pane.openPath(root)
-                return
+        root = None
+        f = "_" if pane.isBlank else pane.focusedItem.getName()
+        for parent in Path(pane.currentPath, f).parents:
+            if reg.match(parent.name):
+                root = parent
+        if root:
+            root = str(root.parent)
+            if root != pane.currentPath:
+                pane.openPath(root)
 
     Keybinder().bind(to_root_of_index, "A-H")
 
