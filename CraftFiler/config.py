@@ -1278,6 +1278,8 @@ def configure(window: MainWindow) -> None:
 
         @classmethod
         def _to_prefix(cls, s: str) -> str:
+            if s.endswith(cls.sep):
+                return s
             if cls.sep in s:
                 return s[: s.rfind(cls.sep)] + cls.sep
             return s
@@ -1287,6 +1289,8 @@ def configure(window: MainWindow) -> None:
 
         @classmethod
         def _to_suffix(cls, s: str) -> str:
+            if s.startswith(cls.sep):
+                return s
             if cls.sep in s:
                 return s[s.find(cls.sep) :]
             return s
@@ -1294,7 +1298,7 @@ def configure(window: MainWindow) -> None:
         def _suffixes(self) -> List[str]:
             return [self._to_suffix(d) for d in self.dirnames]
 
-        def _selectables(self) -> List[str]:
+        def _remove_existing(self) -> List[str]:
             menu = []
             sufs = self._suffixes()
             pres = self._prefixes()
@@ -1316,7 +1320,7 @@ def configure(window: MainWindow) -> None:
             return str(idx).rjust(idx_width, "0")
 
         def listup(self) -> List[str]:
-            menu = self._selectables()
+            menu = self._remove_existing()
             if any([dn.startswith("#") for dn in menu]):
                 idx = self._increment()
                 return [idx + dn[1:] for dn in menu]
@@ -1362,26 +1366,34 @@ def configure(window: MainWindow) -> None:
 
         def __init__(self):
             super().__init__()
+            self.path = Path(self.pane.currentPath)
+
+        @staticmethod
+        def check_juhan(path: Path) -> bool:
+            return path.name == "juhan"
+
+        def is_juhan_child(self) -> bool:
+            return self.check_juhan(self.path.parent)
+
+        def is_juhan_sub_child(self) -> bool:
+            parents = self.path.parents
+            return 1 < len(parents) and self.check_juhan(parents[1])
 
         def candidates(self) -> Tuple[str]:
-            current_path = self.pane.currentPath
-
-            if smart_check_path(os.path.join(current_path, ".root")):
+            if smart_check_path(self.path / ".root"):
                 return self.main_items
 
-            path = Path(current_path)
-            if path.parent.name == "juhan":
+            if self.is_juhan_child():
                 return (datetime.datetime.today().strftime("%Y%m_for"),)
 
-            parents = path.parents
-            if 1 < len(parents) and parents[1].name == "juhan":
+            if self.is_juhan_sub_child():
                 return (
                     "#_send_to_author",
                     "#_reaction_from_author",
                     "#_send_to_printshop",
                 )
 
-            current_name = path.name
+            current_name = self.path.name
             if current_name in self.appendix_items:
                 return self.galley_items
 
@@ -1420,17 +1432,24 @@ def configure(window: MainWindow) -> None:
             smart_mkdir()
             return
 
+        if any([m.startswith("0_") for m in menu]):
+            for i, m in enumerate(menu):
+                if m.startswith("0_"):
+                    menu = menu[: i + 1]
+                    break
+
         if len(menu) == 1:
             dn = stringify(window.commandLine("DirName", text=menu[0]))
             if 0 < len(dn):
                 CPane().mkdir(dn)
             return
 
+        pane = CPane()
+
         result, _ = invoke_listwindow("DirName", menu)
         if result < 0:
             return
 
-        pane = CPane()
         pane.mkdir(menu[result])
 
     Keybinder().bind(ruled_mkdir, "S-A-N")
