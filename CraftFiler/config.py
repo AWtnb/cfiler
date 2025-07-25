@@ -1365,6 +1365,10 @@ def configure(window: MainWindow) -> None:
 
         def candidates(self) -> Tuple[str]:
             path = self.pane.currentPath
+
+            if Path(path).parent.name == "juhan":
+                return (datetime.datetime.today().strftime("%Y%m_for"),)
+
             if smart_check_path(os.path.join(path, ".root")):
                 return self.main_items
 
@@ -1405,6 +1409,12 @@ def configure(window: MainWindow) -> None:
         menu = BookProjectDir().listup()
         if len(menu) < 1:
             smart_mkdir()
+            return
+
+        if len(menu) == 1:
+            dn = stringify(window.commandLine("DirName", text=menu[0]))
+            if 0 < len(dn):
+                CPane().mkdir(dn)
             return
 
         result, _ = invoke_listwindow("DirName", menu)
