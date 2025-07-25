@@ -1478,7 +1478,7 @@ def configure(window: MainWindow) -> None:
 
     def setup_zyw():
         for params, key in {
-            (False, False): "A-Z",
+            (False, False): "S-Z",
             (False, True): "Z",
             (True, False): "S-F",
             (True, True): "C-F",
