@@ -1364,15 +1364,24 @@ def configure(window: MainWindow) -> None:
             super().__init__()
 
         def candidates(self) -> Tuple[str]:
-            path = self.pane.currentPath
+            current_path = self.pane.currentPath
 
-            if Path(path).parent.name == "juhan":
-                return (datetime.datetime.today().strftime("%Y%m_for"),)
-
-            if smart_check_path(os.path.join(path, ".root")):
+            if smart_check_path(os.path.join(current_path, ".root")):
                 return self.main_items
 
-            current_name = Path(path).name
+            path = Path(current_path)
+            if path.parent.name == "juhan":
+                return (datetime.datetime.today().strftime("%Y%m_for"),)
+
+            parents = path.parents
+            if 1 < len(parents) and parents[1].name == "juhan":
+                return (
+                    "#_send_to_author",
+                    "#_reaction_from_author",
+                    "#_send_to_printshop",
+                )
+
+            current_name = path.name
             if current_name in self.appendix_items:
                 return self.galley_items
 
