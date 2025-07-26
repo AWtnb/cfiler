@@ -1515,11 +1515,11 @@ def configure(window: MainWindow) -> None:
             return _wrapper
 
     def setup_zyw():
-        for params, key in {
-            (False, False): "S-Z",
-            (False, True): "Z",
-            (True, False): "S-F",
-            (True, True): "C-F",
+        for key, params in {
+            "S-Z": (False, False),
+            "Z": (False, True),
+            "S-F": (True, False),
+            "C-F": (True, True),
         }.items():
             Keybinder().bind(zyw().invoke(*params), key)
 
