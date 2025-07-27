@@ -2860,9 +2860,9 @@ def configure(window: MainWindow) -> None:
         def from_parents(self) -> List[str]:
             found = []
             parents = Path(CPane().currentPath, "_").parents
-            reg = re.compile(r"^[0-9]{6,}")
+            reg = re.compile(r"[0-9]{6,}")
             for parent in parents:
-                if m := reg.match(parent.name):
+                if m := reg.search(parent.name):
                     found.append(self.sep + m.group(0))
                     break
             return found
