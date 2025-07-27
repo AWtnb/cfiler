@@ -138,11 +138,16 @@ def check_fzf() -> bool:
     return shutil.which("fzf.exe") is not None
 
 
-def get_vscode_path() -> str:
-    code_cmd_path = shutil.which("code.cmd")
-    if code_cmd_path is not None:
-        return os.path.join(Path(code_cmd_path).parents[1], "code.exe")
-    return ""
+def open_vscode(*args: str) -> bool:
+    try:
+        if code_path := shutil.which("code"):
+            cmd = [code_path] + list(args)
+            subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+            return True
+        return False
+    except Exception as e:
+        print(e)
+        return False
 
 
 def shell_exec(path: str, *args) -> None:
@@ -990,13 +995,7 @@ def configure(window: MainWindow) -> None:
         if len(paths) < 1:
             paths.append(pane.focusedItemPath)
 
-        with_pdf_viewer = True
-        for path in paths:
-            if not path.endswith(".pdf"):
-                with_pdf_viewer = False
-
-        if not with_pdf_viewer and 1 < len(paths):
-            return
+        with_pdf_viewer = all([path.endswith(".pdf") for path in paths])
 
         app_table = {}
         if with_pdf_viewer:
@@ -1012,8 +1011,7 @@ def configure(window: MainWindow) -> None:
             app_table["mery"] = os.path.expandvars(
                 r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"
             )
-            if 0 < len(v := get_vscode_path()):
-                app_table["vscode"] = v
+            app_table["vscode"] = lambda x: open_vscode(x)
 
         names = list(app_table.keys())
         if len(names) < 1:
@@ -1027,7 +1025,10 @@ def configure(window: MainWindow) -> None:
 
         exe_path = app_table[names[result]]
         for path in paths:
-            shell_exec(exe_path, path)
+            if isinstance(exe_path, Callable):
+                exe_path(path)
+            else:
+                shell_exec(exe_path, path)
 
     Keybinder().bind(open_with, "C-O")
 
@@ -2195,10 +2196,8 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(open_parent_to_other, "S-U", "S-H")
 
     def on_vscode() -> None:
-        vscode_path = get_vscode_path()
-        if smart_check_path(vscode_path):
-            pane = CPane()
-            shell_exec(vscode_path, pane.currentPath)
+        pane = CPane()
+        open_vscode(pane.currentPath)
 
     Keybinder().bind(on_vscode, "V")
 
@@ -3279,11 +3278,10 @@ def configure(window: MainWindow) -> None:
         dir_path = config_dir
         if (real_path := os.path.realpath(config_dir)) != config_dir:
             dir_path = os.path.dirname(real_path)
-        vscode_path = get_vscode_path()
-        if smart_check_path(vscode_path):
-            shell_exec(vscode_path, dir_path)
-        else:
-            shell_exec(dir_path)
+
+        result = open_vscode(dir_path)
+        if not result:
+            subprocess.run(["explorer.exe", dir_path])
 
     Keybinder().bind(edit_config, "C-E")
 
