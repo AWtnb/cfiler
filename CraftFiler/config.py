@@ -2855,10 +2855,20 @@ def configure(window: MainWindow) -> None:
             if self.timestamp:
                 if (s := self.sep + self.timestamp) not in sufs:
                     sufs = [s] + sufs
-            return sorted(list(set(sufs)), key=len)
+            return sufs
+
+        def from_parents(self) -> List[str]:
+            found = []
+            parents = Path(CPane().currentPath, "_").parents
+            reg = re.compile(r"^[0-9]{6,}")
+            for parent in parents:
+                if m := reg.match(parent.name):
+                    found.append(self.sep + m.group(0))
+                    break
+            return found
 
         def candidates(self, s: str) -> List[str]:
-            sufs = self.possible_suffix
+            sufs = self.possible_suffix + self.from_parents()
             if self.sep not in s:
                 return [s + suf for suf in sufs]
             if s.endswith(self.sep):
@@ -2895,11 +2905,6 @@ def configure(window: MainWindow) -> None:
         ts = item.time()
         item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
         additional_suffix = [item_timestamp]
-
-        if mo := re.search(r"\d{8}", pane.currentPath):
-            ts = mo.group(0)
-            if ts != additional_suffix[0]:
-                additional_suffix.append(ts)
 
         focused_path = Path(item.getFullpath())
         placeholder = focused_path.name if focused_path.is_dir() else focused_path.stem
