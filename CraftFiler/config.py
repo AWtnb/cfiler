@@ -1328,78 +1328,63 @@ def configure(window: MainWindow) -> None:
             return menu
 
     class BookProjectDir(RuledDir):
-        main_items = (
-            "_legacy",
-            "_wiki",
-            "appendix_付き物",
-            "design_装幀",
-            "donation_献本",
-            "galley_本文ゲラ",
-            "letter_手紙",
-            "meeting_会合",
-            "payment_印税",
-            "permission_許諾",
-            "projectpaper_企画書",
-            "promote_販宣",
-            "websupport",
-            "written_お原稿",
-        )
-
-        appendix_items = (
-            "author_著者紹介",
-            "toc_目次",
-            "intro_はしがき",
-            "intro_まえがき",
-            "intro_はじめに",
-            "postscript_あとがき",
-            "postscript_おわりに",
-            "reference_文献リスト",
-            "index_索引",
-            "endroll_奥付",
-        )
-        galley_items = (
-            "#_layout_割付",
-            "#_初校",
-            "#_再校",
-            "#_三校",
-            "#_念校",
-        )
-
         def __init__(self):
             super().__init__()
             self.path = Path(self.pane.currentPath)
 
-        @staticmethod
-        def check_juhan(path: Path) -> bool:
-            return path.name == "juhan"
-
-        def is_juhan_child(self) -> bool:
-            return self.check_juhan(self.path.parent)
-
-        def is_juhan_sub_child(self) -> bool:
+        def has_parent(self, name: str, step: int) -> bool:
+            i = step - 1
             parents = self.path.parents
-            return 1 < len(parents) and self.check_juhan(parents[1])
+            return (
+                0 < step and i < len(parents) and fnmatch.fnmatch(parents[i].name, name)
+            )
 
         def candidates(self) -> Tuple[str]:
             if smart_check_path(self.path / ".root"):
-                return self.main_items
+                return (
+                    "_legacy",
+                    "_wiki",
+                    "appendix_付き物",
+                    "design_装幀",
+                    "donation_献本",
+                    "galley_本文ゲラ",
+                    "letter_手紙",
+                    "meeting_会合",
+                    "payment_印税",
+                    "permission_許諾",
+                    "projectpaper_企画書",
+                    "promote_販宣",
+                    "websupport",
+                    "written_お原稿",
+                )
 
-            if self.is_juhan_child():
+            if self.has_parent("juhan*", 1):
                 return (datetime.datetime.today().strftime("%Y%m_for"),)
 
-            if self.is_juhan_sub_child():
+            if self.has_parent("juhan*", 2):
                 return (
                     "#_send_to_author",
                     "#_reaction_from_author",
                     "#_send_to_printshop",
                 )
 
-            current_name = self.path.name
-            if current_name in self.appendix_items:
-                return self.galley_items
+            if self.has_parent("galley_*", 1):
+                return (
+                    "main_本文",
+                    "appendix_付き物",
+                )
 
+            if self.has_parent("galley_*", 2):
+                return (
+                    "#_layout_割付",
+                    "#_初校",
+                    "#_再校",
+                    "#_三校",
+                    "#_念校",
+                )
+
+            current_name = self.path.name
             mapping = {
-                "galley_*": self.galley_items,
                 "*_?校": (
                     "#_plain",
                     "#_proofed",
@@ -1412,7 +1397,18 @@ def configure(window: MainWindow) -> None:
                     "#_会合メモ",
                     "#_議事録",
                 ),
-                "appendix_*": self.appendix_items,
+                "appendix_*": (
+                    "author_著者紹介",
+                    "toc_目次",
+                    "intro_はしがき",
+                    "intro_まえがき",
+                    "intro_はじめに",
+                    "postscript_あとがき",
+                    "postscript_おわりに",
+                    "reference_文献リスト",
+                    "index_索引",
+                    "endroll_奥付",
+                ),
                 "*_layout_*": (
                     "document_入稿書類",
                     "scan_入稿原稿",
@@ -1425,7 +1421,7 @@ def configure(window: MainWindow) -> None:
             for pattern, names in mapping.items():
                 if fnmatch.fnmatch(current_name, pattern):
                     return names
-            return []
+            return super().candidates()
 
     def ruled_mkdir() -> None:
         menu = BookProjectDir().listup()
