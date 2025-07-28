@@ -1350,15 +1350,16 @@ def configure(window: MainWindow) -> None:
                     "written_お原稿",
                 )
 
-            if fnmatch.fnmatch(self.path.parent.name, "juhan*"):
-                return (datetime.datetime.today().strftime("%Y%m_for"),)
-
-            if fnmatch.fnmatch(self.path.parent.parent.name, "juhan*"):
-                return (
+            mapping_by_grand_parent = {
+                "juhan*": (
                     "#_send_to_author",
                     "#_reaction_from_author",
                     "#_send_to_printshop",
                 )
+            }
+            for pattern, names in mapping_by_grand_parent.items():
+                if fnmatch.fnmatch(self.path.parent.parent.name, pattern):
+                    return names
 
             galley_dirnames = (
                 "#_layout_割付",
@@ -1368,11 +1369,21 @@ def configure(window: MainWindow) -> None:
                 "#_念校",
             )
 
-            if fnmatch.fnmatch(self.path.parent.name, "appendix_*"):
-                return galley_dirnames
+            mapping_by_parent = {
+                "juhan*": (datetime.datetime.today().strftime("%Y%m_for"),),
+                "meeting_*": (
+                    "#_事前資料",
+                    "#_会合メモ",
+                    "#_議事録",
+                ),
+                "appendix_*": galley_dirnames,
+            }
+            for pattern, names in mapping_by_parent.items():
+                if fnmatch.fnmatch(self.path.parent.name, pattern):
+                    return names
 
-            ask_doc_dirname = "_document_依頼書類"
-            mapping = {
+            doc_dirname = "_document_依頼書類"
+            mapping_by_name = {
                 "galley_*": (
                     "main_本文",
                     "appendix_付き物",
@@ -1397,23 +1408,22 @@ def configure(window: MainWindow) -> None:
                     "#_proofed_by_author",
                     "#_send_to_printshop",
                 ),
-                "meeting_*": (
-                    "#_事前資料",
-                    "#_会合メモ",
-                    "#_議事録",
-                ),
                 "*_layout_*": (
                     "document_入稿書類",
                     "scan_入稿原稿",
                 ),
-                "written_*": (ask_doc_dirname,),
-                ask_doc_dirname: ("outline_執筆要領",),
+                "projectpaper_*": (
+                    "#_企画部会提出",
+                    "#_修正反映",
+                ),
+                "written_*": (doc_dirname,),
+                doc_dirname: ("outline_執筆要領",),
             }
-            for pattern, names in mapping.items():
+            for pattern, names in mapping_by_name.items():
                 if fnmatch.fnmatch(self.path.name, pattern):
                     return names
 
-            return []
+            return tuple([])
 
     def ruled_mkdir() -> None:
         menu = BookProjectDir().listup()
@@ -1427,13 +1437,13 @@ def configure(window: MainWindow) -> None:
                     menu = menu[: i + 1]
                     break
 
+        pane = CPane()
+
         if len(menu) == 1:
             dn = stringify(window.commandLine("DirName", text=menu[0]))
             if 0 < len(dn):
-                CPane().mkdir(dn)
+                pane.mkdir(dn)
             return
-
-        pane = CPane()
 
         result, _ = invoke_listwindow("DirName", menu)
         if result < 0:
