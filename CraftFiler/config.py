@@ -1371,6 +1371,7 @@ def configure(window: MainWindow) -> None:
             if fnmatch.fnmatch(self.path.parent.name, "appendix_*"):
                 return galley_dirnames
 
+            ask_doc_dirname = "_document_依頼書類"
             mapping = {
                 "galley_*": (
                     "main_本文",
@@ -1405,10 +1406,8 @@ def configure(window: MainWindow) -> None:
                     "document_入稿書類",
                     "scan_入稿原稿",
                 ),
-                "written_*": (
-                    "document_依頼書類",
-                    "outline_執筆要領",
-                ),
+                "written_*": (ask_doc_dirname,),
+                ask_doc_dirname: ("outline_執筆要領",),
             }
             for pattern, names in mapping.items():
                 if fnmatch.fnmatch(self.path.name, pattern):
