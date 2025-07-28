@@ -1411,9 +1411,9 @@ def configure(window: MainWindow) -> None:
                 "*_layout_*": [
                     "document_入稿書類",
                     "mockup_見本組",
-                    "data_入稿データ",
+                    "send_to_printshop_入稿データ",
                 ],
-                "data_入稿データ": ["scan"],
+                "send_to_printshop_入稿データ": ["scan"],
                 "document_入稿書類": ["layout_レイアウト見本", "mockup_見本組"],
                 "projectpaper_*": [
                     "#_企画部会提出",
