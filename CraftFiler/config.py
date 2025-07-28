@@ -1332,9 +1332,9 @@ def configure(window: MainWindow) -> None:
             super().__init__()
             self.path = Path(self.pane.currentPath)
 
-        def candidates(self) -> Tuple[str]:
+        def candidates(self) -> List[str]:
             if smart_check_path(self.path / ".root"):
-                return (
+                return [
                     "_legacy",
                     "_wiki",
                     "design_装幀",
@@ -1348,48 +1348,47 @@ def configure(window: MainWindow) -> None:
                     "promote_販宣",
                     "websupport",
                     "written_お原稿",
-                )
+                ]
 
             mapping_by_grand_parent = {
-                "juhan*": (
+                "juhan*": [
                     "#_send_to_author",
                     "#_reaction_from_author",
                     "#_send_to_printshop",
-                )
+                ]
             }
             for pattern, names in mapping_by_grand_parent.items():
                 if fnmatch.fnmatch(self.path.parent.parent.name, pattern):
                     return names
 
-            galley_dirnames = (
+            galley_dirnames = [
                 "#_layout_割付",
                 "#_初校",
                 "#_再校",
                 "#_三校",
                 "#_念校",
-            )
+            ]
 
             mapping_by_parent = {
-                "juhan*": (datetime.datetime.today().strftime("%Y%m_for"),),
-                "meeting_*": (
+                "juhan*": [datetime.datetime.today().strftime("%Y%m_for")],
+                "meeting_*": [
                     "#_事前資料",
                     "#_会合メモ",
                     "#_議事録",
-                ),
+                ],
                 "appendix_*": galley_dirnames,
             }
             for pattern, names in mapping_by_parent.items():
                 if fnmatch.fnmatch(self.path.parent.name, pattern):
                     return names
 
-            doc_dirname = "_document_依頼書類"
             mapping_by_name = {
-                "galley_*": (
+                "galley_*": [
                     "main_本文",
                     "appendix_付き物",
-                ),
+                ],
                 "main_*": galley_dirnames,
-                "appendix_*": (
+                "appendix_*": [
                     "author_著者紹介",
                     "toc_目次",
                     "intro_はしがき",
@@ -1400,30 +1399,33 @@ def configure(window: MainWindow) -> None:
                     "reference_文献リスト",
                     "index_索引",
                     "endroll_奥付",
-                ),
-                "*_?校": (
+                ],
+                "*_?校": [
                     "#_plain",
                     "#_proofed",
                     "#_send_to_author",
                     "#_proofed_by_author",
                     "#_send_to_printshop",
-                ),
-                "*_layout_*": (
+                ],
+                "*_layout_*": [
                     "document_入稿書類",
-                    "scan_入稿原稿",
-                ),
-                "projectpaper_*": (
+                    "mockup_見本組",
+                    "data_入稿データ",
+                ],
+                "data_入稿データ": ["scan"],
+                "document_入稿書類": ["layout_レイアウト見本", "mockup_見本組"],
+                "projectpaper_*": [
                     "#_企画部会提出",
                     "#_修正反映",
-                ),
-                "written_*": (doc_dirname,),
-                doc_dirname: ("outline_執筆要領",),
+                ],
+                "written_*": ["_order_依頼書類"],
+                "_order_依頼書類": ["outline_執筆要領"],
             }
             for pattern, names in mapping_by_name.items():
                 if fnmatch.fnmatch(self.path.name, pattern):
                     return names
 
-            return tuple([])
+            return []
 
     def ruled_mkdir() -> None:
         menu = BookProjectDir().listup()
