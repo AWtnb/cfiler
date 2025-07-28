@@ -3054,7 +3054,6 @@ def configure(window: MainWindow) -> None:
 
         result, mod = window.commandLine(
             prompt,
-            text=default_name,
             selection=[0, len(default_name)],
             candidate_handler=_listup_dests,
             return_modkey=True,
