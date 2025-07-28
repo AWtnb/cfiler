@@ -1337,10 +1337,9 @@ def configure(window: MainWindow) -> None:
                 return (
                     "_legacy",
                     "_wiki",
-                    "appendix_付き物",
                     "design_装幀",
                     "donation_献本",
-                    "galley_本文ゲラ",
+                    "galley_ゲラ",
                     "letter_手紙",
                     "meeting_会合",
                     "payment_印税",
