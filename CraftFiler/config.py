@@ -1327,6 +1327,7 @@ def configure(window: MainWindow) -> None:
                 return [idx + dn[1:] for dn in menu]
             return menu
 
+    # https://gist.github.com/AWtnb/db70a72f379e5d7307145177cc114141
     class BookProjectDir(RuledDir):
         def __init__(self):
             super().__init__()
