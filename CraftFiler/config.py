@@ -1376,12 +1376,6 @@ def configure(window: MainWindow) -> None:
                     "#_reaction_from_author",
                     "#_send_to_printshop",
                 ],
-                (
-                    "juhan",
-                    "?????_*",
-                ): [
-                    datetime.datetime.today().strftime("%Y%m_for"),
-                ],
                 ("galley_*", "main_*"): galley_dirnames,
                 ("appendix_*",): [
                     "author_著者紹介",
@@ -1439,25 +1433,24 @@ def configure(window: MainWindow) -> None:
             smart_mkdir()
             return
 
-        if any([m.startswith("0_") for m in menu]):
-            for i, m in enumerate(menu):
-                if m.startswith("0_"):
-                    menu = menu[: i + 1]
-                    break
+        def _listup_dirnames(
+            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+        ) -> tuple:
+            found = []
+            for name in menu:
+                if name.startswith(update_info.text):
+                    found.append(name)
+            return found, 0
 
-        pane = CPane()
-
-        if len(menu) == 1:
-            dn = stringify(window.commandLine("DirName", text=menu[0]))
-            if 0 < len(dn):
-                pane.mkdir(dn)
-            return
-
-        result, _ = invoke_listwindow("DirName", menu)
-        if result < 0:
-            return
-
-        pane.mkdir(menu[result])
+        name = stringify(
+            window.commandLine(
+                "DirName",
+                candidate_handler=_listup_dirnames,
+                auto_complete=True,
+            )
+        )
+        if 0 < len(name):
+            CPane().mkdir(name)
 
     Keybinder().bind(ruled_mkdir, "S-A-N")
 
