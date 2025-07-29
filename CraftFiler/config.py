@@ -1331,10 +1331,17 @@ def configure(window: MainWindow) -> None:
     class BookProjectDir(RuledDir):
         def __init__(self):
             super().__init__()
-            self.path = Path(self.pane.currentPath)
+
+        def get_parents(self, step: int) -> Tuple[str]:
+            found = []
+            p = Path(self.pane.currentPath)
+            for _ in range(step):
+                found.insert(0, p.name)
+                p = p.parent
+            return tuple(found)
 
         def candidates(self) -> List[str]:
-            if smart_check_path(self.path / ".root"):
+            if smart_check_path(os.path.join(self.pane.currentPath, ".root")):
                 return [
                     "_legacy",
                     "_wiki",
@@ -1351,17 +1358,6 @@ def configure(window: MainWindow) -> None:
                     "written_お原稿",
                 ]
 
-            mapping_by_grand_parent = {
-                "juhan*": [
-                    "#_send_to_author",
-                    "#_reaction_from_author",
-                    "#_send_to_printshop",
-                ]
-            }
-            for pattern, names in mapping_by_grand_parent.items():
-                if fnmatch.fnmatch(self.path.parent.parent.name, pattern):
-                    return names
-
             galley_dirnames = [
                 "#_layout_割付",
                 "#_初校",
@@ -1370,26 +1366,24 @@ def configure(window: MainWindow) -> None:
                 "#_念校",
             ]
 
-            mapping_by_parent = {
-                "juhan*": [datetime.datetime.today().strftime("%Y%m_for")],
-                "meeting_*": [
-                    "#_事前資料",
-                    "#_会合メモ",
-                    "#_議事録",
+            mapping = {
+                (
+                    "juhan",
+                    "?????_*",
+                    "*",
+                ): [
+                    "#_send_to_author",
+                    "#_reaction_from_author",
+                    "#_send_to_printshop",
                 ],
-                "appendix_*": galley_dirnames,
-            }
-            for pattern, names in mapping_by_parent.items():
-                if fnmatch.fnmatch(self.path.parent.name, pattern):
-                    return names
-
-            mapping_by_name = {
-                "galley_*": [
-                    "main_本文",
-                    "appendix_付き物",
+                (
+                    "juhan",
+                    "?????_*",
+                ): [
+                    datetime.datetime.today().strftime("%Y%m_for"),
                 ],
-                "main_*": galley_dirnames,
-                "appendix_*": [
+                ("galley_*", "main_*"): galley_dirnames,
+                ("appendix_*",): [
                     "author_著者紹介",
                     "toc_目次",
                     "intro_はしがき",
@@ -1401,29 +1395,40 @@ def configure(window: MainWindow) -> None:
                     "index_索引",
                     "endroll_奥付",
                 ],
-                "*_?校": [
+                ("appendix_*", "*"): galley_dirnames,
+                ("*_?校",): [
                     "#_plain",
                     "#_proofed",
                     "#_send_to_author",
                     "#_proofed_by_author",
                     "#_send_to_printshop",
                 ],
-                "*_layout_*": [
+                ("*_layout_*",): [
                     "document_入稿書類",
                     "mockup_見本組",
                     "send_to_printshop_入稿データ",
                 ],
-                "send_to_printshop_入稿データ": ["scan"],
-                "document_入稿書類": ["layout_レイアウト見本", "mockup_見本組"],
-                "projectpaper_*": [
+                ("*_layout_*", "send_to_printshop_*"): ["scan"],
+                ("*_layout_*", "document_*"): [
+                    "layout_レイアウト見本",
+                    "mockup_見本組",
+                ],
+                ("meeting_*", "*"): [
+                    "#_事前資料",
+                    "#_会合メモ",
+                    "#_議事録",
+                ],
+                ("projectpaper_*",): [
                     "#_企画部会提出",
                     "#_修正反映",
                 ],
-                "written_*": ["_order_依頼書類"],
-                "_order_依頼書類": ["outline_執筆要領"],
+                ("written_*",): ["_order_依頼書類"],
+                ("written_*", "_order_*"): ["outline_執筆要領"],
             }
-            for pattern, names in mapping_by_name.items():
-                if fnmatch.fnmatch(self.path.name, pattern):
+
+            for parents, names in mapping.items():
+                ps = self.get_parents(len(parents))
+                if all([fnmatch.fnmatch(p, parents[i]) for i, p in enumerate(ps)]):
                     return names
 
             return []
