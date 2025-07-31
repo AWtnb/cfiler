@@ -1376,6 +1376,10 @@ def configure(window: MainWindow) -> None:
                     "#_reaction_from_author",
                     "#_send_to_printshop",
                 ],
+                ("galley_*",): [
+                    "main_本文",
+                    "appendix_付き物",
+                ],
                 ("galley_*", "main_*"): galley_dirnames,
                 ("appendix_*",): [
                     "author_著者紹介",
