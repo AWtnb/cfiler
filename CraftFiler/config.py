@@ -1304,7 +1304,8 @@ def configure(window: MainWindow) -> None:
             sufs = self._suffixes()
             pres = self._prefixes()
             for m in self.candidates():
-                if self._to_prefix(m) in pres or self._to_suffix(m) in sufs:
+                root = m.replace("/", os.sep).split(os.sep)[0]
+                if self._to_prefix(root) in pres or self._to_suffix(root) in sufs:
                     continue
                 menu.append(m)
             return menu
@@ -1360,10 +1361,10 @@ def configure(window: MainWindow) -> None:
 
             galley_dirnames = [
                 "#_layout_割付",
-                "#_初校",
-                "#_再校",
-                "#_三校",
-                "#_念校",
+                "#_初校/0_plain",
+                "#_再校/0_plain",
+                "#_三校/0_plain",
+                "#_念校/0_plain",
             ]
 
             mapping = {
