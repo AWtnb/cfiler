@@ -1449,9 +1449,12 @@ def configure(window: MainWindow) -> None:
                     found.append(name)
             return found, 0
 
+        placeholder = menu[0]
         name = stringify(
             window.commandLine(
                 "DirName",
+                text=placeholder,
+                selection=[0, len(placeholder)],
                 candidate_handler=_listup_dirnames,
                 auto_complete=True,
             )
