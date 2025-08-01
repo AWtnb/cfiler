@@ -2705,7 +2705,7 @@ def configure(window: MainWindow) -> None:
         last_regexp = rename_config_regexp.value
         if 0 < len(last_regexp):
             placeholder = last_regexp
-            sel_end = last_regexp.find("/")
+            sel_end = max(last_regexp.find("/"), 0)
 
         print("Rename with regexp-replace. Trailing `/c` enables case-sensitive-mode")
         rename_command = window.commandLine(
