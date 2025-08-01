@@ -1366,6 +1366,19 @@ def configure(window: MainWindow) -> None:
                 "#_三校/0_plain",
                 "#_念校/0_plain",
             ]
+            appendix_dirnames = [
+                "author_著者紹介",
+                "toc_目次",
+                "intro_はしがき",
+                "intro_まえがき",
+                "intro_はじめに",
+                "postscript_あとがき",
+                "postscript_おわりに",
+                "reference_文献リスト",
+                "index_索引",
+                "endroll_奥付",
+            ]
+            appendix_dirnames = [n + "/0_layout_割付" for n in appendix_dirnames]
 
             mapping = {
                 (
@@ -1382,18 +1395,7 @@ def configure(window: MainWindow) -> None:
                     "appendix_付き物",
                 ],
                 ("galley_*", "main_*"): galley_dirnames,
-                ("appendix_*",): [
-                    "author_著者紹介",
-                    "toc_目次",
-                    "intro_はしがき",
-                    "intro_まえがき",
-                    "intro_はじめに",
-                    "postscript_あとがき",
-                    "postscript_おわりに",
-                    "reference_文献リスト",
-                    "index_索引",
-                    "endroll_奥付",
-                ],
+                ("appendix_*",): appendix_dirnames,
                 ("appendix_*", "*"): galley_dirnames,
                 ("*_?校",): [
                     "#_plain",
