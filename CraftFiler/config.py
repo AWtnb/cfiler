@@ -2789,7 +2789,7 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(rename_regexp, "S-R")
 
-    class Prefixer:
+    class NamePrefix:
         sep = "_"
 
         def __init__(self) -> None:
@@ -2824,7 +2824,7 @@ def configure(window: MainWindow) -> None:
         ) -> Tuple[List[str], int]:
             return self.candidates(update_info.text), 0
 
-    class Suffixer:
+    class NameSuffix:
         sep = "_"
 
         def __init__(
@@ -2836,6 +2836,7 @@ def configure(window: MainWindow) -> None:
             if with_timestamp:
                 self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
 
+            self.pane = CPane()
             self._additional = [self.sep + a for a in additional]
 
         @classmethod
@@ -2847,17 +2848,15 @@ def configure(window: MainWindow) -> None:
             return sufs
 
         @staticmethod
-        def to_base(path: str) -> str:
-            p = Path(path)
-            if p.is_dir():
-                return p.name
-            return p.stem
+        def to_stem(path: str) -> str:
+            _, name = os.path.split(path)
+            stem, _ = os.path.splitext(name)
+            return stem
 
-        @property
-        def possible_suffix(self) -> List[str]:
+        def candidates(self) -> List[str]:
             sufs = []
-            for path in CPane().paths:
-                sufs += self.from_name(self.to_base(path))
+            for path in self.pane.paths:
+                sufs += self.from_name(self.to_stem(path))
             if 0 < len(self._additional):
                 sufs += self._additional
             if self.timestamp:
@@ -2867,7 +2866,7 @@ def configure(window: MainWindow) -> None:
 
         def from_parents(self) -> List[str]:
             found = []
-            parents = Path(CPane().currentPath, "_").parents
+            parents = Path(self.pane.currentPath, "_").parents
             reg = re.compile(r"[0-9]{6,}")
             for parent in parents:
                 if m := reg.search(parent.name):
@@ -2875,32 +2874,39 @@ def configure(window: MainWindow) -> None:
                     break
             return found
 
-        def candidates(self, s: str) -> List[str]:
-            sufs = self.possible_suffix + self.from_parents()
-            if self.sep not in s:
-                return [s + suf for suf in sufs]
-            if s.endswith(self.sep):
-                return [s + suf[1:] for suf in sufs]
+        def from_selection(self) -> List[str]:
+            sels = self.pane.selectedItemPaths + CPane(False).selectedItemPaths
+            return [self.to_stem(sel) for sel in sels]
+
+    class SuffixFilter(NameSuffix):
+        def __init__(self, with_timestamp: bool = False, additional: List[str] = []):
+            super().__init__(with_timestamp, additional)
+
+        @classmethod
+        def apply(cls, suffixes: List[str], s: str) -> List[str]:
+            if cls.sep not in s:
+                return [s + suf for suf in suffixes]
+            if s.endswith(cls.sep):
+                return [s + suf[1:] for suf in suffixes]
             found = []
-            sep_pos = s.find(self.sep)
+            sep_pos = s.find(cls.sep)
             command_suffix = s[sep_pos:]
-            for suf in sufs:
+            for suf in suffixes:
                 if suf.startswith(command_suffix):
                     found.append(s[:sep_pos] + suf)
             return found
 
-        def from_selection(self) -> List[str]:
-            found = []
-            for sel in CPane().selectedItemPaths + CPane(False).selectedItemPaths:
-                name = self.to_base(sel)
-                found.append(name)
-            return found
+        def invoke(self) -> Callable:
+            selected = sorted(self.from_selection())
+            sufs = self.candidates() + self.from_parents()
 
-        def __call__(
-            self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
-        ) -> Tuple[List[str], int]:
-            found = self.candidates(update_info.text) + self.from_selection()
-            return sorted(list(set(found)), key=len), 0
+            def _filter(
+                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+            ) -> Tuple[List[str], int]:
+                found = self.apply(sufs, update_info.text)
+                return sorted(list(set(found)), key=len) + selected, 0
+
+            return _filter
 
     def invoke_renamer() -> None:
         pane = CPane()
@@ -2923,7 +2929,7 @@ def configure(window: MainWindow) -> None:
             title="NewStem",
             text=placeholder,
             selection=sel,
-            candidate_handler=Suffixer(True, additional_suffix),
+            candidate_handler=SuffixFilter(True, additional_suffix).invoke(),
             return_modkey=True,
         )
 
@@ -2960,7 +2966,7 @@ def configure(window: MainWindow) -> None:
             window.commandLine(
                 title=prompt,
                 text=placeholder,
-                candidate_handler=Suffixer(True),
+                candidate_handler=SuffixFilter(True).invoke(),
                 selection=[sel_start, sel_end],
             )
         )
@@ -3090,7 +3096,7 @@ def configure(window: MainWindow) -> None:
             "DirName",
             text=ts,
             selection=[0, len(ts)],
-            candidate_handler=Suffixer(False),
+            candidate_handler=SuffixFilter(False).invoke(),
             return_modkey=True,
         )
 
@@ -3123,7 +3129,7 @@ def configure(window: MainWindow) -> None:
                 prompt,
                 text=placeholder,
                 selection=sel,
-                candidate_handler=Suffixer(True),
+                candidate_handler=SuffixFilter(True).invoke(),
                 return_modkey=True,
             )
 
@@ -3519,7 +3525,7 @@ def configure(window: MainWindow) -> None:
         result, mod = window.commandLine(
             "StartsWith",
             return_modkey=True,
-            candidate_handler=Prefixer(),
+            candidate_handler=NamePrefix(),
         )
         if result:
             Selector().stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
@@ -3530,8 +3536,8 @@ def configure(window: MainWindow) -> None:
         result, mod = window.commandLine(
             "EndsWith",
             return_modkey=True,
-            text=Suffixer.sep,
-            candidate_handler=Suffixer(),
+            text=NameSuffix.sep,
+            candidate_handler=SuffixFilter().invoke(),
         )
         if result:
             Selector().stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
