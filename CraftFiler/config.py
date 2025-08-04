@@ -815,7 +815,7 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return
         latest = None
-        for item in pane.items:
+        for item in pane.selectedOrAllItems:
             if latest is None:
                 latest = item
                 continue
@@ -833,7 +833,7 @@ def configure(window: MainWindow) -> None:
             return
         focused = pane.focusedItem
         older = []
-        for item in pane.items:
+        for item in pane.selectedOrAllItems:
             if item.time() < focused.time():
                 older.append(item)
 
