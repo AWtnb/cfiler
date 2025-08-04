@@ -2793,36 +2793,51 @@ def configure(window: MainWindow) -> None:
         sep = "_"
 
         def __init__(self) -> None:
-            pane = CPane()
-            self.names = []
-            for item in pane.items:
-                name = item.getName()
-                if self.sep not in name or name.startswith(self.sep):
-                    continue
-                p = Path(pane.currentPath, name)
-                self.names.append(p.stem)
+            self.pane = CPane()
 
-        @property
-        def possible_prefix(self) -> List[str]:
+        @classmethod
+        def from_name(cls, s: str) -> List[str]:
             pres = []
-            for name in self.names:
-                for i, c in enumerate(name):
-                    if c == self.sep:
-                        pres.append(name[: i + 1])
-            return sorted(list(set(pres)), key=len)
+            for i, c in enumerate(s):
+                if 0 < i and c == cls.sep:
+                    pres.append(s[: i + 1])
+            return pres
 
-        def candidates(self, s: str) -> List[str]:
-            pres = self.possible_prefix
-            found = []
-            for pre in pres:
-                if pre.startswith(s):
-                    found.append(pre)
-            return found
+        @staticmethod
+        def to_stem(path: str) -> str:
+            _, name = os.path.split(path)
+            stem, _ = os.path.splitext(name)
+            return stem
 
-        def __call__(
-            self, update_info: ckit.ckit_widget.EditWidget.UpdateInfo
-        ) -> Tuple[List[str], int]:
-            return self.candidates(update_info.text), 0
+        def candidates(self) -> List[str]:
+            pres = []
+            for path in self.pane.paths:
+                pres += self.from_name(self.to_stem(path))
+            return pres
+
+        def from_selection(self) -> List[str]:
+            sels = self.pane.selectedItemPaths + CPane(False).selectedItemPaths
+            return [self.to_stem(sel) for sel in sels]
+
+    class PrefixFilter(NamePrefix):
+        def __init__(self):
+            super().__init__()
+
+        @staticmethod
+        def apply(prefixes: List[str], s: str) -> List[str]:
+            return [pre for pre in prefixes if pre.startswith(s)]
+
+        def invoke(self) -> Callable:
+            selected = sorted(self.from_selection())
+            pres = self.candidates()
+
+            def _filter(
+                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+            ) -> Tuple[List[str], int]:
+                found = self.apply(pres, update_info.text)
+                return sorted(list(set(found)), key=len) + selected, 0
+
+            return _filter
 
     class NameSuffix:
         sep = "_"
@@ -3122,14 +3137,28 @@ def configure(window: MainWindow) -> None:
             else:
                 prompt += " (with extension)"
 
-            placeholder = ""
-            sel = [0, 0]
+            prefix_filter = PrefixFilter()
+            prefix_candidates = prefix_filter.candidates()
+            suffix_filter = SuffixFilter(True)
+            suffix_candidates = (
+                suffix_filter.candidates() + suffix_filter.from_parents()
+            )
+            selected = sorted(prefix_filter.from_selection())
+
+            def _listup_candidate(
+                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+            ) -> Tuple[List[str], int]:
+                s = update_info.text
+                if "_" not in update_info.text:
+                    found = prefix_filter.apply(prefix_candidates, s)
+                else:
+                    found = suffix_filter.apply(suffix_candidates, s)
+
+                return sorted(list(set(found)), key=len) + selected, 0
 
             result, mod = window.commandLine(
                 prompt,
-                text=placeholder,
-                selection=sel,
-                candidate_handler=SuffixFilter(True).invoke(),
+                candidate_handler=_listup_candidate,
                 return_modkey=True,
             )
 
@@ -3525,7 +3554,7 @@ def configure(window: MainWindow) -> None:
         result, mod = window.commandLine(
             "StartsWith",
             return_modkey=True,
-            candidate_handler=NamePrefix(),
+            candidate_handler=PrefixFilter().invoke(),
         )
         if result:
             Selector().stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
