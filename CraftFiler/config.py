@@ -2789,11 +2789,25 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(rename_regexp, "S-R")
 
-    class NamePrefix:
+    class NameAffix:
         sep = "_"
 
-        def __init__(self) -> None:
+        def __init__(self):
             self.pane = CPane()
+
+        @staticmethod
+        def to_stem(path: str) -> str:
+            _, name = os.path.split(path)
+            stem, _ = os.path.splitext(name)
+            return stem
+
+        def selected_paths(self) -> List[str]:
+            sels = self.pane.selectedItemPaths + CPane(False).selectedItemPaths
+            return sorted([self.to_stem(sel) for sel in sels])
+
+    class NamePrefix(NameAffix):
+        def __init__(self):
+            super().__init__()
 
         @classmethod
         def from_name(cls, s: str) -> List[str]:
@@ -2803,21 +2817,11 @@ def configure(window: MainWindow) -> None:
                     pres.append(s[: i + 1])
             return pres
 
-        @staticmethod
-        def to_stem(path: str) -> str:
-            _, name = os.path.split(path)
-            stem, _ = os.path.splitext(name)
-            return stem
-
         def candidates(self) -> List[str]:
             pres = []
             for path in self.pane.paths:
                 pres += self.from_name(self.to_stem(path))
             return pres
-
-        def from_selection(self) -> List[str]:
-            sels = self.pane.selectedItemPaths + CPane(False).selectedItemPaths
-            return [self.to_stem(sel) for sel in sels]
 
     class PrefixFilter(NamePrefix):
         def __init__(self):
@@ -2828,7 +2832,7 @@ def configure(window: MainWindow) -> None:
             return [pre for pre in prefixes if pre.startswith(s)]
 
         def invoke(self) -> Callable:
-            selected = sorted(self.from_selection())
+            selected = self.selected_paths
             pres = self.candidates()
 
             def _filter(
@@ -2839,19 +2843,18 @@ def configure(window: MainWindow) -> None:
 
             return _filter
 
-    class NameSuffix:
-        sep = "_"
+    class NameSuffix(NameAffix):
 
         def __init__(
             self,
             with_timestamp: bool = False,
             additional: List[str] = [],
         ) -> None:
+            super().__init__()
             self.timestamp = ""
             if with_timestamp:
                 self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
 
-            self.pane = CPane()
             self._additional = [self.sep + a for a in additional]
 
         @classmethod
@@ -2861,12 +2864,6 @@ def configure(window: MainWindow) -> None:
                 if 0 < i and c == cls.sep:
                     sufs.append(s[i:])
             return sufs
-
-        @staticmethod
-        def to_stem(path: str) -> str:
-            _, name = os.path.split(path)
-            stem, _ = os.path.splitext(name)
-            return stem
 
         def candidates(self) -> List[str]:
             sufs = []
@@ -2889,10 +2886,6 @@ def configure(window: MainWindow) -> None:
                     break
             return found
 
-        def from_selection(self) -> List[str]:
-            sels = self.pane.selectedItemPaths + CPane(False).selectedItemPaths
-            return [self.to_stem(sel) for sel in sels]
-
     class SuffixFilter(NameSuffix):
         def __init__(self, with_timestamp: bool = False, additional: List[str] = []):
             super().__init__(with_timestamp, additional)
@@ -2912,7 +2905,7 @@ def configure(window: MainWindow) -> None:
             return found
 
         def invoke(self) -> Callable:
-            selected = sorted(self.from_selection())
+            selected = self.selected_paths
             sufs = self.candidates() + self.from_parents()
 
             def _filter(
@@ -3143,7 +3136,7 @@ def configure(window: MainWindow) -> None:
             suffix_candidates = (
                 suffix_filter.candidates() + suffix_filter.from_parents()
             )
-            selected = sorted(prefix_filter.from_selection())
+            selected = NameAffix().selected_paths()
 
             def _listup_candidate(
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
