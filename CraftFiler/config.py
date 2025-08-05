@@ -2924,10 +2924,11 @@ def configure(window: MainWindow) -> None:
             update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
         ) -> Tuple[List[str], int]:
             s = update_info.text
-            if "_" not in update_info.text:
-                found = prefix_handler.filter_by(s)
-            else:
-                found = suffix_handler.filter_by(s)
+            found = (
+                prefix_handler.filter_by(s)
+                if len(s) < 1
+                else suffix_handler.filter_by(s)
+            )
 
             return sorted(list(set(found)), key=len) + selected, 0
 
