@@ -1414,9 +1414,7 @@ def configure(window: MainWindow) -> None:
                     "layout_レイアウト見本",
                     "mockup_見本組",
                 ],
-                ("donation_*",): [
-                    "letter_献本御礼"
-                ],
+                ("donation_*",): ["letter_献本御礼"],
                 ("meeting_*", "*"): [
                     "#_事前資料",
                     "#_会合メモ",
@@ -2929,7 +2927,7 @@ def configure(window: MainWindow) -> None:
             s = update_info.text
             found = (
                 prefix_handler.filter_by(s)
-                if len(s) < 1
+                if NameAffix.sep not in s
                 else suffix_handler.filter_by(s)
             )
 
