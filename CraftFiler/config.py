@@ -2933,7 +2933,7 @@ def configure(window: MainWindow) -> None:
                 else suffix_handler.filter_by(s)
             )
 
-            return sorted(list(set(found)), key=len) + selected, 0
+            return selected + sorted(list(set(found)), key=len), 0
 
         return _handler
 
