@@ -226,29 +226,29 @@ def configure(window: MainWindow) -> None:
 
     def set_custom_theme():
         custom_theme = {
-            "bg": (18, 37, 48),
-            "fg": (255, 255, 255),
-            "cursor0": (255, 255, 255),
-            "cursor1": (255, 64, 64),
-            "bar_fg": (0, 0, 0),
-            "bar_error_fg": (200, 0, 0),
-            "file_fg": (230, 230, 230),
-            "dir_fg": (244, 215, 26),
-            "hidden_file_fg": (85, 85, 85),
-            "hidden_dir_fg": (85, 85, 50),
-            "error_file_fg": (255, 0, 0),
-            "select_file_bg1": (20, 81, 186),
-            "select_file_bg2": (20, 81, 186),
-            "bookmark_file_bg1": (1, 58, 112),
-            "bookmark_file_bg2": (193, 7, 125),
-            "file_cursor": (127, 255, 187),
-            "select_bg": (20, 81, 186),
-            "select_fg": (255, 255, 255),
-            "choice_bg": (50, 50, 50),
-            "choice_fg": (255, 255, 255),
-            "diff_bg1": (100, 50, 50),
-            "diff_bg2": (50, 100, 50),
-            "diff_bg3": (50, 50, 100),
+            "bg": "#122530",
+            "fg": "#ffffff",
+            "cursor0": "#ffffff",
+            "cursor1": "#ff4040",
+            "bar_fg": "#000000",
+            "bar_error_fg": "#c80000",
+            "file_fg": "#e6e6e6",
+            "dir_fg": "#f4d71a",
+            "hidden_file_fg": "#555555",
+            "hidden_dir_fg": "#555532",
+            "error_file_fg": "#ff0000",
+            "select_file_bg1": "#1451ba",
+            "select_file_bg2": "#1451ba",
+            "bookmark_file_bg1": "#013a70",
+            "bookmark_file_bg2": "#c1077d",
+            "file_cursor": "#7fffcb",
+            "select_bg": "#1451ba",
+            "select_fg": "#ffffff",
+            "choice_bg": "#323232",
+            "choice_fg": "#ffffff",
+            "diff_bg1": "#643232",
+            "diff_bg2": "#326432",
+            "diff_bg3": "#323264",
         }
 
         name = "black"
@@ -256,7 +256,8 @@ def configure(window: MainWindow) -> None:
         window.ini.set("THEME", "name", name)
 
         for k, v in custom_theme.items():
-            ckit.ckit_theme.ini.set("COLOR", k, str(v))
+            rgb = tuple(int(v[i : i + 2], 16) for i in (1, 3, 5))
+            ckit.ckit_theme.ini.set("COLOR", k, str(rgb))
 
         window.destroyThemePlane()
         window.createThemePlane()
