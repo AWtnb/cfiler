@@ -862,20 +862,6 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(lambda: CPane().focusOther(), "C-L")
 
-    def copy_docx_content(path) -> None:
-        if not path.endswith(".docx"):
-            return
-
-        def _read(job_item: ckit.JobItem) -> None:
-            job_item.result = read_docx(path)
-
-        def _view(job_item: ckit.JobItem) -> None:
-            ckit.setClipboardText(job_item.result)
-            Kiritori.log("Copied content: '{}'".format(path))
-
-        job = ckit.JobItem(_read, _view)
-        window.taskEnqueue(job, create_new_queue=False)
-
     def is_extractable(ext: str) -> bool:
         for archiver in window.archiver_list:
             for pattern in archiver[0].split():
@@ -960,20 +946,21 @@ def configure(window: MainWindow) -> None:
             "xlsx",
             "xls",
             "doc",
+            "docx",
             "pptx",
             "ppt",
         ]:
             window.command_Execute(None)
             return True
 
-        if ext == ".docx":
-            menu = ["Open", "Copy content"]
-            result, _ = invoke_listwindow("docx file:", menu)
-            if result == 0:
-                window.command_Execute(None)
-            elif result == 1:
-                copy_docx_content(focus_path)
-            return True
+        # if ext == ".docx":
+        #     menu = ["Open", "Copy content"]
+        #     result, _ = invoke_listwindow("docx file:", menu)
+        #     if result == 0:
+        #         window.command_Execute(None)
+        #     elif result == 1:
+        #         copy_docx_content(focus_path)
+        #     return True
 
         return False
 
@@ -1834,42 +1821,39 @@ def configure(window: MainWindow) -> None:
 
         menu = ["Fullpath", "Name", "Basename"]
 
-        root = None
-        for path in Path(pane.currentPath).parents:
-            p = os.path.join(path, ".root")
-            if smart_check_path(p, 0.5):
-                root = path
-                break
-        if root is not None:
-            menu.append("Relpath")
+        if all([Path(path).suffix == ".docx" for path in targets]):
+            menu.append("Text content")
 
         result, _ = invoke_listwindow("Copy", menu)
         if result < 0:
             return
 
-        lines = []
-        if result == 0:
-            lines = targets
-        elif result == 1:
-            for p in targets:
-                lines.append(Path(p).name)
-        elif result == 3:
-            for p in targets:
-                rel = Path(p).relative_to(root)
-                lines.append(str(rel))
-        else:
-            for p in targets:
-                lines.append(Path(p).stem)
+        def _from(path: str) -> None:
+            if result == 0:
+                return path
+            p = Path(path)
+            if result == 1:
+                return p.name
+            if result == 3:
+                content = read_docx(path)
+                return content
+            return p.stem
 
-        count = len(lines)
-        if 0 < count:
+        def _copy(job_item: ckit.JobItem) -> None:
+            lines = [_from(target) for target in targets]
             ckit.setClipboardText("\n".join(lines))
-            s = "Copied {} of {} item".format(menu[result], count)
-            if 1 < count:
+            job_item.count = len(lines)
+
+        def _finished(job_item: ckit.JobItem) -> None:
+            s = "Copied {} of {} item".format(menu[result], job_item.count)
+            if 1 < job_item.count:
                 s += "s."
             else:
                 s += "."
             Kiritori.log(s)
+
+        job = ckit.JobItem(_copy, _finished)
+        window.taskEnqueue(job, create_new_queue=False)
 
     Keybinder().bind(on_copy, "C-C")
 
