@@ -1845,11 +1845,11 @@ def configure(window: MainWindow) -> None:
             job_item.count = len(lines)
 
         def _finished(job_item: ckit.JobItem) -> None:
-            s = "Copied {} of {} item".format(menu[result], job_item.count)
+            s = "Copied {} of ".format(menu[result])
             if 1 < job_item.count:
-                s += "s."
+                s += "{} items.".format(job_item.count)
             else:
-                s += "."
+                s += "'{}'.".format(Path(targets[0]).name)
             Kiritori.log(s)
 
         job = ckit.JobItem(_copy, _finished)
