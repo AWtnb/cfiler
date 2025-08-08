@@ -3349,6 +3349,10 @@ def configure(window: MainWindow) -> None:
             return n
 
         @property
+        def has_result(self) -> bool:
+            return 0 < len(self._items)
+
+        @property
         def names(self) -> List[str]:
             return [item.origin for item in self._items]
 
@@ -3372,18 +3376,18 @@ def configure(window: MainWindow) -> None:
                         filler = " " * w + "=" * (buffer_width - w)
                         print("", filler, n)
 
-    class FilesHashDiff:
+    class FileHashDiff:
+        def __init__(self, max_mb: int):
+            self.max_mb = max_mb
 
-        @staticmethod
-        def to_hash(path: str) -> str:
+        def to_hash(self, path: str) -> str:
             mb = 1024 * 1024
-            read_size = 1 * mb if 5 * mb < os.path.getsize(path) else None
+            read_size = 1 * mb if self.max_mb * mb < os.path.getsize(path) else None
             with open(path, "rb") as f:
                 digest = hashlib.md5(f.read(read_size)).hexdigest()
             return digest
 
-        @classmethod
-        def compare(cls) -> None:
+        def compare(self) -> None:
             def _scan(job_item: ckit.JobItem) -> None:
                 pane = CPane()
                 targets = []
@@ -3391,8 +3395,7 @@ def configure(window: MainWindow) -> None:
                     if not item.isdir():
                         targets.append(item)
 
-                job_item.comparable = 0 < len(targets)
-                if not job_item.comparable:
+                if len(targets) < 1:
                     return
 
                 Kiritori.log("comparing md5 hash")
@@ -3407,7 +3410,8 @@ def configure(window: MainWindow) -> None:
                     if job_item.isCanceled():
                         return
                     rel = Path(path).relative_to(other_pane.currentPath)
-                    digest = cls.to_hash(path)
+                    print("checking first {}MB of: {}".format(self.max_mb, rel))
+                    digest = self.to_hash(path)
                     table[digest] = table.get(digest, []) + [str(rel)]
 
                 compare_with_selected_items = pane.hasSelection
@@ -3416,7 +3420,7 @@ def configure(window: MainWindow) -> None:
                 for file in targets:
                     if job_item.isCanceled():
                         return
-                    digest = cls.to_hash(file.getFullpath())
+                    digest = self.to_hash(file.getFullpath())
                     if digest in table:
                         name = file.getName()
                         if not compare_with_selected_items:
@@ -3426,17 +3430,21 @@ def configure(window: MainWindow) -> None:
                         for n in table[digest]:
                             other_pane.selectByName(n)
 
-                cloned_items.show()
+                job_item.cloned_items = cloned_items
 
             def _finish(job_item: ckit.JobItem) -> None:
                 window.clearProgress()
-                if job_item.comparable:
-                    if job_item.isCanceled():
-                        Kiritori.log("Canceled.")
-                    else:
-                        Kiritori.log("finished")
+                if job_item.isCanceled():
+                    Kiritori.log("Canceled.")
                 else:
-                    Kiritori.log("finished (nothing to compare)")
+                    cloned = job_item.cloned_items
+                    if cloned.has_result:
+
+                        def _show() -> None:
+                            print("Finished.\n")
+                            cloned.show()
+
+                    Kiritori.wrap(_show)
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
@@ -3776,7 +3784,7 @@ def configure(window: MainWindow) -> None:
                 ckit.getClipboardText().strip()
             ),
             "RenamePseudoVoicing": rename_pseudo_voicing,
-            "FindSameFile": FilesHashDiff().compare,
+            "FindSameFile": FileHashDiff(2).compare,
             "FromOtherNames": from_other_names,
             "FromActiveNames": from_active_names,
             "SelectSameName": select_same_name,
