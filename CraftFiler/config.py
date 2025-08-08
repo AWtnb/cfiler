@@ -18,7 +18,7 @@ from PIL import Image as PILImage
 from PIL.ExifTags import TAGS
 
 from pathlib import Path
-from typing import List, Tuple, Callable, Union, NamedTuple
+from typing import List, Tuple, Callable, Union, NamedTuple, Iterator, Dict
 
 import ckit
 import pyauto
@@ -756,18 +756,16 @@ def configure(window: MainWindow) -> None:
             )
             child_lister.destroy()
 
-        def traverse(self) -> List[str]:
-            paths = []
+        def traverse(self) -> Iterator[str]:
             for item in self.items:
                 if item.isdir():
                     if item.getName().startswith("."):
                         continue
                     for _, _, files in item.walk():
                         for file in files:
-                            paths.append(file.getFullpath())
+                            yield file.getFullpath()
                 else:
-                    paths.append(item.getFullpath())
-            return paths
+                    yield item.getFullpath()
 
     class LeftPane(CPane):
         def __init__(self) -> None:
@@ -3324,19 +3322,9 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(edit_config, "C-E")
 
-    class ClonedItem(NamedTuple):
-        origin: str
-        clones: list
-
-    class ClonedItems:
-        _items: List[ClonedItem]
-
-        def __init__(self) -> None:
-            self._items = []
-
-        def register(self, origin: str, clones: list) -> None:
-            c = ClonedItem(origin, clones)
-            self._items.append(c)
+    class FileHashDiff:
+        def __init__(self, max_mb: int):
+            self.max_mb = max_mb
 
         @staticmethod
         def count_bytes(s: str) -> int:
@@ -3348,38 +3336,6 @@ def configure(window: MainWindow) -> None:
                     n += 1
             return n
 
-        @property
-        def has_result(self) -> bool:
-            return 0 < len(self._items)
-
-        @property
-        def names(self) -> List[str]:
-            return [item.origin for item in self._items]
-
-        def get_max_width(self) -> int:
-            width = 0
-            for name in self.names:
-                bn = self.count_bytes(name)
-                width = max(width, bn)
-            return width + 2
-
-        def show(self) -> None:
-            buffer_width = self.get_max_width()
-            for item in self._items:
-                name = item.origin
-                for i, n in enumerate(item.clones):
-                    w = self.count_bytes(name)
-                    if i == 0:
-                        filler = "=" * (buffer_width - w)
-                        print(name, filler, n)
-                    else:
-                        filler = " " * w + "=" * (buffer_width - w)
-                        print("", filler, n)
-
-    class FileHashDiff:
-        def __init__(self, max_mb: int):
-            self.max_mb = max_mb
-
         def to_hash(self, path: str) -> str:
             mb = 1024 * 1024
             read_size = 1 * mb if self.max_mb * mb < os.path.getsize(path) else None
@@ -3387,9 +3343,15 @@ def configure(window: MainWindow) -> None:
                 digest = hashlib.md5(f.read(read_size)).hexdigest()
             return digest
 
+        def progress(self, name: str) -> None:
+            print("checking first {}MB of: {}".format(self.max_mb, name))
+
         def compare(self) -> None:
+            pane = CPane()
+            other_pane = CPane(False)
+            from_selection = pane.hasSelection
+
             def _scan(job_item: ckit.JobItem) -> None:
-                pane = CPane()
                 targets = []
                 for item in pane.selectedOrAllItems:
                     if not item.isdir():
@@ -3402,49 +3364,52 @@ def configure(window: MainWindow) -> None:
 
                 window.setProgressValue(None)
 
-                other_pane = CPane(False)
+                table = {}
+                for file in targets:
+                    name = file.getName()
+                    digest = self.to_hash(file.getFullpath())
+                    self.progress(name)
+                    table[digest] = table.get(digest, []) + [name]
+
                 other_pane.unSelectAll()
 
-                table = {}
+                clones: Dict[str, List[str]] = {}
                 for path in other_pane.traverse():
                     if job_item.isCanceled():
                         return
-                    rel = Path(path).relative_to(other_pane.currentPath)
-                    print("checking first {}MB of: {}".format(self.max_mb, rel))
+                    rel = str(Path(path).relative_to(other_pane.currentPath))
+                    self.progress(rel)
                     digest = self.to_hash(path)
-                    table[digest] = table.get(digest, []) + [str(rel)]
-
-                compare_with_selected_items = pane.hasSelection
-                cloned_items = ClonedItems()
-
-                for file in targets:
-                    if job_item.isCanceled():
-                        return
-                    digest = self.to_hash(file.getFullpath())
                     if digest in table:
-                        name = file.getName()
-                        if not compare_with_selected_items:
-                            pane.selectByName(name)
-                        cloned_items.register(name, table[digest])
+                        names = table[digest]
+                        for name in names:
+                            clones[name] = clones.get(name, []) + [rel]
 
-                        for n in table[digest]:
-                            other_pane.selectByName(n)
-
-                job_item.cloned_items = cloned_items
+                job_item.clones = clones
 
             def _finish(job_item: ckit.JobItem) -> None:
                 window.clearProgress()
                 if job_item.isCanceled():
                     Kiritori.log("Canceled.")
-                else:
-                    cloned = job_item.cloned_items
-                    if cloned.has_result:
+                    return
 
-                        def _show() -> None:
-                            print("Finished.\n")
-                            cloned.show()
+                def _show() -> None:
+                    print("Finished.\n")
+                    for name, clone_names in job_item.clones.items():
+                        if not from_selection:
+                            pane.selectByName(name)
+                        other_pane.selectByNames(
+                            [n for n in clone_names if os.sep not in n]
+                        )
 
-                    Kiritori.wrap(_show)
+                        filler = " " * self.count_bytes(name)
+                        for i, n in enumerate(clone_names):
+                            if i == 0:
+                                print(name, "==", n)
+                            else:
+                                print(filler, "==", n)
+
+                Kiritori.wrap(_show)
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
