@@ -1402,7 +1402,7 @@ def configure(window: MainWindow) -> None:
                     "layout_レイアウト見本",
                     "mockup_見本組",
                 ],
-                ("donation_*",): ["letter_献本御礼"],
+                ("donation_*",): ["letter_献本同封手紙"],
                 ("meeting_*", "*"): [
                     "#_事前資料",
                     "#_会合メモ",
