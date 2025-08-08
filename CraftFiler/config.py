@@ -1539,11 +1539,22 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log("non-pdf file found!")
                 return
 
-        basename = "conc"
+        def _listup_basenames(
+            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+        ) -> tuple:
+            stems = []
+            for name in pane.names:
+                stem, _ = os.path.splitext(name)
+                if stem not in stems:
+                    stems.append(stem)
+            return [
+                stem
+                for stem in stems
+                if stem.lower().startswith(update_info.text.lower())
+            ], 0
+
         basename = stringify(
-            window.commandLine(
-                title="Outname", text=basename, selection=[0, len(basename)]
-            )
+            window.commandLine(title="Outname", candidate_handler=_listup_basenames)
         )
         if len(basename) < 1:
             return
