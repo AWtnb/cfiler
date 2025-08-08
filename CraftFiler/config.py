@@ -1640,7 +1640,6 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(on_paste, "C-V")
 
     class DriveHandler:
-        wrapper = "<>"
 
         def __init__(self) -> None:
             pane = CPane()
@@ -1653,50 +1652,69 @@ def configure(window: MainWindow) -> None:
                 if d == self._current_drive and not include_current:
                     continue
                 detail = ckit.getDriveDisplayName(d)
-                drives.append(
-                    d
-                    + self.wrapper[0]
-                    + detail[: detail.find("(") - 1]
-                    + self.wrapper[-1]
-                )
+                drives.append(d + detail[: detail.rfind("(")])
             return drives
 
         def parse(self, s: str) -> str:
-            if self.wrapper[0] in s:
-                return s[: s.find(self.wrapper[0])]
+            sep = ":"
+            if sep in s:
+                return s[: s.find(sep) + 1]
             return s
 
-    def smart_jump_input() -> None:
+    def change_drive() -> None:
         pane = CPane()
 
         drive_handler = DriveHandler()
         drives = drive_handler.listup()
 
-        def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
-            found = []
-            for name in drives + pane.names:
-                if name.lower().startswith(update_info.text.lower()):
-                    found.append(name)
+        def _listup_drives(
+            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+        ) -> tuple:
+            found = [
+                d for d in drives if d.lower().startswith(update_info.text.lower())
+            ]
             return found, 0
 
         result = stringify(
             window.commandLine(
-                title="JumpInputSmart",
-                candidate_handler=_listup_names,
+                title="ChangeDrive",
+                candidate_handler=_listup_drives,
+                auto_complete=True,
             )
         )
         result = drive_handler.parse(result)
         if len(result) < 1:
             return
-        if ":" in result:
-            if result == "C:":
-                pane.openPath(DESKTOP_PATH)
-                return
-            pane.openPath(result)
-        else:
+        if result == "C:":
+            pane.openPath(DESKTOP_PATH)
+            return
+        pane.openPath(result)
+
+    Keybinder().bind(change_drive, "D")
+
+    def jump_input() -> None:
+        pane = CPane()
+
+        def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
+            found = [
+                name
+                for name in pane.names
+                if name.lower().startswith(update_info.text.lower())
+            ]
+            return found, 0
+
+        result = stringify(
+            window.commandLine(
+                title="JumpInput",
+                candidate_handler=_listup_names,
+                auto_complete=True,
+            )
+        )
+
+        if 0 < len(result):
             pane.openPath(os.path.join(pane.currentPath, result))
 
-    Keybinder().bind(smart_jump_input, "F")
+    Keybinder().bind(jump_input, "F")
 
     def eject_current_drive() -> None:
         pane = CPane()
@@ -2166,7 +2184,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         pane.focusOther()
 
-    Keybinder().bind(duplicate_pane, "W", "D")
+    Keybinder().bind(duplicate_pane, "W")
 
     def open_on_explorer() -> None:
         pane = CPane(True)
