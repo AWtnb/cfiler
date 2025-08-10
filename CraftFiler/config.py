@@ -3361,6 +3361,8 @@ def configure(window: MainWindow) -> None:
             pane = CPane()
             other_pane = CPane(False)
             from_selection = pane.hasSelection
+            _, dirname = os.path.split(pane.currentPath)
+            _, other_dirname = os.path.split(other_pane.currentPath)
 
             def _scan(job_item: ckit.JobItem) -> None:
                 targets = []
@@ -3378,8 +3380,9 @@ def configure(window: MainWindow) -> None:
                 table = {}
                 for file in targets:
                     name = file.getName()
-                    digest = self.to_hash(file.getFullpath())
-                    self.progress(name)
+                    path = file.getFullpath()
+                    digest = self.to_hash(path)
+                    self.progress("{}\\{}".format(dirname, name))
                     table[digest] = table.get(digest, []) + [name]
 
                 other_pane.unSelectAll()
@@ -3389,7 +3392,7 @@ def configure(window: MainWindow) -> None:
                     if job_item.isCanceled():
                         return
                     rel = str(Path(path).relative_to(other_pane.currentPath))
-                    self.progress(rel)
+                    self.progress("{}\\{}".format(other_dirname, name))
                     digest = self.to_hash(path)
                     if digest in table:
                         names = table[digest]
@@ -3406,6 +3409,10 @@ def configure(window: MainWindow) -> None:
 
                 def _show() -> None:
                     print("Finished.\n")
+                    if not job_item.clones or len(job_item.clones) < 1:
+                        print("(There was no clone)")
+                        return
+
                     for name, clone_names in job_item.clones.items():
                         if not from_selection:
                             pane.selectByName(name)
