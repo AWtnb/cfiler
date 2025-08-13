@@ -3228,12 +3228,13 @@ def configure(window: MainWindow) -> None:
         def __call__(self, items) -> None:
             def _sort_key(item) -> tuple:
                 dir_upper_flag = not item.isdir() if self.order == 1 else item.isdir()
-                starts_with_underscore = item.name.startswith("_")
-                underscore_count = len(item.name) - len(item.name.lstrip("_"))
-                lower_name = item.name.lower()
+                name = item.getName()
+                underscore_count = len(name) - len(name.lstrip("_"))
+                lower_name = name.lower()
                 return (
                     dir_upper_flag,
-                    not starts_with_underscore,
+                    not name.startswith("."),
+                    not name.startswith("_"),
                     (-1 * underscore_count),
                     lower_name,
                 )
