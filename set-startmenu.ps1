@@ -1,5 +1,5 @@
 try {
-    $cmd = Get-Command "Code" -ErrorAction Stop > $null
+    $cmd = Get-Command "Code" -ErrorAction Stop
     $vscode = $cmd.Source | Split-Path -Parent | Split-Path -Parent | Join-Path -ChildPath "code.exe"
     if (Test-Path $vscode) {
         $wsShell = New-Object -ComObject WScript.Shell
