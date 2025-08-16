@@ -1088,13 +1088,15 @@ def configure(window: MainWindow) -> None:
             return path.split(os.sep)[-1]
 
         def to_dict(self) -> dict:
+            global_bookmarks = window.bookmark.getItems()
             d = {}
             for opt in window.ini.items(self.ini_section):
-                name = "{}[{}]".format(opt[0], self.to_leaf(opt[1]))
-                d[name] = opt[1]
-            paths_with_alias = d.values()
-            for path in window.bookmark.getItems():
-                if path not in paths_with_alias:
+                if opt[1] in global_bookmarks:
+                    name = "{}[{}]".format(opt[0], self.to_leaf(opt[1]))
+                    d[name] = opt[1]
+            aliased_paths = d.values()
+            for path in global_bookmarks:
+                if path not in aliased_paths:
                     name = self.to_leaf(path)
                     if name in d.keys():
                         name = "{}[{}]".format(name, path)
