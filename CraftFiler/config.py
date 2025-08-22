@@ -2085,6 +2085,10 @@ def configure(window: MainWindow) -> None:
 
     class SmartJumper:
 
+        def __init__(self):
+            self.pane = CPane()
+            self.dests = self.jumpable()
+
         @staticmethod
         def getBlockEdges(idxs: List[int]) -> List[int]:
             if len(idxs) < 1:
@@ -2108,67 +2112,75 @@ def configure(window: MainWindow) -> None:
                 edges.append(end)
             return edges
 
-        @property
+        @staticmethod
+        def prefixEdges(names: List[str]) -> List[int]:
+            if len(names) < 2:
+                return []
+            prefs = [name.split("_", 1)[0] for name in names]
+            edges = []
+            start = 0
+            for i in range(1, len(prefs) + 1):
+                if i == len(prefs) or prefs[i] != prefs[start]:
+                    if 1 < i - start:
+                        edges += [start, i - 1]
+                    start = i
+            return edges
+
         def jumpable(self) -> List[int]:
-            pane = CPane()
-            if pane.isBlank:
+            if self.pane.isBlank:
                 return []
             stack = []
-            for i in range(pane.count):
-                item = pane.byIndex(i)
+            for i in range(self.pane.count):
+                item = self.pane.byIndex(i)
                 if item.bookmark() or item.selected():
                     stack.append(i)
             stack = self.getBlockEdges(stack)
             stack.append(0)
-            stack.append(pane.count - 1)
-            if 0 < (nd := len(pane.dirs)):
+            stack.append(self.pane.count - 1)
+            if 0 < (nd := len(self.pane.dirs)):
                 stack.append(nd - 1)
-                if 0 < len(pane.files):
+                if 0 < len(self.pane.files):
                     stack.append(nd)
+            stack += self.prefixEdges(self.pane.names)
             return sorted(list(set(stack)))
 
         def down(self, selecting: bool) -> None:
-            targets = self.jumpable
-            if len(targets) < 1:
+            if len(self.dests) < 1:
                 return
-            pane = CPane()
-            cur = pane.cursor
+            cur = self.pane.cursor
             idx = -1
-            for t in targets:
+            for t in self.dests:
                 if cur < t:
                     idx = t
                     break
             if idx < 0:
                 return
             if selecting:
-                for i in range(pane.count):
+                for i in range(self.pane.count):
                     if cur <= i and i <= idx:
-                        pane.select(i)
-            pane.focus(idx)
+                        self.pane.select(i)
+            self.pane.focus(idx)
 
         def up(self, selecting: bool) -> None:
-            targets = self.jumpable
-            if len(targets) < 1:
+            if len(self.dests) < 1:
                 return
-            pane = CPane()
-            cur = pane.cursor
+            cur = self.pane.cursor
             idx = -1
-            for t in targets:
+            for t in self.dests:
                 if t < cur:
                     idx = t
             if idx < 0:
                 return
             if selecting:
-                for i in range(pane.count):
+                for i in range(self.pane.count):
                     if idx <= i and i <= cur:
-                        pane.select(i)
-            pane.focus(idx)
+                        self.pane.select(i)
+            self.pane.focus(idx)
 
     def smart_jumpDown(selecting: bool = False) -> Callable:
-        jumper = SmartJumper()
 
         def _jumper() -> None:
-            jumper.down(selecting)
+            SmartJumper().down(selecting)
 
         return _jumper
 
@@ -2178,10 +2190,9 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(smart_jumpDown(True), "S-C-Down")
 
     def smart_jumpUp(selecting: bool = False) -> None:
-        jumper = SmartJumper()
 
         def _jumper() -> None:
-            jumper.up(selecting)
+            SmartJumper().up(selecting)
 
         return _jumper
 
