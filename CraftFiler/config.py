@@ -1402,10 +1402,7 @@ def configure(window: MainWindow) -> None:
                     "layout_レイアウト見本",
                     "mockup_見本組",
                 ],
-                ("donation_*",): [
-                    "letter_献本同封手紙",
-                    "usage_発送依頼書"
-                    ],
+                ("donation_*",): ["letter_献本同封手紙", "usage_発送依頼書"],
                 ("meeting_*", "*"): [
                     "#_事前資料",
                     "#_会合メモ",
@@ -3397,8 +3394,8 @@ def configure(window: MainWindow) -> None:
                 for path in other_pane.traverse():
                     if job_item.isCanceled():
                         return
-                    rel = str(Path(path).relative_to(other_pane.currentPath))
-                    self.progress("{}\\{}".format(other_dirname, name))
+                    rel = os.path.relpath(path, other_pane.currentPath)
+                    self.progress("{}\\{}".format(other_dirname, rel))
                     digest = self.to_hash(path)
                     if digest in table:
                         names = table[digest]
