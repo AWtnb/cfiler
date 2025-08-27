@@ -1769,6 +1769,51 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_eject, _finished)
         window.taskEnqueue(job, create_new_queue=False)
 
+    def extract_with_7zip(dest: str, *targets: str) -> None:
+        seven_zip = shutil.which("7z")
+        if seven_zip is None:
+            Kiritori.log("7z not found.")
+            return
+
+        targets = [
+            t for t in targets if Path(t).is_file() and is_extractable(Path(t).suffix)
+        ]
+        if len(targets) < 1:
+            return
+
+        def _extract(_) -> None:
+            for target in targets:
+                _, name = os.path.split(target)
+                out_dir = os.path.join(dest, name)
+                try:
+                    cmd = [
+                        seven_zip,
+                        "x",
+                        target,
+                        "-o{}".format(out_dir),
+                        "-y",
+                    ]
+                    proc = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        creationflags=subprocess.CREATE_NO_WINDOW,
+                    )
+                    if proc.returncode != 0:
+                        if o := proc.stdout:
+                            Kiritori.log(o)
+                        if e := proc.stderr:
+                            Kiritori.log(e)
+                except Exception as e:
+                    Kiritori.log(e)
+                    return
+
+        def _finished(_):
+            return
+
+        job = ckit.JobItem(_extract, _finished)
+        window.taskEnqueue(job, create_new_queue=False)
+
     def smart_extract() -> None:
         active_pane = CPane()
 
@@ -1815,7 +1860,10 @@ def configure(window: MainWindow) -> None:
         extract_path = os.path.join(active_pane.currentPath, result)
 
         CPane(False).openPath(extract_path)
-        window.command_ExtractArchive(None)
+        if shutil.which("7z") is not None:
+            extract_with_7zip(extract_path, *active_pane.selectedItemPaths)
+        else:
+            window.command_ExtractArchive(None)
 
     def recylcebin() -> None:
         shell_exec("shell:RecycleBinFolder")
