@@ -1599,14 +1599,17 @@ def configure(window: MainWindow) -> None:
 
         def _access(job_item: ckit.JobItem) -> None:
             job_item.body = None
-            req = urllib.request.Request(url)
-            with urllib.request.urlopen(req) as res:
-                body = res.read()
-                try:
-                    text = body.decode("utf-8", errors="ignore")
-                except Exception:
-                    text = body.decode("cp932", errors="ignore")
-                job_item.body = text
+            try:
+                req = urllib.request.Request(url)
+                with urllib.request.urlopen(req) as res:
+                    body = res.read()
+                    try:
+                        text = body.decode("utf-8", errors="ignore")
+                    except Exception:
+                        text = body.decode("cp932", errors="ignore")
+                    job_item.body = text
+            except Exception as e:
+                Kiritori.log(e)
 
         def _make_shortcut(job_item: ckit.JobItem) -> None:
             title = ""
