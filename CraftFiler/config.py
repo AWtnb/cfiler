@@ -2169,8 +2169,7 @@ def configure(window: MainWindow) -> None:
             start = 0
             for i in range(1, len(prefs) + 1):
                 if i == len(prefs) or prefs[i] != prefs[start]:
-                    if 1 < i - start:
-                        edges += [start, i - 1]
+                    edges += [start, i - 1]
                     start = i
             return edges
 
