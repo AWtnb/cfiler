@@ -3423,6 +3423,7 @@ def configure(window: MainWindow) -> None:
             pane = CPane()
             other_pane = CPane(False)
             from_selection = pane.hasSelection
+            with_selection = other_pane.hasSelection
             _, dirname = os.path.split(pane.currentPath)
             _, other_dirname = os.path.split(other_pane.currentPath)
 
@@ -3441,16 +3442,23 @@ def configure(window: MainWindow) -> None:
 
                 table = {}
                 for file in targets:
+                    if job_item.isCanceled():
+                        return
                     name = file.getName()
                     path = file.getFullpath()
                     digest = self.to_hash(path)
                     self.progress("{}\\{}".format(dirname, name))
                     table[digest] = table.get(digest, []) + [name]
 
-                other_pane.unSelectAll()
+                def __compare_targets() -> Union[Iterator[str], List[str]]:
+                    if with_selection:
+                        paths = other_pane.selectedItemPaths
+                        other_pane.unSelectAll()
+                        return paths
+                    return other_pane.traverse()
 
                 clones: Dict[str, List[str]] = {}
-                for path in other_pane.traverse():
+                for path in __compare_targets():
                     if job_item.isCanceled():
                         return
                     rel = os.path.relpath(path, other_pane.currentPath)
