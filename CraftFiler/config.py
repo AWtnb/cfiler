@@ -3432,6 +3432,7 @@ def configure(window: MainWindow) -> None:
             def _scan(job_item: ckit.JobItem) -> None:
                 targets = []
                 for item in pane.selectedOrAllItems:
+                    pane.unSelectByName(item.getName())
                     if not item.isdir():
                         targets.append(item)
 
@@ -3486,8 +3487,7 @@ def configure(window: MainWindow) -> None:
                         return
 
                     for name, clone_names in job_item.clones.items():
-                        if not from_selection:
-                            pane.selectByName(name)
+                        pane.selectByName(name)
                         other_pane.selectByNames(
                             [n for n in clone_names if os.sep not in n]
                         )
