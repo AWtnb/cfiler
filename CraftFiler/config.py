@@ -4122,6 +4122,18 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
     window.keymap["C-Enter"] = open_original
     window.keymap["C-L"] = open_original
 
+    def copy_path_to_clioboard(_) -> None:
+        item = window.items[window.cursor]
+        path = item.getFullpath()
+        ckit.setClipboardText(path)
+        window.setTitle(
+            "{} - [ {} ] path copied!".format(
+                cfiler_resource.cfiler_appname, window.items[window.cursor].name
+            )
+        )
+
+    window.keymap["S-C-C"] = copy_path_to_clioboard
+
     def copy_image_to_clioboard(_) -> None:
         def _copy(_) -> None:
             item = window.items[window.cursor]
