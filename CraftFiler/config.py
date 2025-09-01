@@ -1385,7 +1385,7 @@ def configure(window: MainWindow) -> None:
                 ("galley_*", "main_*"): galley_dirnames,
                 ("appendix_*",): appendix_dirnames,
                 ("appendix_*", "*"): galley_dirnames,
-                ("*_?校",): [
+                ("*_*校",): [
                     "#_plain",
                     "#_proofed",
                     "#_send_to_author",
