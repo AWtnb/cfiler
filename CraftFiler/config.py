@@ -1432,10 +1432,11 @@ def configure(window: MainWindow) -> None:
         def _listup_dirnames(
             update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
         ) -> tuple:
-            found = []
-            for name in menu:
-                if name.startswith(update_info.text):
-                    found.append(name)
+            found = [
+                name
+                for name in menu
+                if name.lower().startswith(update_info.text.lower())
+            ]
             return found, 0
 
         placeholder = menu[0]
@@ -1541,23 +1542,7 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log("non-pdf file found!")
                 return
 
-        def _listup_basenames(
-            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-        ) -> tuple:
-            stems = []
-            for name in pane.names:
-                stem, _ = os.path.splitext(name)
-                if stem not in stems:
-                    stems.append(stem)
-            return [
-                stem
-                for stem in stems
-                if stem.lower().startswith(update_info.text.lower())
-            ], 0
-
-        basename = stringify(
-            window.commandLine(title="Outname", candidate_handler=_listup_basenames)
-        )
+        basename = stringify(window.commandLine(title="Outname", text="conc"))
         if len(basename) < 1:
             return
 
@@ -1828,26 +1813,12 @@ def configure(window: MainWindow) -> None:
         if not active_pane.hasSelection:
             return
 
-        def _listup_stems(
-            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-        ) -> tuple:
-            found = []
-            for path in active_pane.selectedItemPaths:
-                stem = Path(path).stem
-                if stem.lower().startswith(update_info.text.lower()):
-                    found.append(stem)
-            return found, 0
-
-        placeholder = sorted(
-            [Path(p).stem for p in active_pane.selectedItemPaths], key=len
-        )[0]
-
         result = stringify(
             window.commandLine(
                 "Extract as",
-                text=placeholder,
-                candidate_handler=_listup_stems,
-                auto_complete=True,
+                text="extract_{}".format(
+                    datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
+                ),
             )
         )
         if len(result) < 1:
@@ -3060,14 +3031,20 @@ def configure(window: MainWindow) -> None:
         focused_path = Path(item.getFullpath())
         placeholder = focused_path.suffix
 
+        exts = []
+        for item in pane.items:
+            name = item.getName()
+            _, ext = os.path.splitext(name)
+            if 0 < len(ext):
+                exts.append(ext)
+        exts = sorted(list(set(exts)))
+
         def _listup_exts(
             update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
         ) -> tuple:
             found = []
-            for item in pane.items:
-                name = item.getName()
-                _, ext = os.path.splitext(name)
-                if 0 < len(ext) and ext not in found:
+            for ext in exts:
+                if ext.lower().startswith(update_info.text.lower()):
                     found.append(ext)
             return found, 0
 
@@ -3197,24 +3174,29 @@ def configure(window: MainWindow) -> None:
         if len(items) < 1:
             return
 
-        default_name = "_obsolete"
+        dests = []
+        for item in pane.items:
+            if item.isdir() and not item.selected():
+                name = item.getName()
+                if name not in dests:
+                    dests.append(name)
+
+        obs_name = "_obsolete"
+        if obs_name not in dests:
+            dests.append(obs_name)
 
         def _listup_dests(
             update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
         ) -> tuple:
-            found = []
-            if default_name not in pane.names:
-                found.append(default_name)
-            for item in pane.items:
-                if item.isdir() and not item.selected():
-                    name = item.getName()
-                    if name.startswith(update_info.text):
-                        found.append(name)
+            found = [
+                dest
+                for dest in dests
+                if dest.lower().startswith(update_info.text.lower())
+            ]
             return found, 0
 
         result, mod = window.commandLine(
             prompt,
-            selection=[0, len(default_name)],
             candidate_handler=_listup_dests,
             return_modkey=True,
         )
