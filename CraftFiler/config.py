@@ -3011,7 +3011,7 @@ def configure(window: MainWindow) -> None:
 
         return _handler
 
-    def invoke_renamer() -> None:
+    def rename_stem() -> None:
         pane = CPane()
         item = pane.focusedItem
 
@@ -3047,9 +3047,52 @@ def configure(window: MainWindow) -> None:
 
         Kiritori.wrap(_func)
 
-    Keybinder().bind(invoke_renamer, "N")
+    Keybinder().bind(rename_stem, "N")
 
-    def duplicate_file() -> None:
+    def rename_ext() -> None:
+        pane = CPane()
+        item = pane.focusedItem
+
+        renamer = Renamer()
+        if not renamer.renamable(item) or pane.isBlank:
+            return
+
+        focused_path = Path(item.getFullpath())
+        placeholder = focused_path.suffix
+
+        def _listup_exts(
+            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+        ) -> tuple:
+            found = []
+            for item in pane.items:
+                name = item.getName()
+                _, ext = os.path.splitext(name)
+                if 0 < len(ext) and ext not in found:
+                    found.append(ext)
+            return found, 0
+
+        new_ext, mod = window.commandLine(
+            title="NewExt",
+            text=placeholder,
+            selection=[1, len(placeholder)],
+            candidate_handler=_listup_exts,
+            return_modkey=True,
+        )
+
+        new_ext = stringify(new_ext)
+        if len(new_ext) < 1:
+            return
+
+        new_name = focused_path.stem + new_ext
+
+        def _func() -> None:
+            renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
+
+        Kiritori.wrap(_func)
+
+    Keybinder().bind(rename_ext, "S-N")
+
+    def duplicate_with_new_stem() -> None:
         pane = CPane()
 
         src_path = Path(pane.focusedItemPath)
@@ -3095,7 +3138,7 @@ def configure(window: MainWindow) -> None:
         pane.refresh()
         pane.focusByName(new_path.name)
 
-    Keybinder().bind(duplicate_file, "S-D")
+    Keybinder().bind(duplicate_with_new_stem, "S-D")
 
     def duplicate_with_new_extension() -> None:
         pane = CPane()
