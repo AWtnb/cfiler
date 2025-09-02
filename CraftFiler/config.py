@@ -3237,44 +3237,50 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(smart_mkdir, "C-S-N")
 
-    def invoke_toucher(extension: str = "") -> Callable:
-        def _func() -> None:
-            pane = CPane()
-            if not hasattr(pane.fileList.getLister(), "touch"):
-                return
+    def touch_new_file() -> None:
+        pane = CPane()
+        if not hasattr(pane.fileList.getLister(), "touch"):
+            return
 
-            prompt = "NewFileName"
-            ext = "." + extension if 0 < len(extension) else ""
-            if ext:
-                prompt += " ({})".format(ext)
-            else:
-                prompt += " (with extension)"
+        result, mod = window.commandLine(
+            "NewStem",
+            candidate_handler=name_candidate_handler(True),
+            return_modkey=True,
+        )
 
-            result, mod = window.commandLine(
-                prompt,
-                candidate_handler=name_candidate_handler(True),
-                return_modkey=True,
-            )
+        stem = stringify(result)
+        if len(stem) < 1:
+            return
 
-            filename = stringify(result)
-            if len(filename) < 1:
-                return
+        exts = ["txt", "md"]
 
-            if ext and not filename.endswith(ext):
-                filename += ext
-            new_path = os.path.join(pane.currentPath, filename)
-            if smart_check_path(new_path):
-                Kiritori.log("'{}' already exists.".format(filename))
-                return
-            pane.touch(filename)
-            if mod == ckit.MODKEY_SHIFT:
-                shell_exec(new_path)
+        def _listup_exts(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
+            found = [
+                ext for ext in exts if ext.lower().startswith(update_info.text.lower())
+            ]
+            return found, 0
 
-        return _func
+        ext = window.commandLine(
+            "Extension",
+            candidate_handler=_listup_exts,
+        )
 
-    Keybinder().bind(invoke_toucher("txt"), "T")
-    Keybinder().bind(invoke_toucher("md"), "A-T")
-    Keybinder().bind(invoke_toucher(""), "C-N")
+        if ext is None:
+            return
+        if len(ext) < 1:
+            ext = exts[0]
+
+        new_name = stem + "." + ext
+        new_path = os.path.join(pane.currentPath, new_name)
+        if smart_check_path(new_path):
+            Kiritori.log("'{}' already exists.".format(stem))
+            return
+
+        pane.touch(new_name)
+        if mod == ckit.MODKEY_SHIFT:
+            shell_exec(new_path)
+
+    Keybinder().bind(touch_new_file, "T")
 
     class Rect(NamedTuple):
         left: int
