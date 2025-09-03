@@ -756,16 +756,16 @@ def configure(window: MainWindow) -> None:
             )
             child_lister.destroy()
 
-        def traverse(self) -> Iterator[str]:
+        def traverse(self) -> Iterator[item_Default]:
             for item in self.items:
                 if item.isdir():
                     if item.getName().startswith("."):
                         continue
                     for _, _, files in item.walk():
                         for file in files:
-                            yield file.getFullpath()
+                            yield file
                 else:
-                    yield item.getFullpath()
+                    yield item
 
     class LeftPane(CPane):
         def __init__(self) -> None:
@@ -825,6 +825,29 @@ def configure(window: MainWindow) -> None:
             pane.focusByName(latest.getName())
 
     Keybinder().bind(focus_latest, "A-N")
+
+    def open_latest_under_tree() -> None:
+        pane = CPane()
+        if pane.isBlank:
+            return
+
+        def _scan(job_item: ckit.JobItem) -> None:
+            job_item.latest = None
+            for item in pane.traverse():
+                if job_item.latest is None:
+                    job_item.latest = item
+                    continue
+                if job_item.latest.time() <= item.time():
+                    job_item.latest = item
+
+        def _open(job_item: ckit.JobItem) -> None:
+            if job_item.latest:
+                pane.openPath(job_item.latest.getFullpath())
+
+        job = ckit.JobItem(_scan, _open)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    Keybinder().bind(open_latest_under_tree, "C-S-A-N")
 
     def focus_by_timestamp() -> None:
         pane = CPane()
@@ -2078,8 +2101,7 @@ def configure(window: MainWindow) -> None:
                     paths.append(d.getFullpath())
 
             if 0 < len(paths):
-                paths.sort(reverse=True)
-                job_item.result = paths[0]
+                job_item.result = paths[-1]
 
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.result:
@@ -2096,6 +2118,9 @@ def configure(window: MainWindow) -> None:
         root = None
         f = "_" if pane.isBlank else pane.focusedItem.getName()
         for parent in Path(pane.currentPath, f).parents:
+            if smart_check_path(os.path.join(str(parent.parent), ".root")):
+                root = parent
+                break
             if reg.match(parent.name):
                 root = parent
         if root:
@@ -3488,20 +3513,21 @@ def configure(window: MainWindow) -> None:
                     self.progress("{}\\{}".format(dirname, name))
                     table[digest] = table.get(digest, []) + [name]
 
-                def __compare_targets() -> Union[Iterator[str], List[str]]:
+                def __files_to_compare() -> Union[Iterator[str], List[str]]:
                     if with_selection:
-                        paths = other_pane.selectedItemPaths
+                        sels = other_pane.selectedItems
                         other_pane.unSelectAll()
-                        return paths
+                        return sels
                     return other_pane.traverse()
 
                 clones: Dict[str, List[str]] = {}
-                for path in __compare_targets():
+                for item in __files_to_compare():
                     if job_item.isCanceled():
                         return
-                    rel = os.path.relpath(path, other_pane.currentPath)
+                    p = item.getFullpath()
+                    rel = os.path.relpath(p, other_pane.currentPath)
                     self.progress("{}\\{}".format(other_dirname, rel))
-                    digest = self.to_hash(path)
+                    digest = self.to_hash(p)
                     if digest in table:
                         names = table[digest]
                         for name in names:
