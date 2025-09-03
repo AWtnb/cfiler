@@ -1854,10 +1854,10 @@ def configure(window: MainWindow) -> None:
         active_pane.mkdir(result, False)
         extract_path = os.path.join(active_pane.currentPath, result)
 
-        CPane(False).openPath(extract_path)
         if shutil.which("7z") is not None:
             extract_with_7zip(extract_path, *active_pane.selectedItemPaths)
         else:
+            CPane(False).openPath(extract_path)
             window.command_ExtractArchive(None)
 
     def recylcebin() -> None:
