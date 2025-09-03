@@ -3252,7 +3252,7 @@ def configure(window: MainWindow) -> None:
         if len(stem) < 1:
             return
 
-        exts = ["txt", "md"]
+        exts = ["txt", "md", "html"]
 
         def _listup_exts(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
             found = [
@@ -3262,7 +3262,10 @@ def configure(window: MainWindow) -> None:
 
         ext = window.commandLine(
             "Extension",
+            text=exts[0],
+            selection=[0, len(exts[0])],
             candidate_handler=_listup_exts,
+            auto_complete=True,
         )
 
         if ext is None:
