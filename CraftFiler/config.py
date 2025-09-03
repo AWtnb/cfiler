@@ -3288,28 +3288,36 @@ def configure(window: MainWindow) -> None:
         if len(stem) < 1:
             return
 
-        exts = ["txt", "md", "css", "html"]
+        if "." in stem:
+            ext = ""
+        else:
+            exts = ["txt", "md", "css", "html"]
 
-        def _listup_exts(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
-            found = [
-                ext for ext in exts if ext.lower().startswith(update_info.text.lower())
-            ]
-            return found, 0
+            def _listup_exts(
+                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+            ) -> tuple:
+                found = [
+                    ext
+                    for ext in exts
+                    if ext.lower().startswith(update_info.text.lower())
+                ]
+                return found, 0
 
-        ext = window.commandLine(
-            "Extension",
-            text=exts[0],
-            selection=[0, len(exts[0])],
-            candidate_handler=_listup_exts,
-            auto_complete=True,
-        )
+            ext = window.commandLine(
+                "Extension",
+                text=exts[0],
+                selection=[0, len(exts[0])],
+                candidate_handler=_listup_exts,
+                auto_complete=True,
+            )
 
-        if ext is None:
-            return
-        if len(ext) < 1:
-            ext = exts[0]
+            if ext is None:
+                return
+            if len(ext) < 1:
+                ext = exts[0]
+            ext = "." + ext
 
-        new_name = stem + "." + ext
+        new_name = stem + ext
         new_path = os.path.join(pane.currentPath, new_name)
         if smart_check_path(new_path):
             Kiritori.log("'{}' already exists.".format(stem))
