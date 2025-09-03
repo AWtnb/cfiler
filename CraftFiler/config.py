@@ -2077,6 +2077,19 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(unselect_panes, "C-U", "S-Esc")
 
+    def show_trimmed_info() -> None:
+        def _show() -> None:
+            pane = CPane()
+            for i, s in enumerate(
+                [p for p in pane.focusedItemPath.split(os.sep) if 0 < len(p)]
+            ):
+                b = "" if i == 0 else "\u2514\u2500"
+                print(" " * i, b, s)
+
+        Kiritori.wrap(_show)
+
+    Keybinder().bind(show_trimmed_info, "Y")
+
     def to_edge_dir() -> None:
         pane = CPane()
 
