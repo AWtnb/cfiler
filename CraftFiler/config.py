@@ -1794,14 +1794,12 @@ def configure(window: MainWindow) -> None:
 
         def _extract(_) -> None:
             for target in targets:
-                _, name = os.path.split(target)
-                out_dir = os.path.join(dest, name)
                 try:
                     cmd = [
                         seven_zip,
                         "x",
                         target,
-                        "-o{}".format(out_dir),
+                        "-o{}".format(dest),
                         "-y",
                     ]
                     proc = subprocess.run(
