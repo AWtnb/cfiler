@@ -3288,7 +3288,7 @@ def configure(window: MainWindow) -> None:
         if len(stem) < 1:
             return
 
-        exts = ["txt", "md", "html"]
+        exts = ["txt", "md", "css", "html"]
 
         def _listup_exts(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
             found = [
