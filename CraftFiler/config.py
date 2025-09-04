@@ -2106,8 +2106,10 @@ def configure(window: MainWindow) -> None:
                     if 100 < count:
                         Kiritori.log("Too many directories found, stopping search.")
                         return
-                    _, n = os.path.split(d.getName())
-                    if n[0] in (".", "_", "~"):
+                    rel = d.getName()
+                    if rel.startswith(os.sep):
+                        continue
+                    if any([(os.sep + c in rel) for c in (".", "_", "~")]):
                         continue
                     paths.append(d.getFullpath())
 
