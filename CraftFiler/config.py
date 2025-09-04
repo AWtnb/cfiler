@@ -831,7 +831,7 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return
 
-        print("Searching for newest-modified dir...")
+        print("Searching for newest file under '{}' ...".format(pane.currentPath))
 
         def _scan(job_item: ckit.JobItem) -> None:
             job_item.latest = None
@@ -2097,7 +2097,7 @@ def configure(window: MainWindow) -> None:
 
     def to_edge_dir() -> None:
         pane = CPane()
-        print("Searching for last-indexed dir:")
+        print("Searching for last-indexed dir under '{}' ...".format(pane.currentPath))
 
         def _traverse(job_item: ckit.JobItem) -> None:
             job_item.result = None
@@ -2111,7 +2111,7 @@ def configure(window: MainWindow) -> None:
             for _, dirs, _ in root.walk():
                 for d in dirs:
                     count += 1
-                    if 100 < count:
+                    if 900 < count:
                         Kiritori.log("Too many directories found, stopping search.")
                         return
                     rel = d.getName()
