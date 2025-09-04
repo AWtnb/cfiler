@@ -843,6 +843,8 @@ def configure(window: MainWindow) -> None:
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.latest:
                 pane.openPath(job_item.latest.getFullpath())
+                print("Jumped to newest dir:")
+                show_trimmed_info()
 
         job = ckit.JobItem(_scan, _open)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2124,6 +2126,8 @@ def configure(window: MainWindow) -> None:
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.result:
                 pane.openPath(job_item.result)
+                print("Jumped to last-ordered dir:")
+                show_trimmed_info()
 
         job = ckit.JobItem(_traverse, _open)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2136,15 +2140,13 @@ def configure(window: MainWindow) -> None:
         root = None
         f = "_" if pane.isBlank else pane.focusedItem.getName()
         for parent in Path(pane.currentPath, f).parents:
-            if smart_check_path(os.path.join(str(parent.parent), ".root")):
-                root = parent
-                break
             if reg.match(parent.name):
                 root = parent
         if root:
             root = str(root.parent)
             if root != pane.currentPath:
                 pane.openPath(root)
+                show_trimmed_info()
 
     Keybinder().bind(to_root_of_index, "A-H")
 
