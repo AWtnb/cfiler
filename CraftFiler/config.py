@@ -831,6 +831,8 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return
 
+        print("Searching for newest-modified dir...")
+
         def _scan(job_item: ckit.JobItem) -> None:
             job_item.latest = None
             for item in pane.traverse():
@@ -843,8 +845,7 @@ def configure(window: MainWindow) -> None:
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.latest:
                 pane.openPath(job_item.latest.getFullpath())
-                print("Jumped to newest dir:")
-                show_trimmed_info()
+                show_path_tree()
 
         job = ckit.JobItem(_scan, _open)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2077,7 +2078,7 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(unselect_panes, "C-U", "S-Esc")
 
-    def show_trimmed_info() -> None:
+    def show_path_tree() -> None:
         def _show() -> None:
             pane = CPane()
             stack = []
@@ -2086,17 +2087,17 @@ def configure(window: MainWindow) -> None:
                     stack.insert(0, n)
                 if smart_check_path(os.path.join(p, ".root")):
                     break
-            stack.append(pane.focusedItem.getName())
             for i, s in enumerate(stack):
                 b = "" if i == 0 else " \u2514"
                 print(b, s)
 
         Kiritori.wrap(_show)
 
-    Keybinder().bind(show_trimmed_info, "Y")
+    Keybinder().bind(show_path_tree, "Y")
 
     def to_edge_dir() -> None:
         pane = CPane()
+        print("Searching for last-indexed dir:")
 
         def _traverse(job_item: ckit.JobItem) -> None:
             job_item.result = None
@@ -2126,8 +2127,7 @@ def configure(window: MainWindow) -> None:
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.result:
                 pane.openPath(job_item.result)
-                print("Jumped to last-ordered dir:")
-                show_trimmed_info()
+                show_path_tree()
 
         job = ckit.JobItem(_traverse, _open)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2146,7 +2146,6 @@ def configure(window: MainWindow) -> None:
             root = str(root.parent)
             if root != pane.currentPath:
                 pane.openPath(root)
-                show_trimmed_info()
 
     Keybinder().bind(to_root_of_index, "A-H")
 
