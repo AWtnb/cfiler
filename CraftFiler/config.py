@@ -2078,11 +2078,16 @@ def configure(window: MainWindow) -> None:
     def show_trimmed_info() -> None:
         def _show() -> None:
             pane = CPane()
-            for i, s in enumerate(
-                [p for p in pane.focusedItemPath.split(os.sep) if 0 < len(p)]
-            ):
-                b = "" if i == 0 else "\u2514\u2500"
-                print(" " * i, b, s)
+            stack = []
+            for p in Path(pane.currentPath, "_").parents:
+                if n := p.name:
+                    stack.insert(0, n)
+                if smart_check_path(os.path.join(p, ".root")):
+                    break
+            stack.append(pane.focusedItem.getName())
+            for i, s in enumerate(stack):
+                b = "" if i == 0 else " \u2514"
+                print(b, s)
 
         Kiritori.wrap(_show)
 
