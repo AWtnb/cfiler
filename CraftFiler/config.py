@@ -845,7 +845,7 @@ def configure(window: MainWindow) -> None:
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.latest:
                 pane.openPath(job_item.latest.getFullpath())
-                show_path_tree()
+                show_path_tree(True)
 
         job = ckit.JobItem(_scan, _open)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2078,7 +2078,7 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(unselect_panes, "C-U", "S-Esc")
 
-    def show_path_tree() -> None:
+    def show_path_tree(with_name: bool = False) -> None:
         def _show() -> None:
             pane = CPane()
             stack = []
@@ -2087,13 +2087,15 @@ def configure(window: MainWindow) -> None:
                     stack.insert(0, n)
                 if smart_check_path(os.path.join(p, ".root")):
                     break
+            if with_name:
+                stack.append(pane.focusedItem.getName())
             for i, s in enumerate(stack):
                 b = "" if i == 0 else " \u2514"
                 print(b, s)
 
         Kiritori.wrap(_show)
 
-    Keybinder().bind(show_path_tree, "Y")
+    Keybinder().bind(lambda: show_path_tree(True), "Y")
 
     def to_edge_dir() -> None:
         pane = CPane()
