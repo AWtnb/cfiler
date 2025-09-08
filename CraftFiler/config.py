@@ -1907,14 +1907,13 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             targets.append(pane.currentPath)
         else:
-            for i in range(pane.count):
-                item = pane.byIndex(i)
-                if item.selected():
-                    targets.append(item.getFullpath())
+            targets = pane.selectedItemPaths
             if len(targets) < 1:
                 targets.append(pane.focusedItemPath)
 
-        menu = ["Fullpath", "Name", "Basename"]
+        menu = ["Fullpath", "Name"]
+        if any([Path(t).is_file() for t in targets]):
+            menu.append("Basename")
 
         if all([Path(path).suffix == ".docx" for path in targets]):
             menu.append("Text content")
