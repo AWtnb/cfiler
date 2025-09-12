@@ -1858,8 +1858,6 @@ def configure(window: MainWindow) -> None:
         if len(result) < 1:
             return
 
-        active_pane.adjustWidth()
-
         if active_pane.byName(result) != -1:
             Kiritori.log("'{}' already exists.".format(result))
             return
@@ -1870,6 +1868,7 @@ def configure(window: MainWindow) -> None:
         if shutil.which("7z") is not None:
             extract_with_7zip(extract_path, *active_pane.selectedItemPaths)
         else:
+            active_pane.adjustWidth()
             CPane(False).openPath(extract_path)
             window.command_ExtractArchive(None)
 
