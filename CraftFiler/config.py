@@ -997,15 +997,6 @@ def configure(window: MainWindow) -> None:
             window.command_Execute(None)
             return True
 
-        # if ext == ".docx":
-        #     menu = ["Open", "Copy content"]
-        #     result, _ = invoke_listwindow("docx file:", menu)
-        #     if result == 0:
-        #         window.command_Execute(None)
-        #     elif result == 1:
-        #         copy_docx_content(focus_path)
-        #     return True
-
         return False
 
     window.enter_hook = hook_enter
@@ -1019,11 +1010,11 @@ def configure(window: MainWindow) -> None:
 
     def open_with() -> None:
         pane = CPane()
-        if pane.isBlank or pane.focusedItem.isdir():
+        if pane.isBlank:
             return
 
         paths = pane.selectedItemPaths
-        if len(paths) < 1:
+        if len(paths) < 1 and not pane.focusedItem.isdir():
             paths.append(pane.focusedItemPath)
 
         with_pdf_viewer = all([path.endswith(".pdf") for path in paths])
