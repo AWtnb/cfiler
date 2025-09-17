@@ -11,6 +11,7 @@ import time
 import unicodedata
 import urllib
 import urllib.request
+import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 
 from PIL import ImageGrab
@@ -151,17 +152,12 @@ def open_vscode(*args: str) -> bool:
 
 
 def shell_exec(path: str, *args) -> None:
-    if type(path) is not str:
+    if not isinstance(path, str):
         path = str(path)
-    params = []
-    for arg in args:
-        if len(arg.strip()):
-            if " " in arg:
-                params.append('"{}"'.format(arg))
-            else:
-                params.append(arg)
+    path = os.path.expandvars(path)
     try:
-        pyauto.shellExecute(None, path, " ".join(params), "")
+        cmd = ["start", "", path] + list(args)
+        subprocess.run(cmd, shell=True)
     except Exception as e:
         print(e)
 
@@ -1034,23 +1030,20 @@ def configure(window: MainWindow) -> None:
                 r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"
             )
             app_table["vscode"] = lambda x: open_vscode(x)
+            app_table["(associated app)"] = shell_exec
 
         names = list(app_table.keys())
-        if len(names) < 1:
+
+        result, _ = invoke_listwindow("open with:", names)
+        if result < 0:
             return
 
-        result = 0
-        if 1 < len(names):
-            result, _ = invoke_listwindow("open with:", names)
-            if result < 0:
-                return
-
-        exe_path = app_table[names[result]]
+        exe = app_table[names[result]]
         for path in paths:
-            if isinstance(exe_path, Callable):
-                exe_path(path)
+            if isinstance(exe, Callable):
+                exe(path)
             else:
-                shell_exec(exe_path, path)
+                shell_exec(exe, path)
 
     Keybinder().bind(open_with, "C-O")
 
