@@ -1786,6 +1786,67 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_eject, _finished)
         window.taskEnqueue(job, create_new_queue=False)
 
+    def compress_with_7zip(zip_path: str, *targets: str) -> None:
+        seven_zip = shutil.which("7z")
+        if seven_zip is None:
+            Kiritori.log("7z not found.")
+            return
+
+        def _compress(_) -> None:
+            try:
+                cmd = [seven_zip, "a", "-tzip", "-y", zip_path] + list(targets)
+                proc = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                )
+                if proc.returncode != 0:
+                    if o := proc.stdout:
+                        Kiritori.log(o)
+                    if e := proc.stderr:
+                        Kiritori.log(e)
+            except Exception as e:
+                Kiritori.log(e)
+                return
+
+        def _finished(_):
+            pass
+
+        job = ckit.JobItem(_compress, _finished)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    def smart_compress() -> None:
+        active_pane = CPane()
+        targets = active_pane.selectedItemPaths
+        if len(targets) < 1:
+            targets = [active_pane.focusedItemPath]
+
+        placeholder = (
+            Path(targets[0]).name
+            if len(targets) == 1
+            else "compress_{}".format(
+                datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
+            )
+        )
+        result = stringify(window.commandLine("Zip name", text=placeholder))
+        if len(result) < 1:
+            return
+        if not result.endswith(".zip"):
+            result += ".zip"
+
+        if active_pane.byName(result) != -1:
+            Kiritori.log("'{}' already exists.".format(result))
+            return
+
+        zip_path = os.path.join(active_pane.currentPath, result)
+
+        if shutil.which("7z") is not None:
+            compress_with_7zip(zip_path, *targets)
+        else:
+            active_pane.adjustWidth()
+            window.command_CreateArchive(None)
+
     def extract_with_7zip(dest: str, *targets: str) -> None:
         seven_zip = shutil.which("7z")
         if seven_zip is None:
@@ -1824,7 +1885,7 @@ def configure(window: MainWindow) -> None:
                     return
 
         def _finished(_):
-            return
+            pass
 
         job = ckit.JobItem(_extract, _finished)
         window.taskEnqueue(job, create_new_queue=False)
@@ -3894,7 +3955,7 @@ def configure(window: MainWindow) -> None:
         {
             "RenamePhotoFile": rename_photo_file,
             "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
-            "ZipSelections": window.command_CreateArchive,
+            "CompressAsZip": smart_compress,
             "SetBookmarkAlias": set_bookmark_alias,
             "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
             "BookmarkHere": bookmark_here,
@@ -3903,7 +3964,7 @@ def configure(window: MainWindow) -> None:
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
-            "ExtractZipSmart": smart_extract,
+            "ExtractZip": smart_extract,
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
             "Diffinity": diffinity,
