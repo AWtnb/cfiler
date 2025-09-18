@@ -154,6 +154,9 @@ def open_vscode(*args: str) -> bool:
 def shell_exec(path: str, *args) -> None:
     if not isinstance(path, str):
         path = str(path)
+    if path.startswith("http"):
+        webbrowser.open(path)
+        return
     path = os.path.expandvars(path)
     try:
         cmd = ["start", "", path] + list(args)
