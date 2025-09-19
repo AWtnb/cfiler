@@ -758,11 +758,14 @@ def configure(window: MainWindow) -> None:
         def traverse(self) -> Iterator[item_Default]:
             for item in self.items:
                 if item.isdir():
-                    if item.getName().startswith("."):
+                    _, dn = os.path.split(item.getName())
+                    if dn == "node_modules" or dn.startswith("."):
                         continue
                     for _, _, files in item.walk():
                         for file in files:
-                            yield file
+                            _, fn = os.path.split(file.getName())
+                            if not fn.startswith("~$_"):
+                                yield file
                 else:
                     yield item
 
