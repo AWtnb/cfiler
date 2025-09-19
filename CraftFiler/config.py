@@ -828,24 +828,26 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(focus_latest, "A-N")
 
-    def show_path_tree(with_leaf: bool = False) -> None:
+    def show_path_tree(path: str) -> None:
+        if len(path) < 1:
+            return
+
         def _show() -> None:
-            pane = CPane()
-            stack = []
-            for p in Path(pane.currentPath, "_").parents:
-                if n := p.name:
-                    stack.insert(0, n)
-                if smart_check_path(os.path.join(p, ".root")):
+            p = Path(path)
+            stack = [p.name]
+            for parent in p.parents:
+                if n := parent.name:
+                    stack.append(n)
+                if smart_check_path(os.path.join(parent, ".root")):
                     break
-            if with_leaf:
-                stack.append(pane.focusedItem.getName())
+            stack.reverse()
             for i, s in enumerate(stack):
                 b = "" if i == 0 else " \u2514"
                 print(b, s)
 
         Kiritori.wrap(_show)
 
-    Keybinder().bind(lambda: show_path_tree(True), "Y")
+    Keybinder().bind(lambda: show_path_tree(CPane().focusedItemPath), "Y")
 
     def open_latest_under_tree() -> None:
         pane = CPane()
@@ -865,8 +867,9 @@ def configure(window: MainWindow) -> None:
 
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.latest:
-                pane.openPath(job_item.latest.getFullpath())
-                show_path_tree(True)
+                p = job_item.latest.getFullpath()
+                pane.openPath(p)
+                show_path_tree(p)
 
         job = ckit.JobItem(_scan, _open)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2181,7 +2184,7 @@ def configure(window: MainWindow) -> None:
         def _open(job_item: ckit.JobItem) -> None:
             if job_item.result:
                 pane.openPath(job_item.result)
-                show_path_tree()
+                show_path_tree(job_item.result)
 
         job = ckit.JobItem(_traverse, _open)
         window.taskEnqueue(job, create_new_queue=False)
