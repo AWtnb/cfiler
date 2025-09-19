@@ -2145,6 +2145,9 @@ def configure(window: MainWindow) -> None:
 
     def to_edge_dir() -> None:
         pane = CPane()
+        if len(pane.dirs) < 1:
+            return
+
         print("Searching for last-indexed dir under '{}' ...".format(pane.currentPath))
 
         def _traverse(job_item: ckit.JobItem) -> None:
