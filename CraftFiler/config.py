@@ -2187,7 +2187,7 @@ def configure(window: MainWindow) -> None:
 
     def to_root_of_index() -> None:
         pane = CPane()
-        reg = re.compile(r"^\d+_")
+        reg = re.compile(r"^\d+_|^\d+$")
         root = None
         f = "_" if pane.isBlank else pane.focusedItem.getName()
         for parent in Path(pane.currentPath, f).parents:
