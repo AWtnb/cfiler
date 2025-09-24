@@ -1674,7 +1674,7 @@ def configure(window: MainWindow) -> None:
             return
         CPane().openPath(c.strip().strip('"'))
 
-    Keybinder().bind(on_paste, "C-V")
+    Keybinder().bind(on_paste, "C-V", "S-Insert")
 
     class DriveHandler:
 
@@ -4115,6 +4115,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         window.command_Close(None)
 
     window.keymap["C-C"] = copy_content
+    window.keymap["C-Insert"] = copy_content
 
     def copy_line_at_top(_) -> None:
         c = get_content()
