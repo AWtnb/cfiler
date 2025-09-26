@@ -13,6 +13,7 @@ import urllib
 import urllib.request
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
+from winreg import HKEY_CURRENT_USER, HKEY_CLASSES_ROOT, OpenKey, QueryValueEx
 
 from PIL import ImageGrab
 from PIL import Image as PILImage
@@ -1013,6 +1014,26 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(toggle_hidden, "C-S-H")
 
+    def get_default_browser() -> str:
+        register_path = r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice"
+        prog_id = None
+        with OpenKey(HKEY_CURRENT_USER, register_path) as key:
+            prog_id = str(QueryValueEx(key, "ProgId")[0])
+
+        if not prog_id:
+            return ""
+
+        commandline = None
+        register_path = r"{}\shell\open\command".format(prog_id)
+        with OpenKey(HKEY_CLASSES_ROOT, register_path) as key:
+            commandline = str(QueryValueEx(key, "")[0])
+
+        if not commandline:
+            return ""
+
+        ext = ".exe"
+        return commandline[: commandline.find(ext) + len(ext)].strip('"')
+
     def open_with() -> None:
         pane = CPane()
         if pane.isBlank:
@@ -1022,10 +1043,8 @@ def configure(window: MainWindow) -> None:
         if len(paths) < 1 and not pane.focusedItem.isdir():
             paths.append(pane.focusedItemPath)
 
-        with_pdf_viewer = all([path.endswith(".pdf") for path in paths])
-
         app_table = {}
-        if with_pdf_viewer:
+        if all([path.endswith(".pdf") for path in paths]):
             app_table["sumatra"] = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
             app_table["adobe"] = (
                 r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
@@ -1033,6 +1052,9 @@ def configure(window: MainWindow) -> None:
             app_table["xedit"] = (
                 r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
             )
+            browser_path = get_default_browser()
+            if browser_path:
+                app_table["browser"] = browser_path
         else:
             app_table["notepad"] = r"C:\Windows\System32\notepad.exe"
             app_table["mery"] = os.path.expandvars(
