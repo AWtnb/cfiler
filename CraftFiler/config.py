@@ -1922,38 +1922,43 @@ def configure(window: MainWindow) -> None:
         window.taskEnqueue(job, create_new_queue=False)
 
     def smart_extract() -> None:
-        active_pane = CPane()
+        pane = CPane()
 
-        for item in active_pane.selectedItems:
+        for item in pane.selectedItems:
             ext = Path(item.getFullpath()).suffix
             if not is_extractable(ext):
-                active_pane.unSelectByName(item.getName())
+                pane.unSelectByName(item.getName())
 
-        if not active_pane.hasSelection:
+        if not pane.hasSelection:
             return
+
+        placeholder = "extract_{}".format(
+            datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
+        )
+        if len(pane.selectedItems) == 1:
+            p = pane.selectedItemPaths[0]
+            placeholder = Path(p).stem
 
         result = stringify(
             window.commandLine(
                 "Extract as",
-                text="extract_{}".format(
-                    datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
-                ),
+                text=placeholder,
             )
         )
         if len(result) < 1:
             return
 
-        if active_pane.byName(result) != -1:
+        if pane.byName(result) != -1:
             Kiritori.log("'{}' already exists.".format(result))
             return
 
-        active_pane.mkdir(result, False)
-        extract_path = os.path.join(active_pane.currentPath, result)
+        pane.mkdir(result, False)
+        extract_path = os.path.join(pane.currentPath, result)
 
         if shutil.which("7z") is not None:
-            extract_with_7zip(extract_path, *active_pane.selectedItemPaths)
+            extract_with_7zip(extract_path, *pane.selectedItemPaths)
         else:
-            active_pane.adjustWidth()
+            pane.adjustWidth()
             CPane(False).openPath(extract_path)
             window.command_ExtractArchive(None)
 
