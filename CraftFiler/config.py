@@ -1848,34 +1848,31 @@ def configure(window: MainWindow) -> None:
         window.taskEnqueue(job, create_new_queue=False)
 
     def smart_compress() -> None:
-        active_pane = CPane()
-        targets = active_pane.selectedItemPaths
+        pane = CPane()
+        targets = pane.selectedItemPaths
         if len(targets) < 1:
-            targets = [active_pane.focusedItemPath]
+            targets = [pane.focusedItemPath]
 
-        placeholder = (
-            Path(targets[0]).name
-            if len(targets) == 1
-            else "compress_{}".format(
-                datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
-            )
-        )
+        placeholder = datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
+        if len(targets) == 1:
+            placeholder = Path(targets[0]).name
+
         result = stringify(window.commandLine("Zip name", text=placeholder))
         if len(result) < 1:
             return
         if not result.endswith(".zip"):
             result += ".zip"
 
-        if active_pane.byName(result) != -1:
+        if pane.byName(result) != -1:
             Kiritori.log("'{}' already exists.".format(result))
             return
 
-        zip_path = os.path.join(active_pane.currentPath, result)
+        zip_path = os.path.join(pane.currentPath, result)
 
         if shutil.which("7z") is not None:
             compress_with_7zip(zip_path, *targets)
         else:
-            active_pane.adjustWidth()
+            pane.adjustWidth()
             window.command_CreateArchive(None)
 
     def extract_with_7zip(dest: str, *targets: str) -> None:
