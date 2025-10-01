@@ -3476,7 +3476,7 @@ def configure(window: MainWindow) -> None:
         if len(window.sorter_list) == 4:
             window.sorter_list = [
                 (
-                    "U : Underscore First",
+                    "U : Underscore Order",
                     sorter_UnderscoreFirst(),
                     sorter_UnderscoreFirst(order=-1),
                 ),
@@ -3497,7 +3497,6 @@ def configure(window: MainWindow) -> None:
 
     def reload_config() -> None:
         window.configure()
-        to_home_position(False)
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
         window.setStatusMessage("reloaded config.py | {}".format(ts), 2000)
 
