@@ -3788,7 +3788,7 @@ def configure(window: MainWindow) -> None:
         if result:
             Selector().stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    Keybinder().bind(select_stem_startswith, "Caret")
+    Keybinder().bind(select_stem_startswith, "Caret", "A-A")
 
     def select_stem_endswith() -> None:
         result, mod = window.commandLine(
@@ -3800,7 +3800,7 @@ def configure(window: MainWindow) -> None:
         if result:
             Selector().stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    Keybinder().bind(select_stem_endswith, "S-4")
+    Keybinder().bind(select_stem_endswith, "S-4", "A-E")
 
     def select_stem_contains() -> None:
         result, mod = window.commandLine("Contains", return_modkey=True)
