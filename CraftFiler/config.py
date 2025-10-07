@@ -2276,10 +2276,12 @@ def configure(window: MainWindow) -> None:
         def jumpable(self) -> List[int]:
             if self.pane.isBlank:
                 return []
+            if self.pane.hasSelection:
+                return [self.pane.byName(name) for name in self.pane.selectedItemNames]
             stack = []
             for i in range(self.pane.count):
                 item = self.pane.byIndex(i)
-                if item.bookmark() or item.selected():
+                if item.bookmark():
                     stack.append(i)
             stack = self.getBlockEdges(stack)
             stack.append(0)
