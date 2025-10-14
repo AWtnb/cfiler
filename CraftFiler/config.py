@@ -818,6 +818,8 @@ def configure(window: MainWindow) -> None:
             return
         latest = None
         for item in pane.selectedOrAllItems:
+            if item.isdir():
+                continue
             if latest is None:
                 latest = item
                 continue
