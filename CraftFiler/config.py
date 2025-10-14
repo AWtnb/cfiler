@@ -812,14 +812,12 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(smart_cursorDown, "J", "Down")
 
-    def focus_latest_file() -> None:
+    def focus_latest_item() -> None:
         pane = CPane()
         if pane.isBlank:
             return
         latest = None
         for item in pane.selectedOrAllItems:
-            if item.isdir():
-                continue
             if latest is None:
                 latest = item
                 continue
@@ -829,7 +827,7 @@ def configure(window: MainWindow) -> None:
         if latest:
             pane.focusByName(latest.getName())
 
-    Keybinder().bind(focus_latest_file, "A-N")
+    Keybinder().bind(focus_latest_item, "A-N")
 
     def show_path_tree(path: str) -> None:
         if len(path) < 1:
