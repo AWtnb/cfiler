@@ -2232,9 +2232,9 @@ def configure(window: MainWindow) -> None:
 
     class SmartJumper:
 
-        def __init__(self):
+        def __init__(self, by_prefix: bool):
             self.pane = CPane()
-            self.dests = self.jumpable()
+            self.dests = self.prefixEdges() if by_prefix else self.itemEdges()
 
         @staticmethod
         def getBlockEdges(idxs: List[int]) -> List[int]:
@@ -2259,8 +2259,30 @@ def configure(window: MainWindow) -> None:
                 edges.append(end)
             return edges
 
-        @staticmethod
-        def prefixEdges(names: List[str]) -> List[int]:
+        def appendBaseEdges(self, edges: List[int]) -> List[int]:
+            edges.append(0)
+            edges.append(self.pane.count - 1)
+            if 0 < (nd := len(self.pane.dirs)):
+                edges.append(nd - 1)
+                if 0 < len(self.pane.files):
+                    edges.append(nd)
+            return edges
+
+        def itemEdges(self) -> List[int]:
+            if self.pane.isBlank:
+                return []
+            stack = []
+            for i in range(self.pane.count):
+                item = self.pane.byIndex(i)
+                if item.bookmark() or item.selected():
+                    stack.append(i)
+            stack = self.getBlockEdges(stack)
+            return sorted(list(set(self.appendBaseEdges(stack))))
+
+        def prefixEdges(self) -> List[int]:
+            if self.pane.isBlank:
+                return []
+            names = self.pane.names
             if len(names) < 2:
                 return []
             prefs = [name.split("_", 1)[0] for name in names]
@@ -2271,25 +2293,7 @@ def configure(window: MainWindow) -> None:
                     if 1 < i - start:
                         edges += [start, i - 1]
                     start = i
-            return edges
-
-        def jumpable(self) -> List[int]:
-            if self.pane.isBlank:
-                return []
-            stack = []
-            for i in range(self.pane.count):
-                item = self.pane.byIndex(i)
-                if item.bookmark() or item.selected():
-                    stack.append(i)
-            stack = self.getBlockEdges(stack)
-            stack.append(0)
-            stack.append(self.pane.count - 1)
-            if 0 < (nd := len(self.pane.dirs)):
-                stack.append(nd - 1)
-                if 0 < len(self.pane.files):
-                    stack.append(nd)
-            stack += self.prefixEdges(self.pane.names)
-            return sorted(list(set(stack)))
+            return sorted(list(set(self.appendBaseEdges(edges))))
 
         def down(self, selecting: bool) -> None:
             if len(self.dests) < 1:
@@ -2324,29 +2328,29 @@ def configure(window: MainWindow) -> None:
                         self.pane.select(i)
             self.pane.focus(idx)
 
-    def smart_jumpDown(selecting: bool = False) -> Callable:
+    def smart_jumpDown(by_prefix: bool, selecting: bool) -> Callable:
 
         def _jumper() -> None:
-            SmartJumper().down(selecting)
+            SmartJumper(by_prefix).down(selecting)
 
         return _jumper
 
-    Keybinder().bind(smart_jumpDown(False), "C-J")
-    Keybinder().bind(smart_jumpDown(False), "C-Down")
-    Keybinder().bind(smart_jumpDown(True), "S-C-J")
-    Keybinder().bind(smart_jumpDown(True), "S-C-Down")
+    Keybinder().bind(smart_jumpDown(True, False), "A-J")
+    Keybinder().bind(smart_jumpDown(True, True), "S-A-J")
+    Keybinder().bind(smart_jumpDown(False, False), "C-J")
+    Keybinder().bind(smart_jumpDown(False, True), "S-C-J")
 
-    def smart_jumpUp(selecting: bool = False) -> None:
+    def smart_jumpUp(by_prefix: bool, selecting: bool) -> Callable:
 
         def _jumper() -> None:
-            SmartJumper().up(selecting)
+            SmartJumper(by_prefix).up(selecting)
 
         return _jumper
 
-    Keybinder().bind(smart_jumpUp(False), "C-K")
-    Keybinder().bind(smart_jumpUp(False), "C-Up")
-    Keybinder().bind(smart_jumpUp(True), "S-C-K")
-    Keybinder().bind(smart_jumpUp(True), "S-C-Up")
+    Keybinder().bind(smart_jumpUp(True, False), "A-K")
+    Keybinder().bind(smart_jumpUp(True, True), "S-A-K")
+    Keybinder().bind(smart_jumpUp(False, False), "C-K")
+    Keybinder().bind(smart_jumpUp(False, True), "S-C-K")
 
     def duplicate_pane() -> None:
         window.command_ChdirInactivePaneToOther(None)
