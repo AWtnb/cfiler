@@ -3597,7 +3597,6 @@ def configure(window: MainWindow) -> None:
         def compare(self) -> None:
             pane = CPane()
             other_pane = CPane(False)
-            from_selection = pane.hasSelection
             with_selection = other_pane.hasSelection
             _, dirname = os.path.split(pane.currentPath)
             _, other_dirname = os.path.split(other_pane.currentPath)
@@ -3617,14 +3616,18 @@ def configure(window: MainWindow) -> None:
                 window.setProgressValue(None)
 
                 table = {}
+                exts = set()
+
                 for file in targets:
                     if job_item.isCanceled():
                         return
-                    name = file.getName()
                     path = file.getFullpath()
                     digest = self.to_hash(path)
+                    _, name = os.path.split(path)
+                    _, ext = os.path.splitext(name)
                     self.progress("{}\\{}".format(dirname, name))
                     table[digest] = table.get(digest, []) + [name]
+                    exts.add(ext)
 
                 def __files_to_compare() -> Union[Iterator[str], List[str]]:
                     if with_selection:
@@ -3634,13 +3637,17 @@ def configure(window: MainWindow) -> None:
                     return other_pane.traverse()
 
                 clones: Dict[str, List[str]] = {}
+
                 for item in __files_to_compare():
                     if job_item.isCanceled():
                         return
-                    p = item.getFullpath()
-                    rel = os.path.relpath(p, other_pane.currentPath)
+                    path = item.getFullpath()
+                    _, ext = os.path.splitext(path)
+                    if ext not in exts:
+                        continue
+                    rel = os.path.relpath(path, other_pane.currentPath)
                     self.progress("{}\\{}".format(other_dirname, rel))
-                    digest = self.to_hash(p)
+                    digest = self.to_hash(path)
                     if digest in table:
                         names = table[digest]
                         for name in names:
