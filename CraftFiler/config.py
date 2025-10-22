@@ -1256,35 +1256,15 @@ def configure(window: MainWindow) -> None:
                 pane.refresh()
         Kiritori.log("Registered '{}' as alias for '{}'".format(alias, target))
 
-    def read_docx(path: str) -> str:
-        exe_path = shutil.which("docxr.exe")
-        if not exe_path:
-            Kiritori.log("'{}' not found...".format(exe_path))
-            return ""
-        try:
-            cmd = [
-                exe_path,
-                "-src={}".format(path),
-            ]
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                encoding="utf-8",
-                creationflags=subprocess.CREATE_NO_WINDOW,
-            )
-            if proc.returncode != 0:
-                if o := proc.stdout:
-                    Kiritori.log(o)
-                if e := proc.stderr:
-                    Kiritori.log(e)
-                return ""
-            return proc.stdout
-        except Exception as e:
-            Kiritori.log(e)
-            return ""
+    def read_openxml(path: str) -> str:
+        go_tool = {
+            ".docx": "docxr.exe",
+            ".xlsx": "xlsxr.exe",
+        }.get(Path(path).suffix, None)
+        if go_tool is None:
+            return
 
-    def read_xlsx_topsheet(path: str) -> str:
-        exe_path = shutil.which("xlsxr.exe")
+        exe_path = shutil.which(go_tool)
         if not exe_path:
             Kiritori.log("'{}' not found...".format(exe_path))
             return ""
@@ -1316,7 +1296,7 @@ def configure(window: MainWindow) -> None:
                 return
 
             def __read(job_item: ckit.JobItem) -> None:
-                job_item.result = read_docx(path)
+                job_item.result = read_openxml(path)
 
             def __write(job_item: ckit.JobItem) -> None:
                 new_path = Path(path).with_suffix(".txt")
@@ -2018,7 +1998,7 @@ def configure(window: MainWindow) -> None:
         if any([Path(t).is_file() for t in targets]):
             menu.append("Basename")
 
-        if all([Path(path).suffix == ".docx" for path in targets]):
+        if all([Path(path).suffix in [".docx", ".xlsx"] for path in targets]):
             menu.append("Text content")
 
         result, _ = invoke_listwindow("Copy", menu)
@@ -2032,7 +2012,7 @@ def configure(window: MainWindow) -> None:
             if result == 1:
                 return p.name
             if result == 3:
-                content = read_docx(path)
+                content = read_openxml(path)
                 return content
             return p.stem
 
