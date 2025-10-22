@@ -950,7 +950,6 @@ def configure(window: MainWindow) -> None:
         return result, mod
 
     def hook_enter() -> bool:
-        # returning `True` hooks (skips) default action.
 
         pane = CPane()
         if pane.isBlank:
@@ -1259,6 +1258,33 @@ def configure(window: MainWindow) -> None:
 
     def read_docx(path: str) -> str:
         exe_path = shutil.which("docxr.exe")
+        if not exe_path:
+            Kiritori.log("'{}' not found...".format(exe_path))
+            return ""
+        try:
+            cmd = [
+                exe_path,
+                "-src={}".format(path),
+            ]
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                encoding="utf-8",
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            if proc.returncode != 0:
+                if o := proc.stdout:
+                    Kiritori.log(o)
+                if e := proc.stderr:
+                    Kiritori.log(e)
+                return ""
+            return proc.stdout
+        except Exception as e:
+            Kiritori.log(e)
+            return ""
+
+    def read_xlsx_topsheet(path: str) -> str:
+        exe_path = shutil.which("xlsxr.exe")
         if not exe_path:
             Kiritori.log("'{}' not found...".format(exe_path))
             return ""
