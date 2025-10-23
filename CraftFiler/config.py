@@ -987,15 +987,31 @@ def configure(window: MainWindow) -> None:
                 smart_extract()
             return True
 
+        if ext.lower() in [
+            ".docx",
+            ".xlsx",
+        ]:
+            menu = []
+            if ext == ".docx":
+                menu.append("Copy text")
+            else:
+                menu.append("Copy text of Sheet1")
+            menu.append("Open with default app")
+            result, _ = invoke_listwindow("OpenXML file:", menu)
+            if result != -1:
+                if result == 0:
+                    copy_openxml_content(focus_path)
+                else:
+                    window.command_Execute(None)
+            return True
+
         if ext[1:].lower() in [
             "webp",
             "m4a",
             "mp4",
             "pdf",
-            "xlsx",
             "xls",
             "doc",
-            "docx",
             "pptx",
             "ppt",
         ]:
@@ -1289,6 +1305,22 @@ def configure(window: MainWindow) -> None:
         except Exception as e:
             Kiritori.log(e)
             return ""
+
+    def copy_openxml_content(path: str) -> None:
+        _, ext = os.path.splitext(path)
+        if ext not in [".docx", ".xlsx"]:
+            return
+
+        def _read(job_item: ckit.JobItem) -> None:
+            job_item.result = read_openxml(path)
+
+        def _copy(job_item: ckit.JobItem) -> None:
+            ckit.setClipboardText(job_item.result)
+            msg = "copied content of '{}'.".format(Path(path).name)
+            Kiritori.log(msg)
+
+        job = ckit.JobItem(_read, _copy)
+        window.taskEnqueue(job, create_new_queue=False)
 
     def docx_to_txt() -> None:
         def _convert(path: str) -> None:
