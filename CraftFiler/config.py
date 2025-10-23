@@ -919,6 +919,34 @@ def configure(window: MainWindow) -> None:
                     return True
         return False
 
+    def peek_archive(path: str) -> None:
+        p = Path(path)
+        archiver = window.getArchiver(p.name)
+        if not archiver:
+            return
+
+        def _peek(job_item: ckit.JobItem) -> None:
+            job_item.name = p.name
+            job_item.tree = []
+
+            arc = archiver.openArchive(window.getHWND(), path, 0)
+            try:
+                for info in arc.iterItems("*"):
+                    job_item.tree.append(info[0])
+            finally:
+                arc.close()
+
+        def _finished(job_item: ckit.JobItem) -> None:
+            def __show():
+                print(job_item.name)
+                for line in job_item.tree:
+                    print("  ", line)
+
+            Kiritori.wrap(__show)
+
+        job = ckit.JobItem(_peek, _finished)
+        window.taskEnqueue(job, create_new_queue=False)
+
     def invoke_listwindow(
         prompt: str, items: list, cursor_pos: int = 0
     ) -> Tuple[int, int]:
@@ -977,14 +1005,7 @@ def configure(window: MainWindow) -> None:
             return True
 
         if is_extractable(ext):
-            menu = ["Peek", "Extract"]
-            result, _ = invoke_listwindow("Archived file:", menu)
-            if result == 0:
-                window.command_InfoArchive(None)
-            elif result == 1:
-                if not pane.hasSelection:
-                    pane.select(pane.cursor)
-                smart_extract()
+            peek_archive(focus_path)
             return True
 
         if ext.lower() in [
@@ -1885,11 +1906,12 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_compress, _finished)
         window.taskEnqueue(job, create_new_queue=False)
 
-    def smart_compress() -> None:
+    def compress_files() -> None:
         pane = CPane()
         targets = pane.selectedItemPaths
+
         if len(targets) < 1:
-            targets = [pane.focusedItemPath]
+            return
 
         placeholder = datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
         if len(targets) == 1:
@@ -1956,7 +1978,7 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_extract, _finished)
         window.taskEnqueue(job, create_new_queue=False)
 
-    def smart_extract() -> None:
+    def extract_archives() -> None:
         pane = CPane()
 
         for item in pane.selectedItems:
@@ -4041,7 +4063,7 @@ def configure(window: MainWindow) -> None:
         {
             "RenamePhotoFile": rename_photo_file,
             "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
-            "CompressAsZip": smart_compress,
+            "ZipSelections": compress_files,
             "SetBookmarkAlias": set_bookmark_alias,
             "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
             "BookmarkHere": bookmark_here,
@@ -4050,7 +4072,7 @@ def configure(window: MainWindow) -> None:
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
-            "ExtractZip": smart_extract,
+            "UnzipSelections": extract_archives,
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
             "Diffinity": diffinity,
