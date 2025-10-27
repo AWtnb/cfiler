@@ -1012,18 +1012,17 @@ def configure(window: MainWindow) -> None:
             ".docx",
             ".xlsx",
         ]:
-            menu = []
+            menu = ["Open"]
             if ext == ".docx":
-                menu.append("Copy text")
+                menu.append("(Copy text)")
             else:
-                menu.append("Copy text of Sheet1")
-            menu.append("Open with default app")
+                menu.append("(Copy text of Sheet1)")
             result, _ = invoke_listwindow("OpenXML file:", menu)
             if result != -1:
                 if result == 0:
-                    copy_openxml_content(focus_path)
-                else:
                     window.command_Execute(None)
+                else:
+                    copy_openxml_content(focus_path)
             return True
 
         if ext[1:].lower() in [
