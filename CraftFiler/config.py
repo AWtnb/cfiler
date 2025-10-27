@@ -756,15 +756,20 @@ def configure(window: MainWindow) -> None:
             )
             child_lister.destroy()
 
-        def traverse(self) -> Iterator[item_Default]:
+        def traverse(self, only_file: bool = True) -> Iterator[item_Default]:
             for item in self.items:
                 if item.isdir():
-                    _, dn = os.path.split(item.getName())
+                    _, dn = os.path.split(item.getFullpath())
                     if dn == "node_modules" or dn.startswith("."):
                         continue
-                    for _, _, files in item.walk():
+                    if not only_file:
+                        yield item
+                    for _, dirs, files in item.walk():
+                        if not only_file:
+                            for d in dirs:
+                                yield d
                         for file in files:
-                            _, fn = os.path.split(file.getName())
+                            _, fn = os.path.split(file.getFullpath())
                             if not fn.startswith("~$_"):
                                 yield file
                 else:
@@ -828,6 +833,26 @@ def configure(window: MainWindow) -> None:
             pane.focusByName(latest.getName())
 
     Keybinder().bind(focus_latest_item, "A-N")
+
+    def copy_dir_tree() -> None:
+        pane = CPane()
+        root = pane.currentPath
+
+        def _traverse(job_item: ckit.JobItem) -> None:
+            items = pane.traverse(False)
+            job_item.paths = [
+                item.getFullpath()[len(root) :].strip("\\") for item in items
+            ]
+
+        def _finished(job_item: ckit.JobItem) -> None:
+            lines = "\n".join(sorted(job_item.paths))
+            ckit.setClipboardText(lines)
+            Kiritori.log("Copied tree: {}".format(root))
+
+        job = ckit.JobItem(_traverse, _finished)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    Keybinder().bind(copy_dir_tree, "C-T")
 
     def show_path_tree(path: str) -> None:
         if len(path) < 1:
