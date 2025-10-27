@@ -841,7 +841,7 @@ def configure(window: MainWindow) -> None:
         def _traverse(job_item: ckit.JobItem) -> None:
             items = pane.traverse(False)
             job_item.paths = [
-                item.getFullpath()[len(root) :].strip("\\") for item in items
+                item.getFullpath()[len(root) :].lstrip(os.sep) for item in items
             ]
 
         def _finished(job_item: ckit.JobItem) -> None:
@@ -3709,7 +3709,7 @@ def configure(window: MainWindow) -> None:
                     digest = self.to_hash(path)
                     _, name = os.path.split(path)
                     _, ext = os.path.splitext(name)
-                    self.progress("{}\\{}".format(dirname, name))
+                    self.progress(dirname + os.sep + name)
                     table[digest] = table.get(digest, []) + [name]
                     exts.add(ext)
 
@@ -3730,7 +3730,7 @@ def configure(window: MainWindow) -> None:
                     if ext not in exts:
                         continue
                     rel = os.path.relpath(path, other_pane.currentPath)
-                    self.progress("{}\\{}".format(other_dirname, rel))
+                    self.progress(other_dirname + os.sep + rel)
                     digest = self.to_hash(path)
                     if digest in table:
                         names = table[digest]
