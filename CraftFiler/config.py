@@ -847,17 +847,24 @@ def configure(window: MainWindow) -> None:
     def copy_dir_tree() -> None:
         pane = CPane()
         root = pane.currentPath
+        window.setProgressValue(None)
 
         def _traverse(job_item: ckit.JobItem) -> None:
-            items = pane.traverse(False)
-            job_item.paths = [
-                item.getFullpath()[len(root) :].lstrip(os.sep) for item in items
-            ]
+            job_item.paths = []
+            for item in pane.traverse(False):
+                if job_item.isCanceled():
+                    return
+                rel = item.getFullpath()[len(root) :].lstrip(os.sep)
+                job_item.paths.append(rel)
 
         def _finished(job_item: ckit.JobItem) -> None:
-            lines = "\n".join(sorted(job_item.paths))
-            ckit.setClipboardText(lines)
-            Kiritori.log("Copied tree: {}".format(root))
+            window.clearProgress()
+            if job_item.isCanceled():
+                Kiritori.log("Canceled.")
+            else:
+                lines = "\n".join(sorted(job_item.paths))
+                ckit.setClipboardText(lines)
+                Kiritori.log("Copied tree: {}".format(root))
 
         job = ckit.JobItem(_traverse, _finished)
         window.taskEnqueue(job, create_new_queue=False)
