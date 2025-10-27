@@ -775,6 +775,16 @@ def configure(window: MainWindow) -> None:
                 else:
                     yield item
 
+        def traverseDir(self) -> Iterator[item_Default]:
+            for di in self.dirs:
+                _, n = os.path.split(di.getFullpath())
+                if n == "node_modules" or n.startswith("."):
+                    continue
+                yield di
+                for _, dis, _ in di.walk():
+                    for d in dis:
+                        yield d
+
     class LeftPane(CPane):
         def __init__(self) -> None:
             super().__init__(window.focus == MainWindow.FOCUS_LEFT)
@@ -2262,6 +2272,8 @@ def configure(window: MainWindow) -> None:
         if len(pane.dirs) < 1:
             return
 
+        root = pane.currentPath
+
         print("Searching for last-indexed dir under '{}' ...".format(pane.currentPath))
 
         def _traverse(job_item: ckit.JobItem) -> None:
@@ -2269,24 +2281,16 @@ def configure(window: MainWindow) -> None:
             if pane.isBlank:
                 return
 
-            count = 0
             paths = []
-            parent, name = os.path.split(pane.currentPath)
-            root = item_Default(parent, name)
-            for _, dirs, _ in root.walk():
-                for d in dirs:
-                    count += 1
-                    if 900 < count:
-                        Kiritori.log("Too many directories found, stopping search.")
-                        return
-                    rel = d.getName()
-                    if rel.startswith(os.sep):
-                        continue
-                    if any([(os.sep + c in rel) for c in (".", "_", "~")]):
-                        continue
-                    paths.append(d.getFullpath())
+            for d in pane.traverseDir():
+                p = d.getFullpath()
+                rel = p[len(root) :].lstrip(os.sep)
+                if any([(os.sep + c in rel) for c in (".", "_", "~")]):
+                    continue
+                paths.append(p)
 
             if 0 < len(paths):
+                paths.sort()
                 job_item.result = paths[-1]
 
         def _open(job_item: ckit.JobItem) -> None:
