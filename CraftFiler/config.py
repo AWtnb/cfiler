@@ -756,16 +756,16 @@ def configure(window: MainWindow) -> None:
             )
             child_lister.destroy()
 
-        def traverse(self, only_file: bool = True) -> Iterator[item_Default]:
+        def traverse(self, ignore_dir: bool = False) -> Iterator[item_Default]:
             for item in self.items:
                 if item.isdir():
                     _, dn = os.path.split(item.getFullpath())
                     if dn == "node_modules" or dn.startswith("."):
                         continue
-                    if not only_file:
+                    if not ignore_dir:
                         yield item
                     for _, dirs, files in item.walk():
-                        if not only_file:
+                        if not ignore_dir:
                             for d in dirs:
                                 yield d
                         for file in files:
@@ -851,7 +851,7 @@ def configure(window: MainWindow) -> None:
 
         def _traverse(job_item: ckit.JobItem) -> None:
             job_item.paths = []
-            for item in pane.traverse(False):
+            for item in pane.traverse():
                 if job_item.isCanceled():
                     return
                 rel = item.getFullpath()[len(root) :].lstrip(os.sep)
@@ -901,7 +901,7 @@ def configure(window: MainWindow) -> None:
 
         def _scan(job_item: ckit.JobItem) -> None:
             job_item.latest = None
-            for item in pane.traverse():
+            for item in pane.traverse(True):
                 if job_item.latest is None:
                     job_item.latest = item
                     continue
@@ -3729,7 +3729,7 @@ def configure(window: MainWindow) -> None:
                         sels = other_pane.selectedItems
                         other_pane.unSelectAll()
                         return sels
-                    return other_pane.traverse()
+                    return other_pane.traverse(True)
 
                 clones: Dict[str, List[str]] = {}
 
