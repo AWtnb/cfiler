@@ -31,7 +31,6 @@ from cfiler import *
 # https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
 from cfiler_mainwindow import (
     MainWindow,
-    History,
     PAINT_LEFT_LOCATION,
     PAINT_LEFT_HEADER,
     PAINT_LEFT_ITEMS,
@@ -80,6 +79,7 @@ from cfiler_misc import getFileSizeString
 import cfiler_resource
 
 import cfiler_msgbox
+import cfiler_debug
 
 
 class PaintOption:
@@ -756,34 +756,42 @@ def configure(window: MainWindow) -> None:
             )
             child_lister.destroy()
 
-        def traverse(self, ignore_dir: bool = False) -> Iterator[item_Default]:
-            for item in self.items:
-                if item.isdir():
-                    _, dn = os.path.split(item.getFullpath())
-                    if dn == "node_modules" or dn.startswith("."):
-                        continue
-                    if not ignore_dir:
-                        yield item
-                    for _, dirs, files in item.walk():
-                        if not ignore_dir:
-                            for d in dirs:
-                                yield d
-                        for file in files:
-                            _, fn = os.path.split(file.getFullpath())
-                            if not fn.startswith("~$_"):
-                                yield file
-                else:
-                    yield item
+        def traverse(
+            self, ignore_dir: bool = False, *ignore_dirnames: str
+        ) -> Iterator[item_Default]:
 
-        def traverseDir(self) -> Iterator[item_Default]:
-            for di in self.dirs:
-                _, n = os.path.split(di.getFullpath())
-                if n == "node_modules" or n.startswith("."):
-                    continue
-                yield di
-                for _, dis, _ in di.walk():
-                    for d in dis:
+            class FileListEntry:
+                def __init__(self, root: str, path: str) -> None:
+                    self.root = root
+                    self.dirname = path[len(root) :].lstrip(os.sep)
+
+                def __call__(self, name) -> Union[item_Default, None]:
+                    try:
+                        item = item_Default(
+                            self.root, ckit.joinPath(self.dirname, name)
+                        )
+                        return item
+                    except Exception:
+                        cfiler_debug.printErrorInfo()
+                        return None
+
+            ignore_dirnames = list(ignore_dirnames) + ["node_modules"]
+            for dirpath, subdirs, subfiles in os.walk(self.currentPath):
+                for dn in subdirs:
+                    if dn.startswith(".") or dn in ignore_dirnames:
+                        subdirs.remove(dn)
+                for fn in subfiles:
+                    if fn.startswith("~$_"):
+                        subfiles.remove(fn)
+                ent = FileListEntry(self.currentPath, dirpath)
+                if not ignore_dir:
+                    for d in filter(
+                        None,
+                        map(ent, subdirs),
+                    ):
                         yield d
+                for f in filter(None, map(ent, subfiles)):
+                    yield f
 
     class LeftPane(CPane):
         def __init__(self) -> None:
@@ -2289,12 +2297,12 @@ def configure(window: MainWindow) -> None:
                 return
 
             paths = []
-            for d in pane.traverseDir():
-                p = d.getFullpath()
-                rel = p[len(root) :].lstrip(os.sep)
-                if any([(os.sep + c in rel) for c in (".", "_", "~")]):
-                    continue
-                paths.append(p)
+            for item in pane.traverse():
+                if item.isdir():
+                    rel = item.name
+                    if any([(os.sep + c in rel) for c in ("_", "~")]):
+                        continue
+                    paths.append(item.getFullpath())
 
             if 0 < len(paths):
                 paths.sort()
