@@ -757,7 +757,7 @@ def configure(window: MainWindow) -> None:
             child_lister.destroy()
 
         def traverse(
-            self, ignore_dir: bool = False, *ignore_dirnames: str
+            self, only_file: bool = False, *ignore_dirnames: str
         ) -> Iterator[item_Default]:
 
             class FileListEntry:
@@ -784,7 +784,7 @@ def configure(window: MainWindow) -> None:
                     if fn.startswith("~$_"):
                         subfiles.remove(fn)
                 ent = FileListEntry(self.currentPath, dirpath)
-                if not ignore_dir:
+                if not only_file:
                     for d in filter(
                         None,
                         map(ent, subdirs),
