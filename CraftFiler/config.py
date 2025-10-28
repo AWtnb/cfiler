@@ -757,7 +757,7 @@ def configure(window: MainWindow) -> None:
             child_lister.destroy()
 
         def traverse(
-            self, only_file: bool = False, *ignore_dirnames: str
+            self, only_file: bool, *ignore_dirnames: str
         ) -> Iterator[item_Default]:
 
             class FileListEntry:
@@ -859,7 +859,7 @@ def configure(window: MainWindow) -> None:
 
         def _traverse(job_item: ckit.JobItem) -> None:
             job_item.paths = []
-            for item in pane.traverse():
+            for item in pane.traverse(False):
                 if job_item.isCanceled():
                     return
                 rel = item.getFullpath()[len(root) :].lstrip(os.sep)
@@ -2297,9 +2297,9 @@ def configure(window: MainWindow) -> None:
                 return
 
             paths = []
-            for item in pane.traverse("_obsolete"):
+            for item in pane.traverse(False, "_obsolete"):
                 if item.isdir():
-                    rel = item.name
+                    rel = item.getName()
                     if any([(os.sep + c in rel) for c in ("_", "~")]):
                         continue
                     paths.append(item.getFullpath())
