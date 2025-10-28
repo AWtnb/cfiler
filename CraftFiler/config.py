@@ -3118,7 +3118,7 @@ def configure(window: MainWindow) -> None:
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
             ) -> Tuple[List[str], int]:
                 found = self.filter_by(update_info.text)
-                return sorted(list(set(found)), key=len) + self.selected, 0
+                return self.selected + sorted(list(set(found)), key=len), 0
 
             return _handler
 
@@ -3191,7 +3191,7 @@ def configure(window: MainWindow) -> None:
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
             ) -> Tuple[List[str], int]:
                 found = self.filter_by(update_info.text)
-                return sorted(list(set(found)), key=len) + self.selected, 0
+                return self.selected + sorted(list(set(found)), key=len), 0
 
             return _filter
 
