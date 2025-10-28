@@ -909,7 +909,7 @@ def configure(window: MainWindow) -> None:
 
         def _scan(job_item: ckit.JobItem) -> None:
             job_item.latest = None
-            for item in pane.traverse(True):
+            for item in pane.traverse(True, "_obsolete"):
                 if job_item.latest is None:
                     job_item.latest = item
                     continue
@@ -2297,7 +2297,7 @@ def configure(window: MainWindow) -> None:
                 return
 
             paths = []
-            for item in pane.traverse():
+            for item in pane.traverse("_obsolete"):
                 if item.isdir():
                     rel = item.name
                     if any([(os.sep + c in rel) for c in ("_", "~")]):
