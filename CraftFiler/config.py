@@ -1064,9 +1064,9 @@ def configure(window: MainWindow) -> None:
         ]:
             menu = ["Open"]
             if ext == ".docx":
-                menu.append("(Copy text)")
+                menu.append("(copy text)")
             else:
-                menu.append("(Copy text of Sheet1)")
+                menu.append("(copy text of sheet1)")
             result, _ = invoke_listwindow("OpenXML file:", menu)
             if result != -1:
                 if result == 0:
