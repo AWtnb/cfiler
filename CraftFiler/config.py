@@ -168,6 +168,29 @@ def shell_exec(path: str, *args) -> None:
 CallbackFunc = Callable[[], None]
 
 
+class PaneHistoryProtocol(Protocol):
+    def append(self, parent: str, name: str, visible: bool, mark: bool) -> None: ...
+
+    items: list
+
+
+class PaneEntityProtocol(Protocol):
+    cursor: int
+    history: PaneHistoryProtocol
+    file_list: FileList
+    scroll_info: ckit.ScrollInfo
+
+
+class ItemDefaultProtocol(Protocol):
+    def isdir(self) -> bool: ...
+    def getName(self) -> str: ...
+    def getFullpath(self) -> str: ...
+    def bookmark(self) -> list: ...
+    def time(self) -> tuple: ...
+    def selected(self) -> bool: ...
+    def size(self) -> int: ...
+
+
 def configure(window: MainWindow) -> None:
 
     class ItemTimestamp:
@@ -190,7 +213,9 @@ def configure(window: MainWindow) -> None:
         def tostr(self) -> str:
             return self._datestr() + " " + self._timestr()
 
-    def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(window, item, width, _) -> str:
+    def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
+        window: MainWindow, item: ItemDefaultProtocol, width: int, _
+    ) -> str:
         if item.isdir():
             str_size = "\ud83d\udcc1"
         else:
@@ -382,26 +407,6 @@ def configure(window: MainWindow) -> None:
         }
     )
 
-    class PaneHistoryProtocol(Protocol):
-        def append(self, parent: str, name: str, visible: bool, mark: bool) -> None: ...
-
-        items: list
-
-    class PaneEntityProtocol(Protocol):
-        cursor: int
-        history: PaneHistoryProtocol
-        file_list: FileList
-        scroll_info: ckit.ScrollInfo
-
-    class ItemDefaultProtocol(Protocol):
-        def isdir(self) -> bool: ...
-        def getName(self) -> str: ...
-        def getFullpath(self) -> str: ...
-        def bookmark(self) -> list: ...
-        def time(self) -> tuple: ...
-        def selected(self) -> bool: ...
-        def size(self) -> int: ...
-
     class CPane:
         min_width = 20
 
@@ -426,7 +431,9 @@ def configure(window: MainWindow) -> None:
             window.subThreadCall(self.fileList.refresh, (False, True))
             self.fileList.applyItems()
 
-        def setSorter(self, sorter: Callable[[List[ItemDefaultProtocol]], None]) -> None:
+        def setSorter(
+            self, sorter: Callable[[List[ItemDefaultProtocol]], None]
+        ) -> None:
             window.subThreadCall(self.fileList.setSorter, (sorter,))
             self.refresh()
 
