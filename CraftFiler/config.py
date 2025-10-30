@@ -166,6 +166,9 @@ def shell_exec(path: str, *args) -> None:
         print(e)
 
 
+CallbackFunc = Callable[[], None]
+
+
 def configure(window: MainWindow) -> None:
 
     class ItemTimestamp:
@@ -291,7 +294,7 @@ def configure(window: MainWindow) -> None:
             cls._draw_footer()
 
         @classmethod
-        def wrap(cls, func: Callable[..., None]) -> None:
+        def wrap(cls, func: CallbackFunc) -> None:
             cls._draw_header()
             func()
             cls._draw_footer()
@@ -315,14 +318,12 @@ def configure(window: MainWindow) -> None:
 
         @staticmethod
         def wrap(
-            func: Union[
-                Callable[..., None], Callable[[ckit.ckit_command.CommandInfo], None]
-            ],
+            func: Callable[..., None],
         ) -> Callable[[ckit.ckit_command.CommandInfo], None]:
             if len(inspect.signature(func).parameters) < 1:
 
                 def _callback(_) -> None:
-                    func()  # type: ignore
+                    func()
 
                 return _callback
 
@@ -331,9 +332,7 @@ def configure(window: MainWindow) -> None:
         @classmethod
         def bind(
             cls,
-            func: Union[
-                Callable[..., None], Callable[[ckit.ckit_command.CommandInfo], None]
-            ],
+            func: Callable[..., None],
             *keys: str,
         ) -> None:
             for key in keys:
@@ -1644,7 +1643,7 @@ def configure(window: MainWindow) -> None:
             return src
 
         @classmethod
-        def invoke(cls, current_dir: bool, search_all: bool) -> Callable[..., None]:
+        def invoke(cls, current_dir: bool, search_all: bool) -> CallbackFunc:
 
             def _wrapper() -> None:
                 pane = CPane()
@@ -2437,7 +2436,7 @@ def configure(window: MainWindow) -> None:
                         self.pane.select(i)
             self.pane.focus(idx)
 
-    def smart_jumpDown(by_prefix: bool, selecting: bool) -> Callable[..., None]:
+    def smart_jumpDown(by_prefix: bool, selecting: bool) -> CallbackFunc:
 
         def _jumper() -> None:
             SmartJumper(by_prefix).down(selecting)
@@ -2449,7 +2448,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(smart_jumpDown(False, False), "C-J")
     Keybinder().bind(smart_jumpDown(False, True), "S-C-J")
 
-    def smart_jumpUp(by_prefix: bool, selecting: bool) -> Callable[..., None]:
+    def smart_jumpUp(by_prefix: bool, selecting: bool) -> CallbackFunc:
 
         def _jumper() -> None:
             SmartJumper(by_prefix).up(selecting)
@@ -3847,7 +3846,7 @@ def configure(window: MainWindow) -> None:
             if name in active_names:
                 other.selectByName(name)
 
-    def invoke_regex_selector(case: bool) -> Callable[..., None]:
+    def invoke_regex_selector(case: bool) -> CallbackFunc:
         def _selector() -> None:
             result, mod = window.commandLine("Regexp", return_modkey=True)
 
