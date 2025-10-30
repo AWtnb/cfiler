@@ -426,7 +426,7 @@ def configure(window: MainWindow) -> None:
             window.subThreadCall(self.fileList.refresh, (False, True))
             self.fileList.applyItems()
 
-        def setSorter(self, sorter: Callable[[List[item_Default]], None]) -> None:
+        def setSorter(self, sorter: Callable[[List[ItemDefaultProtocol]], None]) -> None:
             window.subThreadCall(self.fileList.setSorter, (sorter,))
             self.refresh()
 
@@ -789,9 +789,9 @@ def configure(window: MainWindow) -> None:
                     self.root = root
                     self.dirname = path[len(root) :].lstrip(os.sep)
 
-                def __call__(self, name) -> Union[item_Default, None]:
+                def __call__(self, name) -> Union[ItemDefaultProtocol, None]:
                     try:
-                        item = item_Default(
+                        item: ItemDefaultProtocol = item_Default(
                             self.root, ckit.joinPath(self.dirname, name)
                         )
                         return item
