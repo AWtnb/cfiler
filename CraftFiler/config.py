@@ -3623,16 +3623,9 @@ def configure(window: MainWindow) -> None:
                 ),
             ] + window.sorter_list
 
-        name = None
-        if focus := CPane().focusedItem:
-            name = focus.getName()
-
         sorter = window.sorter_list[0][1]
         LeftPane().setSorter(sorter)
         RightPane().setSorter(sorter)
-
-        if name:
-            CPane().focusByName(name)
 
     setup_sorter()
 
