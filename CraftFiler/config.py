@@ -20,7 +20,7 @@ from PIL import Image as PILImage
 from PIL.ExifTags import TAGS
 
 from pathlib import Path
-from typing import List, Tuple, Callable, Union, NamedTuple, Iterator, Dict
+from typing import List, Tuple, Callable, Union, NamedTuple, Iterator, Dict, Protocol
 
 import ckit  # type: ignore
 import pyauto  # type: ignore
@@ -56,7 +56,6 @@ from cfiler_mainwindow import (  # type: ignore
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import (  # type: ignore
     FileList,
-    item_Base,
     item_Default,
     lister_Default,
     item_Empty,
@@ -383,6 +382,26 @@ def configure(window: MainWindow) -> None:
         }
     )
 
+    class PaneHistoryProtocol(Protocol):
+        def append(self, parent: str, name: str, visible: bool, mark: bool) -> None: ...
+
+        items: list
+
+    class PaneEntityProtocol(Protocol):
+        cursor: int
+        history: PaneHistoryProtocol
+        file_list: FileList
+        scroll_info: ckit.ScrollInfo
+
+    class ItemDefaultProtocol(Protocol):
+        def isdir(self) -> bool: ...
+        def getName(self) -> str: ...
+        def getFullpath(self) -> str: ...
+        def bookmark(self) -> list: ...
+        def time(self) -> tuple: ...
+        def selected(self) -> bool: ...
+        def size(self) -> int: ...
+
     class CPane:
         min_width = 20
 
@@ -397,7 +416,7 @@ def configure(window: MainWindow) -> None:
                 self._other = window.activePane()
 
         @property
-        def entity(self) -> None:
+        def entity(self) -> PaneEntityProtocol:
             return self._pane
 
         def repaint(self, option: PaintOption = PO.All) -> None:
@@ -412,13 +431,13 @@ def configure(window: MainWindow) -> None:
             self.refresh()
 
         @property
-        def items(self) -> list:
+        def items(self) -> List[ItemDefaultProtocol]:
             if self.isBlank:
                 return []
             return self._items
 
         @property
-        def dirs(self) -> list:
+        def dirs(self) -> List[ItemDefaultProtocol]:
             items = []
             if self.isBlank:
                 return items
@@ -429,7 +448,7 @@ def configure(window: MainWindow) -> None:
             return items
 
         @property
-        def files(self) -> list:
+        def files(self) -> List[ItemDefaultProtocol]:
             items = []
             if self.isBlank:
                 return items
@@ -440,7 +459,7 @@ def configure(window: MainWindow) -> None:
             return items
 
         @property
-        def stems(self) -> list:
+        def stems(self) -> List[str]:
             items = []
             if self.isBlank:
                 return items
@@ -453,11 +472,11 @@ def configure(window: MainWindow) -> None:
             p = Path(path)
             lister = self.lister
             visible = isinstance(lister, lister_Default)
-            self.entity.history.append(str(p.parent), p.name, visible, mark)  # type: ignore
+            self.entity.history.append(str(p.parent), p.name, visible, mark)
 
         @property
         def cursor(self) -> int:
-            return self.entity.cursor  # type: ignore
+            return self.entity.cursor
 
         def focus(self, i: int) -> None:
             if self.isValidIndex(i):
@@ -499,7 +518,7 @@ def configure(window: MainWindow) -> None:
 
         @property
         def fileList(self) -> FileList:
-            return self.entity.file_list  # type: ignore
+            return self.entity.file_list
 
         @property
         def lister(self) -> lister_Default:
@@ -518,7 +537,7 @@ def configure(window: MainWindow) -> None:
 
         @property
         def scrollInfo(self) -> ckit.ScrollInfo:
-            return self.entity.scroll_info  # type: ignore
+            return self.entity.scroll_info
 
         @property
         def currentPath(self) -> str:
@@ -528,7 +547,7 @@ def configure(window: MainWindow) -> None:
         def count(self) -> int:
             return self.fileList.numItems()
 
-        def byIndex(self, i: int) -> item_Base:
+        def byIndex(self, i: int) -> ItemDefaultProtocol:
             return self.fileList.getItem(i)
 
         @property
@@ -536,7 +555,7 @@ def configure(window: MainWindow) -> None:
             return isinstance(self.byIndex(0), item_Empty)
 
         @property
-        def names(self) -> list:
+        def names(self) -> List[str]:
             names = []
             if self.isBlank:
                 return names
@@ -546,11 +565,11 @@ def configure(window: MainWindow) -> None:
             return names
 
         @property
-        def paths(self) -> list:
+        def paths(self) -> List[str]:
             return [os.path.join(self.currentPath, name) for name in self.names]
 
         @property
-        def extensions(self) -> list:
+        def extensions(self) -> List[str]:
             exts = []
             if self.isBlank:
                 return exts
@@ -562,7 +581,7 @@ def configure(window: MainWindow) -> None:
             return exts
 
         @property
-        def selectedItems(self) -> list:
+        def selectedItems(self) -> List[ItemDefaultProtocol]:
             items = []
             if self.isBlank:
                 return items
@@ -573,23 +592,23 @@ def configure(window: MainWindow) -> None:
             return items
 
         @property
-        def selectedOrAllItems(self) -> list:
+        def selectedOrAllItems(self) -> List[ItemDefaultProtocol]:
             if self.hasSelection:
                 return self.selectedItems
             return self.items
 
         @property
-        def selectedItemPaths(self) -> list:
+        def selectedItemPaths(self) -> List[str]:
             return [item.getFullpath() for item in self.selectedItems]
 
         @property
-        def selectedItemNames(self) -> list:
+        def selectedItemNames(self) -> List[str]:
             return [item.getName() for item in self.selectedItems]
 
         @property
-        def focusedItem(self) -> Union[item_Base, None]:
+        def focusedItem(self) -> ItemDefaultProtocol:
             if self.isBlank:
-                return None
+                raise ValueError("No item to focus.")
             return self.byIndex(self.cursor)
 
         def pathByIndex(self, i: int) -> str:
@@ -711,7 +730,7 @@ def configure(window: MainWindow) -> None:
                         return None
 
                     for hist_item in (
-                        self.entity.history.items + self._other.history.items  # type: ignore
+                        self.entity.history.items + self._other.history.items
                     ):
                         focus_name = _last_focused_name(hist_item)
                         if focus_name is not None:
@@ -763,7 +782,7 @@ def configure(window: MainWindow) -> None:
 
         def traverse(
             self, only_file: bool, *ignore_dirnames: str
-        ) -> Iterator[item_Default]:
+        ) -> Iterator[ItemDefaultProtocol]:
 
             class FileListEntry:
                 def __init__(self, root: str, path: str) -> None:
@@ -821,9 +840,9 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank or pane.count == 1:
             return
         if pane.cursor == 0:
-            pane.entity.cursor = pane.count - 1  # type: ignore
+            pane.entity.cursor = pane.count - 1
         else:
-            pane.entity.cursor -= 1  # type: ignore
+            pane.entity.cursor -= 1
         pane.scrollToCursor()
 
     Keybinder().bind(smart_cursorUp, "K", "Up")
@@ -833,9 +852,9 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank or pane.count == 1:
             return
         if pane.cursor == pane.count - 1:
-            pane.entity.cursor = 0  # type: ignore
+            pane.entity.cursor = 0
         else:
-            pane.entity.cursor += 1  # type: ignore
+            pane.entity.cursor += 1
         pane.scrollToCursor()
 
     Keybinder().bind(smart_cursorDown, "J", "Down")
@@ -939,7 +958,7 @@ def configure(window: MainWindow) -> None:
         focused = pane.focusedItem
         older = []
         for item in pane.selectedOrAllItems:
-            if item.time() < focused.time():  # type: ignore
+            if item.time() < focused.time():
                 older.append(item)
 
         if 0 < len(older):
@@ -1045,7 +1064,7 @@ def configure(window: MainWindow) -> None:
             pane.openPath(focus_path)
             return True
 
-        if pane.focusedItem.size() == 0:  # type: ignore
+        if pane.focusedItem.size() == 0:
             window.command_Execute(None)
             return True
 
@@ -1130,7 +1149,7 @@ def configure(window: MainWindow) -> None:
             return
 
         paths = pane.selectedItemPaths
-        if len(paths) < 1 and not pane.focusedItem.isdir():  # type: ignore
+        if len(paths) < 1 and not pane.focusedItem.isdir():
             paths.append(pane.focusedItemPath)
 
         app_table = {}
@@ -1190,7 +1209,7 @@ def configure(window: MainWindow) -> None:
         active = CPane(True)
         active_selects = active.selectedItemNames
         active_path = active.currentPath
-        active_focus_name = None if active.isBlank else active.focusedItem.getName()  # type: ignore
+        active_focus_name = None if active.isBlank else active.focusedItem.getName()
         active_sorter = active.fileList.getSorter()
 
         other = CPane(False)
@@ -1198,7 +1217,7 @@ def configure(window: MainWindow) -> None:
         other_path = other.currentPath
         other_sorter = other.fileList.getSorter()
 
-        other_focus_name = None if other.isBlank else other.focusedItem.getName()  # type: ignore
+        other_focus_name = None if other.isBlank else other.focusedItem.getName()
 
         active.openPath(other_path, other_focus_name)
         active.selectByNames(ogther_selects)
@@ -2327,7 +2346,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         reg = re.compile(r"^\d+_|^\d+$")
         root = None
-        f = "_" if pane.isBlank else pane.focusedItem.getName()  # type: ignore
+        f = "_" if pane.isBlank else pane.focusedItem.getName()
         for parent in Path(pane.currentPath, f).parents:
             if reg.match(parent.name):
                 root = parent
@@ -3228,11 +3247,11 @@ def configure(window: MainWindow) -> None:
         if not renamer.renamable(item) or pane.isBlank:
             return
 
-        ts = item.time()  # type: ignore
+        ts = item.time()
         item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
         additional_suffix = [item_timestamp]
 
-        focused_path = Path(item.getFullpath())  # type: ignore
+        focused_path = Path(item.getFullpath())
         placeholder = focused_path.name if focused_path.is_dir() else focused_path.stem
         offset = len(placeholder)
         sel = [offset, offset]
@@ -3261,14 +3280,14 @@ def configure(window: MainWindow) -> None:
     def rename_ext() -> None:
         pane = CPane()
         item = pane.focusedItem
-        if item.isdir():  # type: ignore
+        if item.isdir():
             return
 
         renamer = Renamer()
         if not renamer.renamable(item) or pane.isBlank:
             return
 
-        focused_path = Path(item.getFullpath())  # type: ignore
+        focused_path = Path(item.getFullpath())
         placeholder = focused_path.suffix
 
         exts = []
@@ -3738,7 +3757,9 @@ def configure(window: MainWindow) -> None:
                     table[digest] = table.get(digest, []) + [name]
                     exts.add(ext)
 
-                def __files_to_compare() -> Union[Iterator[str], List[str]]:
+                def __files_to_compare() -> (
+                    Union[Iterator[ItemDefaultProtocol], List[ItemDefaultProtocol]]
+                ):
                     if with_selection:
                         sels = other_pane.selectedItems
                         other_pane.unSelectAll()
@@ -3750,7 +3771,7 @@ def configure(window: MainWindow) -> None:
                 for item in __files_to_compare():
                     if job_item.isCanceled():
                         return
-                    path = item.getFullpath()  # type: ignore
+                    path = item.getFullpath()
                     _, ext = os.path.splitext(path)
                     if ext not in exts:
                         continue
@@ -3861,7 +3882,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         active_names = pane.selectedItemNames
         if len(active_names) < 1:
-            active_names = [pane.focusedItem.getName()]  # type: ignore
+            active_names = [pane.focusedItem.getName()]
         other = CPane(False)
         other.unSelectAll()
 
