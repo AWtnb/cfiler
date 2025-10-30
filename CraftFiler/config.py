@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import time
 import unicodedata
-import urllib
+import urllib.parse
 import urllib.request
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
@@ -22,14 +22,14 @@ from PIL.ExifTags import TAGS
 from pathlib import Path
 from typing import List, Tuple, Callable, Union, NamedTuple, Iterator, Dict
 
-import ckit
-import pyauto
+import ckit  # type: ignore
+import pyauto  # type: ignore
 
-from cfiler import *
+from cfiler import *  # type: ignore
 
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
-from cfiler_mainwindow import (
+from cfiler_mainwindow import (  # type: ignore
     MainWindow,
     PAINT_LEFT_LOCATION,
     PAINT_LEFT_HEADER,
@@ -54,7 +54,7 @@ from cfiler_mainwindow import (
 )
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
-from cfiler_filelist import (
+from cfiler_filelist import (  # type: ignore
     FileList,
     item_Base,
     item_Default,
@@ -64,22 +64,22 @@ from cfiler_filelist import (
 )
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
-from cfiler_listwindow import ListWindow, ListItem
+from cfiler_listwindow import ListWindow  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_textviewer.py
-from cfiler_textviewer import TextViewer
+from cfiler_textviewer import TextViewer  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_renamewindow.py
-from cfiler_resultwindow import popResultWindow
+from cfiler_resultwindow import popResultWindow  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_misc.py
-from cfiler_misc import getFileSizeString
+from cfiler_misc import getFileSizeString  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_resource.py
-import cfiler_resource
+import cfiler_resource  # type: ignore
 
-import cfiler_msgbox
-import cfiler_debug
+import cfiler_msgbox  # type: ignore
+import cfiler_debug  # type: ignore
 
 
 class PaintOption:
@@ -188,7 +188,7 @@ def configure(window: MainWindow) -> None:
         def tostr(self) -> str:
             return self._datestr() + " " + self._timestr()
 
-    def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(window, item, width, _):
+    def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(window, item, width, _) -> str:
         if item.isdir():
             str_size = "\ud83d\udcc1"
         else:
@@ -224,7 +224,7 @@ def configure(window: MainWindow) -> None:
 
     window.itemformat = itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS
 
-    def set_custom_theme():
+    def set_custom_theme() -> None:
         custom_theme = {
             "bg": "#122530",
             "fg": "#ffffff",
@@ -291,7 +291,7 @@ def configure(window: MainWindow) -> None:
             cls._draw_footer()
 
         @classmethod
-        def wrap(cls, func: Callable) -> None:
+        def wrap(cls, func: Callable[..., None]) -> None:
             cls._draw_header()
             func()
             cls._draw_footer()
@@ -314,11 +314,15 @@ def configure(window: MainWindow) -> None:
     class Keybinder:
 
         @staticmethod
-        def wrap(func: Callable) -> Callable:
+        def wrap(
+            func: Union[
+                Callable[..., None], Callable[[ckit.ckit_command.CommandInfo], None]
+            ],
+        ) -> Callable[[ckit.ckit_command.CommandInfo], None]:
             if len(inspect.signature(func).parameters) < 1:
 
                 def _callback(_) -> None:
-                    func()
+                    func()  # type: ignore
 
                 return _callback
 
@@ -327,7 +331,9 @@ def configure(window: MainWindow) -> None:
         @classmethod
         def bind(
             cls,
-            func: Callable,
+            func: Union[
+                Callable[..., None], Callable[[ckit.ckit_command.CommandInfo], None]
+            ],
             *keys: str,
         ) -> None:
             for key in keys:
@@ -392,7 +398,7 @@ def configure(window: MainWindow) -> None:
                 self._other = window.activePane()
 
         @property
-        def entity(self):
+        def entity(self) -> None:
             return self._pane
 
         def repaint(self, option: PaintOption = PO.All) -> None:
@@ -402,7 +408,7 @@ def configure(window: MainWindow) -> None:
             window.subThreadCall(self.fileList.refresh, (False, True))
             self.fileList.applyItems()
 
-        def setSorter(self, sorter: Callable) -> None:
+        def setSorter(self, sorter: Callable[[List[item_Default]], None]) -> None:
             window.subThreadCall(self.fileList.setSorter, (sorter,))
             self.refresh()
 
@@ -448,11 +454,11 @@ def configure(window: MainWindow) -> None:
             p = Path(path)
             lister = self.lister
             visible = isinstance(lister, lister_Default)
-            self.entity.history.append(str(p.parent), p.name, visible, mark)
+            self.entity.history.append(str(p.parent), p.name, visible, mark)  # type: ignore
 
         @property
         def cursor(self) -> int:
-            return self.entity.cursor
+            return self.entity.cursor  # type: ignore
 
         def focus(self, i: int) -> None:
             if self.isValidIndex(i):
@@ -494,10 +500,10 @@ def configure(window: MainWindow) -> None:
 
         @property
         def fileList(self) -> FileList:
-            return self.entity.file_list
+            return self.entity.file_list  # type: ignore
 
         @property
-        def lister(self):
+        def lister(self) -> lister_Default:
             return self.fileList.getLister()
 
         @property
@@ -513,7 +519,7 @@ def configure(window: MainWindow) -> None:
 
         @property
         def scrollInfo(self) -> ckit.ScrollInfo:
-            return self.entity.scroll_info
+            return self.entity.scroll_info  # type: ignore
 
         @property
         def currentPath(self) -> str:
@@ -706,7 +712,7 @@ def configure(window: MainWindow) -> None:
                         return None
 
                     for hist_item in (
-                        self.entity.history.items + self._other.history.items
+                        self.entity.history.items + self._other.history.items  # type: ignore
                     ):
                         focus_name = _last_focused_name(hist_item)
                         if focus_name is not None:
@@ -775,10 +781,10 @@ def configure(window: MainWindow) -> None:
                         cfiler_debug.printErrorInfo()
                         return None
 
-            ignore_dirnames = list(ignore_dirnames) + ["node_modules"]
+            ignore_list = list(ignore_dirnames) + ["node_modules"]
             for dirpath, subdirs, subfiles in os.walk(self.currentPath):
                 for dn in subdirs:
-                    if dn.startswith(".") or dn in ignore_dirnames:
+                    if dn.startswith(".") or dn in ignore_list:
                         subdirs.remove(dn)
                 for fn in subfiles:
                     if fn.startswith("~$_"):
@@ -816,9 +822,9 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank or pane.count == 1:
             return
         if pane.cursor == 0:
-            pane.entity.cursor = pane.count - 1
+            pane.entity.cursor = pane.count - 1  # type: ignore
         else:
-            pane.entity.cursor -= 1
+            pane.entity.cursor -= 1  # type: ignore
         pane.scrollToCursor()
 
     Keybinder().bind(smart_cursorUp, "K", "Up")
@@ -828,9 +834,9 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank or pane.count == 1:
             return
         if pane.cursor == pane.count - 1:
-            pane.entity.cursor = 0
+            pane.entity.cursor = 0  # type: ignore
         else:
-            pane.entity.cursor += 1
+            pane.entity.cursor += 1  # type: ignore
         pane.scrollToCursor()
 
     Keybinder().bind(smart_cursorDown, "J", "Down")
@@ -934,7 +940,7 @@ def configure(window: MainWindow) -> None:
         focused = pane.focusedItem
         older = []
         for item in pane.selectedOrAllItems:
-            if item.time() < focused.time():
+            if item.time() < focused.time():  # type: ignore
                 older.append(item)
 
         if 0 < len(older):
@@ -987,7 +993,7 @@ def configure(window: MainWindow) -> None:
                 arc.close()
 
         def _finished(job_item: ckit.JobItem) -> None:
-            def __show():
+            def __show() -> None:
                 print(job_item.name)
                 for line in job_item.tree:
                     print("  ", line)
@@ -1040,7 +1046,7 @@ def configure(window: MainWindow) -> None:
             pane.openPath(focus_path)
             return True
 
-        if pane.focusedItem.size() == 0:
+        if pane.focusedItem.size() == 0:  # type: ignore
             window.command_Execute(None)
             return True
 
@@ -1125,7 +1131,7 @@ def configure(window: MainWindow) -> None:
             return
 
         paths = pane.selectedItemPaths
-        if len(paths) < 1 and not pane.focusedItem.isdir():
+        if len(paths) < 1 and not pane.focusedItem.isdir():  # type: ignore
             paths.append(pane.focusedItemPath)
 
         app_table = {}
@@ -1185,7 +1191,7 @@ def configure(window: MainWindow) -> None:
         active = CPane(True)
         active_selects = active.selectedItemNames
         active_path = active.currentPath
-        active_focus_name = None if active.isBlank else active.focusedItem.getName()
+        active_focus_name = None if active.isBlank else active.focusedItem.getName()  # type: ignore
         active_sorter = active.fileList.getSorter()
 
         other = CPane(False)
@@ -1193,7 +1199,7 @@ def configure(window: MainWindow) -> None:
         other_path = other.currentPath
         other_sorter = other.fileList.getSorter()
 
-        other_focus_name = None if other.isBlank else other.focusedItem.getName()
+        other_focus_name = None if other.isBlank else other.focusedItem.getName()  # type: ignore
 
         active.openPath(other_path, other_focus_name)
         active.selectByNames(ogther_selects)
@@ -1348,7 +1354,7 @@ def configure(window: MainWindow) -> None:
             ".xlsx": "xlsxr.exe",
         }.get(Path(path).suffix, None)
         if go_tool is None:
-            return
+            return ""
 
         exe_path = shutil.which(go_tool)
         if not exe_path:
@@ -1426,12 +1432,12 @@ def configure(window: MainWindow) -> None:
             self.reg = re.compile(r"^[0-9]+")
             self.dirnames = [d.getName() for d in self.pane.dirs]
 
-        def candidates(self) -> Tuple[str]:
-            return (
+        def candidates(self) -> List[str]:
+            return [
                 "#_prepare",
                 "#_main",
                 "#_finished",
-            )
+            ]
 
         @classmethod
         def _to_prefix(cls, s: str) -> str:
@@ -1486,7 +1492,7 @@ def configure(window: MainWindow) -> None:
 
     # https://gist.github.com/AWtnb/db70a72f379e5d7307145177cc114141
     class BookProjectDir(RuledDir):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
 
         def get_parents(self, step: int) -> Tuple[str]:
@@ -1634,11 +1640,11 @@ def configure(window: MainWindow) -> None:
             for path in Path(src).parents:
                 p = os.path.join(path, ".root")
                 if smart_check_path(p, 0.5):
-                    return path
+                    return str(path)
             return src
 
         @classmethod
-        def invoke(cls, current_dir: bool, search_all: bool) -> Callable:
+        def invoke(cls, current_dir: bool, search_all: bool) -> Callable[..., None]:
 
             def _wrapper() -> None:
                 pane = CPane()
@@ -1682,7 +1688,7 @@ def configure(window: MainWindow) -> None:
 
             return _wrapper
 
-    def setup_zyw():
+    def setup_zyw() -> None:
         for key, params in {
             "S-Z": (False, False),
             "Z": (False, True),
@@ -1949,7 +1955,7 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log(e)
                 return
 
-        def _finished(_):
+        def _finished(_) -> None:
             pass
 
         job = ckit.JobItem(_compress, _finished)
@@ -1984,14 +1990,14 @@ def configure(window: MainWindow) -> None:
             pane.adjustWidth()
             window.command_CreateArchive(None)
 
-    def extract_with_7zip(dest: str, *targets: str) -> None:
+    def extract_with_7zip(dest: str, *paths: str) -> None:
         seven_zip = shutil.which("7z")
         if seven_zip is None:
             Kiritori.log("7z not found.")
             return
 
         targets = [
-            t for t in targets if Path(t).is_file() and is_extractable(Path(t).suffix)
+            t for t in paths if Path(t).is_file() and is_extractable(Path(t).suffix)
         ]
         if len(targets) < 1:
             return
@@ -2021,7 +2027,7 @@ def configure(window: MainWindow) -> None:
                     Kiritori.log(e)
                     return
 
-        def _finished(_):
+        def _finished(_) -> None:
             pass
 
         job = ckit.JobItem(_extract, _finished)
@@ -2108,7 +2114,7 @@ def configure(window: MainWindow) -> None:
         if result < 0:
             return
 
-        def _from(path: str) -> None:
+        def _from(path: str) -> str:
             if result == 0:
                 return path
             p = Path(path)
@@ -2214,7 +2220,7 @@ def configure(window: MainWindow) -> None:
             CPane().unSelectAll()
 
         @staticmethod
-        def byFunction(func: Callable, negative: bool = False) -> None:
+        def byFunction(func: Callable[[str], bool], negative: bool = False) -> None:
             pane = CPane()
             for item in pane.selectedOrAllItems:
                 path = item.getFullpath()
@@ -2322,7 +2328,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         reg = re.compile(r"^\d+_|^\d+$")
         root = None
-        f = "_" if pane.isBlank else pane.focusedItem.getName()
+        f = "_" if pane.isBlank else pane.focusedItem.getName()  # type: ignore
         for parent in Path(pane.currentPath, f).parents:
             if reg.match(parent.name):
                 root = parent
@@ -2431,7 +2437,7 @@ def configure(window: MainWindow) -> None:
                         self.pane.select(i)
             self.pane.focus(idx)
 
-    def smart_jumpDown(by_prefix: bool, selecting: bool) -> Callable:
+    def smart_jumpDown(by_prefix: bool, selecting: bool) -> Callable[..., None]:
 
         def _jumper() -> None:
             SmartJumper(by_prefix).down(selecting)
@@ -2443,7 +2449,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(smart_jumpDown(False, False), "C-J")
     Keybinder().bind(smart_jumpDown(False, True), "S-C-J")
 
-    def smart_jumpUp(by_prefix: bool, selecting: bool) -> Callable:
+    def smart_jumpUp(by_prefix: bool, selecting: bool) -> Callable[..., None]:
 
         def _jumper() -> None:
             SmartJumper(by_prefix).up(selecting)
@@ -2892,7 +2898,11 @@ def configure(window: MainWindow) -> None:
 
             def __init__(self) -> None:
                 commands = command_index.split("@")
-                self.index_template = commands[0].rstrip()
+                left_parts = commands[0].rstrip()
+                if str(left_parts).isdecimal():
+                    self.index_template = left_parts
+                else:
+                    self.index_template = "00"
                 if 1 < len(commands):
                     args = [a.strip() for a in commands[1].split(",")]
                     self.position = int(args[0])
@@ -2916,14 +2926,8 @@ def configure(window: MainWindow) -> None:
                 return filled + connector
 
             @property
-            def start(self) -> Union[int, None]:
-                try:
-                    return int(self.index_template)
-                except:
-                    return None
-
-            def is_valid(self) -> bool:
-                return self.start is not None
+            def start(self) -> int:
+                return int(self.index_template)
 
             def increment(self, i: int) -> int:
                 i += self.step
@@ -2934,9 +2938,6 @@ def configure(window: MainWindow) -> None:
                 return i
 
         ni = NameIndex()
-        if not ni.is_valid():
-            print("Canceled (Invalid format).\n")
-            return
 
         print(rename_command)
         rename_config_index.register(rename_command)
@@ -3072,7 +3073,7 @@ def configure(window: MainWindow) -> None:
     class NameAffix:
         sep = "_"
 
-        def __init__(self):
+        def __init__(self) -> None:
             self.pane = CPane()
 
         @staticmethod
@@ -3086,7 +3087,7 @@ def configure(window: MainWindow) -> None:
             return sorted([self.to_stem(sel) for sel in sels])
 
     class NamePrefix(NameAffix):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
 
         @classmethod
@@ -3104,7 +3105,7 @@ def configure(window: MainWindow) -> None:
             return pres
 
     class PrefixHandler(NamePrefix):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self.candidates = self.variants()
             self.selected = self.selected_stems()
@@ -3112,7 +3113,9 @@ def configure(window: MainWindow) -> None:
         def filter_by(self, s: str) -> List[str]:
             return [pre for pre in self.candidates if pre.startswith(s)]
 
-        def invoke(self) -> Callable:
+        def invoke(
+            self,
+        ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], Tuple[List[str], int]]:
 
             def _handler(
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
@@ -3185,7 +3188,9 @@ def configure(window: MainWindow) -> None:
                     found.append(s[:sep_pos] + suf)
             return found
 
-        def invoke(self) -> Callable:
+        def invoke(
+            self,
+        ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], Tuple[List[str], int]]:
 
             def _filter(
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
@@ -3195,7 +3200,9 @@ def configure(window: MainWindow) -> None:
 
             return _filter
 
-    def name_candidate_handler(with_timestamp: bool) -> Callable:
+    def name_candidate_handler(
+        with_timestamp: bool,
+    ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], Tuple[List[str], int]]:
         prefix_handler = PrefixHandler()
         suffix_handler = SuffixHandler(with_timestamp)
         selected = NameAffix().selected_stems()
@@ -3222,11 +3229,11 @@ def configure(window: MainWindow) -> None:
         if not renamer.renamable(item) or pane.isBlank:
             return
 
-        ts = item.time()
+        ts = item.time()  # type: ignore
         item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
         additional_suffix = [item_timestamp]
 
-        focused_path = Path(item.getFullpath())
+        focused_path = Path(item.getFullpath())  # type: ignore
         placeholder = focused_path.name if focused_path.is_dir() else focused_path.stem
         offset = len(placeholder)
         sel = [offset, offset]
@@ -3255,14 +3262,14 @@ def configure(window: MainWindow) -> None:
     def rename_ext() -> None:
         pane = CPane()
         item = pane.focusedItem
-        if item.isdir():
+        if item.isdir():  # type: ignore
             return
 
         renamer = Renamer()
         if not renamer.renamable(item) or pane.isBlank:
             return
 
-        focused_path = Path(item.getFullpath())
+        focused_path = Path(item.getFullpath())  # type: ignore
         placeholder = focused_path.suffix
 
         exts = []
@@ -3659,7 +3666,7 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(open_doc, "C-F1")
 
     def edit_config() -> None:
-        config_dir = os.path.join(os.environ.get("APPDATA"), "CraftFiler")
+        config_dir = os.path.join(os.environ.get("APPDATA", ""), "CraftFiler")
         if not smart_check_path(config_dir):
             Kiritori.log("cannot find config dir: {}".format(config_dir))
             return
@@ -3744,7 +3751,7 @@ def configure(window: MainWindow) -> None:
                 for item in __files_to_compare():
                     if job_item.isCanceled():
                         return
-                    path = item.getFullpath()
+                    path = item.getFullpath()  # type: ignore
                     _, ext = os.path.splitext(path)
                     if ext not in exts:
                         continue
@@ -3840,7 +3847,7 @@ def configure(window: MainWindow) -> None:
             if name in active_names:
                 other.selectByName(name)
 
-    def invoke_regex_selector(case: bool) -> Callable:
+    def invoke_regex_selector(case: bool) -> Callable[..., None]:
         def _selector() -> None:
             result, mod = window.commandLine("Regexp", return_modkey=True)
 
@@ -3855,7 +3862,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         active_names = pane.selectedItemNames
         if len(active_names) < 1:
-            active_names = [pane.focusedItem.getName()]
+            active_names = [pane.focusedItem.getName()]  # type: ignore
         other = CPane(False)
         other.unSelectAll()
 
