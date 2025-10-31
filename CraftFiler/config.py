@@ -3129,9 +3129,11 @@ def configure(window: MainWindow) -> None:
                 return 0 < len(self.args[0])
 
             @property
-            def from_reg(self) -> re.Pattern:
-                flag = re.IGNORECASE if self.args[2] == "" else re.NOFLAG
-                return re.compile(self.args[0], flag)
+            def search_reg(self) -> re.Pattern:
+                r = self.args[0]
+                if self.args[2] == "c":
+                    return re.compile(r)
+                return re.compile(r, re.IGNORECASE)
 
             @property
             def to_str(self) -> str:
@@ -3143,7 +3145,7 @@ def configure(window: MainWindow) -> None:
             return
 
         rename_config_regexp.register(rename_command)
-        reg = rc.from_reg
+        reg = rc.search_reg
 
         def _confirm() -> Tuple[List[RenameInfo], bool]:
             infos = []
