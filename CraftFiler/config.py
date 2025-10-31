@@ -1397,7 +1397,7 @@ def configure(window: MainWindow) -> None:
 
         exe_path = shutil.which(go_tool)
         if not exe_path:
-            Kiritori.log("'{}' not found...".format(exe_path))
+            Kiritori.log("'{}' not found...".format(go_tool))
             return ""
         try:
             cmd = [
@@ -1448,9 +1448,10 @@ def configure(window: MainWindow) -> None:
                 Kiritori.log(e)
 
         def _view_tempfile(job_item: ckit.JobItem) -> None:
-            d, n = os.path.split(job_item.temp_path)
-            item = item_Default(d, n)
-            window._viewCommon(d, item)
+            if job_item.temp_path:
+                d, n = os.path.split(job_item.temp_path)
+                item = item_Default(d, n)
+                window._viewCommon(d, item)
 
         job = ckit.JobItem(_write_to_tempfile, _view_tempfile)
         window.taskEnqueue(job, create_new_queue=False)
