@@ -1408,22 +1408,6 @@ def configure(window: MainWindow) -> None:
             Kiritori.log(e)
             return ""
 
-    def copy_openxml_content(path: str) -> None:
-        _, ext = os.path.splitext(path)
-        if ext not in [".docx", ".xlsx"]:
-            return
-
-        def _read(job_item: ckit.JobItem) -> None:
-            job_item.result = read_openxml(path)
-
-        def _copy(job_item: ckit.JobItem) -> None:
-            ckit.setClipboardText(job_item.result)
-            msg = "copied content of '{}'.".format(Path(path).name)
-            Kiritori.log(msg)
-
-        job = ckit.JobItem(_read, _copy)
-        window.taskEnqueue(job, create_new_queue=False)
-
     TEMP_FILE_PREFIX = "cfiler_preview_openxml_"
 
     def preview_openxml_content(path: str) -> None:
@@ -1484,6 +1468,7 @@ def configure(window: MainWindow) -> None:
         Kiritori.wrap(_log)
 
     remove_tempfiles()
+    Keybinder().bind(remove_tempfiles, "C-A-D")
 
     def docx_to_txt() -> None:
         def _convert(path: str) -> None:
