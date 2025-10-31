@@ -121,6 +121,14 @@ def stringify(x: Union[str, None], trim: bool = True) -> str:
     return ""
 
 
+def is_file_locked(path: Union[Path, str]) -> bool:
+    try:
+        with open(path, "a"):
+            return False
+    except OSError:
+        return True
+
+
 def smart_check_path(
     path: Union[str, Path], timeout_sec: Union[int, float, None] = None
 ) -> bool:
@@ -1467,8 +1475,39 @@ def configure(window: MainWindow) -> None:
 
         Kiritori.wrap(_log)
 
-    remove_tempfiles()
-    Keybinder().bind(remove_tempfiles, "C-A-D")
+    def register_tempfile_cleaner_cron() -> None:
+        if ckit.CronTable.defaultCronTable():
+            ckit.CronTable.defaultCronTable().cancel()
+            ckit.CronTable.defaultCronTable().clear()
+        else:
+            ckit.CronTable.createDefaultCronTable()
+
+        temp_dir = tempfile.gettempdir()
+
+        def _crean(_) -> None:
+            count = 0
+            for file in os.listdir(temp_dir):
+                if file.startswith(TEMP_FILE_PREFIX) and file.endswith(".txt"):
+                    try:
+                        p = Path(temp_dir, file)
+                        if not is_file_locked(p):
+                            p.unlink()
+                            count += 1
+                    except Exception as e:
+                        Kiritori.log(
+                            "Failed to remove temp file :{}\n{}".format(file, e)
+                        )
+
+            if 0 < count:
+                msg = "Removed {} tempfile".format(count)
+                if 1 < count:
+                    msg += "s"
+                window.setStatusMessage(msg, 5000)
+
+        ci = ckit.CronItem(_crean, 30.0)
+        ckit.CronTable.defaultCronTable().add(ci)
+
+    register_tempfile_cleaner_cron()
 
     def docx_to_txt() -> None:
         def _convert(path: str) -> None:
@@ -3679,7 +3718,7 @@ def configure(window: MainWindow) -> None:
     def reload_config() -> None:
         window.configure()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
-        window.setStatusMessage("reloaded config.py | {}".format(ts), 2000)
+        window.setStatusMessage("Reloaded config.py | {}".format(ts), 2000)
 
     Keybinder().bind(reload_config, "C-R", "F5")
 
@@ -4178,6 +4217,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "CleanTempFiles": remove_tempfiles,
             "RenamePhotoFile": rename_photo_file,
             "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
             "ZipSelections": compress_files,
