@@ -1271,27 +1271,26 @@ def configure(window: MainWindow) -> None:
                     window.ini.remove_option(self.ini_section, opt[0])
 
         @staticmethod
-        def to_leaf(path: str) -> str:
+        def to_last_elem(path: str) -> str:
             path = path.rstrip(os.sep)
             p = Path(path)
             if 0 < len(p.name):
                 return p.name
             return path.split(os.sep)[-1]
 
-        def to_dict(self) -> dict:
-            global_bookmarks = window.bookmark.getItems()
-            d = {}
+        def alias_of(self, path: str) -> str:
             for opt in window.ini.items(self.ini_section):
-                if opt[1] in global_bookmarks:
-                    name = "{}[{}]".format(opt[0], self.to_leaf(opt[1]))
-                    d[name] = opt[1]
-            aliased_paths = d.values()
-            for path in global_bookmarks:
-                if path not in aliased_paths:
-                    name = self.to_leaf(path)
-                    if name in d.keys():
-                        name = "{}[{}]".format(name, path)
-                    d[name] = path
+                if opt[1] == path:
+                    return opt[0]
+            return ""
+
+        def to_dict(self) -> Dict[str, str]:
+            d = {}
+            for path in window.bookmark.getItems():
+                leaf = self.to_last_elem(path)
+                if 0 < len(a := self.alias_of(path)):
+                    leaf = "{}[{}]".format(a, self.to_last_elem(path))
+                d[leaf] = path
             return d
 
     class FuzzyBookmark:
