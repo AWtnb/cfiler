@@ -1499,7 +1499,7 @@ def configure(window: MainWindow) -> None:
                         )
 
             if 0 < count:
-                msg = "Removed {} tempfile".format(count)
+                msg = "Removed {} tempfile for open xml preview.".format(count)
                 if 1 < count:
                     msg += "s"
                 window.setStatusMessage(msg, 5000)
