@@ -21,6 +21,7 @@ from PIL.ExifTags import TAGS
 
 from pathlib import Path
 from typing import List, Tuple, Callable, Union, NamedTuple, Iterator, Dict, Protocol
+import tempfile
 
 import ckit  # type: ignore
 import pyauto  # type: ignore
@@ -307,7 +308,7 @@ def configure(window: MainWindow) -> None:
         @classmethod
         def _draw_footer(cls) -> None:
             ts = datetime.datetime.today().strftime(
-                " %Y-%m-%d %H:%M:%S {}".format(cls.sep * 2)
+                " %Y-%m-%d %H:%M:%S.%f {}".format(cls.sep * 2)
             )
             print("{}\n".format(ts.rjust(cls.get_width(), cls.sep)))
 
@@ -1095,15 +1096,15 @@ def configure(window: MainWindow) -> None:
         ]:
             menu = ["Open"]
             if ext == ".docx":
-                menu.append("(copy text)")
+                menu.append("(peek text)")
             else:
-                menu.append("(copy text of sheet1)")
+                menu.append("(peek text of sheet1)")
             result, _ = invoke_listwindow("OpenXML file:", menu)
             if result != -1:
                 if result == 0:
                     window.command_Execute(None)
                 else:
-                    copy_openxml_content(focus_path)
+                    preview_openxml_content(focus_path)
             return True
 
         if ext[1:].lower() in [
@@ -1422,6 +1423,67 @@ def configure(window: MainWindow) -> None:
 
         job = ckit.JobItem(_read, _copy)
         window.taskEnqueue(job, create_new_queue=False)
+
+    TEMP_FILE_PREFIX = "cfiler_preview_openxml_"
+
+    def preview_openxml_content(path: str) -> None:
+        _, ext = os.path.splitext(path)
+        if ext not in [".docx", ".xlsx"]:
+            return
+
+        def _write_to_tempfile(job_item: ckit.JobItem) -> None:
+            job_item.temp_path = ""
+            content = read_openxml(path)
+            if not content:
+                return
+            try:
+                tf = tempfile.NamedTemporaryFile(
+                    mode="w",
+                    encoding="utf-8",
+                    delete=False,
+                    suffix=".txt",
+                    prefix=TEMP_FILE_PREFIX,
+                )
+                tf.write(content)
+                tf.close()
+                job_item.temp_path = tf.name
+            except Exception as e:
+                Kiritori.log(e)
+
+        def _view_tempfile(job_item: ckit.JobItem) -> None:
+            d, n = os.path.split(job_item.temp_path)
+            item = item_Default(d, n)
+            window._viewCommon(d, item)
+
+        job = ckit.JobItem(_write_to_tempfile, _view_tempfile)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    def remove_tempfiles() -> None:
+        temp_dir = tempfile.gettempdir()
+        paths = []
+        for file in os.listdir(temp_dir):
+            if file.startswith(TEMP_FILE_PREFIX) and file.endswith(".txt"):
+                try:
+                    os.remove(os.path.join(temp_dir, file))
+                    paths.append(file)
+                except Exception as e:
+                    Kiritori.log("Failed to remove temp file : {}".format(e))
+
+        if len(paths) < 1:
+            return
+
+        def _log() -> None:
+            count = len(paths)
+            msg = "Removed {} temp file".format(count)
+            if 1 < count:
+                msg += "s"
+            print(msg)
+            for p in paths:
+                print("-", p)
+
+        Kiritori.wrap(_log)
+
+    remove_tempfiles()
 
     def docx_to_txt() -> None:
         def _convert(path: str) -> None:
