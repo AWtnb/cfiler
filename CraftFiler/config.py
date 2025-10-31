@@ -202,6 +202,12 @@ class ItemDefaultProtocol(Protocol):
 
 def configure(window: MainWindow) -> None:
 
+    if ckit.CronTable.defaultCronTable():
+        ckit.CronTable.defaultCronTable().cancel()
+        ckit.CronTable.defaultCronTable().clear()
+    else:
+        ckit.CronTable.createDefaultCronTable()
+
     class ItemTimestamp:
         def __init__(self, item) -> None:
             self._time = item.time()
@@ -1476,12 +1482,6 @@ def configure(window: MainWindow) -> None:
         Kiritori.wrap(_log)
 
     def register_tempfile_cleaner_cron() -> None:
-        if ckit.CronTable.defaultCronTable():
-            ckit.CronTable.defaultCronTable().cancel()
-            ckit.CronTable.defaultCronTable().clear()
-        else:
-            ckit.CronTable.createDefaultCronTable()
-
         temp_dir = tempfile.gettempdir()
 
         def _crean(_) -> None:
