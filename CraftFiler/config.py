@@ -1498,10 +1498,11 @@ def configure(window: MainWindow) -> None:
                         )
 
             if 0 < count:
-                msg = "Removed {} tempfile for open xml preview.".format(count)
+                msg = "Removed {} tempfile".format(count)
                 if 1 < count:
                     msg += "s"
-                window.setStatusMessage(msg, 5000)
+                msg += " for preview."
+                window.setStatusMessage(msg, 8000)
 
         ci = ckit.CronItem(_crean, 30.0)
         ckit.CronTable.defaultCronTable().add(ci)
