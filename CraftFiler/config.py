@@ -409,7 +409,7 @@ def configure(window: MainWindow) -> None:
             "A-S-F10": window.command_ContextMenuDir,
             "Apps": window.command_ContextMenu,
             "S-Apps": window.command_ContextMenuDir,
-            "C-A-N": window.command_DuplicateCfiler,
+            "C-N": window.command_DuplicateCfiler,
             "OpenBracket": window.command_MoveSeparatorLeft,
             "CloseBracket": window.command_MoveSeparatorRight,
             "Yen": window.command_MoveSeparatorCenter,
@@ -987,7 +987,7 @@ def configure(window: MainWindow) -> None:
             last = sorted(older, key=lambda x: x.time())[-1]
             pane.focusByName(last.getName())
 
-    Keybinder().bind(focus_by_timestamp, "A-Back")
+    Keybinder().bind(focus_by_timestamp, "A-Back", "A-B")
 
     def toggle_pane_width() -> None:
         half = (window.width() - 1) // 2
