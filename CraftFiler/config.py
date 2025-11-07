@@ -4353,13 +4353,12 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         c = get_content()
         if len(c) < 1:
             return
-        n = Path(get_fullpath()).name
         ckit.setClipboardText(c)
         cfiler_msgbox.popMessageBox(
             window,
             cfiler_msgbox.MessageBox.TYPE_OK,
-            "Copied",
-            f"Target: '{n}'",
+            "Copied:",
+            Path(get_fullpath()).name,
         )
 
     window.keymap["C-C"] = copy_content
@@ -4376,8 +4375,8 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         cfiler_msgbox.popMessageBox(
             window,
             cfiler_msgbox.MessageBox.TYPE_OK,
-            "Copied",
-            f"Target: Line {window.scroll_info.pos + 1}",
+            "Copied:",
+            f"Line {window.scroll_info.pos + 1}",
         )
 
     window.keymap["C-T"] = copy_line_at_top
@@ -4396,8 +4395,8 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         cfiler_msgbox.popMessageBox(
             window,
             cfiler_msgbox.MessageBox.TYPE_OK,
-            "Copied",
-            f"Target: Displayed lines ({top + 1} - {bottom})",
+            "Copied:",
+            f"Lines {top + 1} - {min(len(lines), top + window.height() - 1)}",
         )
 
     window.keymap["C-S-C"] = copy_displayed_lines
