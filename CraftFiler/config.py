@@ -2444,6 +2444,7 @@ def configure(window: MainWindow) -> None:
         for parent in Path(pane.currentPath, f).parents:
             if reg.match(parent.name):
                 root = parent
+                break
         if root:
             root = str(root.parent)
             if root != pane.currentPath:
