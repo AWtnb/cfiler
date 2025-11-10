@@ -1170,12 +1170,18 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return
 
+        if any([item.isdir() for item in pane.selectedItems]):
+            return
+
         paths = pane.selectedItemPaths
         if len(paths) < 1 and not pane.focusedItem.isdir():
             paths.append(pane.focusedItemPath)
 
         app_table = {}
-        if all([path.endswith(".pdf") for path in paths]):
+        if len(set([Path(p).suffix for p in paths])) != 1:
+            app_table["(associated app)"] = shell_exec
+
+        if any([path.endswith(".pdf") for path in paths]):
             app_table["sumatra"] = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
             app_table["adobe"] = (
                 r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
@@ -1186,13 +1192,12 @@ def configure(window: MainWindow) -> None:
             browser_path = get_default_browser()
             if browser_path:
                 app_table["browser"] = browser_path
-        else:
-            app_table["notepad"] = r"C:\Windows\System32\notepad.exe"
-            app_table["mery"] = os.path.expandvars(
-                r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"
-            )
-            app_table["vscode"] = lambda x: open_vscode(x)
-            app_table["(associated app)"] = shell_exec
+
+        app_table["notepad"] = r"C:\Windows\System32\notepad.exe"
+        app_table["mery"] = os.path.expandvars(
+            r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"
+        )
+        app_table["vscode"] = lambda x: open_vscode(x)
 
         names = list(app_table.keys())
 
