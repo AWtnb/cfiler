@@ -186,17 +186,19 @@ def configure(window: MainWindow) -> None:
     else:
         ckit.CronTable.createDefaultCronTable()
 
-    class PanePartsMinWidth:
-        date = 11
+    class MinWidth:
         time = 9
+        date = 11
         filesize = 6
+        ext = 6
+        area = 40
 
     class ItemTimestamp:
         def __init__(self, item) -> None:
             self._time = item.time()
             self._now = time.localtime()
 
-        def _datestr(self) -> str:
+        def date_elem(self) -> str:
             t = self._time
             if t[0] == self._now[0]:
                 if t[1] == self._now[1] and t[2] == self._now[2]:
@@ -204,51 +206,56 @@ def configure(window: MainWindow) -> None:
                 return "{:02}-{:02}".format(t[1], t[2])
             return "{}-{:02}-{:02}".format(t[0], t[1], t[2])
 
-        def _timestr(self) -> str:
+        def time_elem(self) -> str:
             t = self._time
             return "{:02}:{:02}:{:02}".format(t[3], t[4], t[5])
 
         def tostr(self) -> str:
-            return self._datestr().rjust(
-                PanePartsMinWidth.date
-            ) + self._timestr().rjust(PanePartsMinWidth.time)
+            return self.date_elem().rjust(MinWidth.date) + self.time_elem().rjust(
+                MinWidth.time
+            )
 
     def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
         window: MainWindow, item: ItemDefaultProtocol, width: int, _
     ) -> str:
-        if item.isdir():
-            str_size = "\ud83d\udcc1"
-        else:
-            str_size = getFileSizeString(item.size())
-
-        str_size_time = (
-            str_size.rjust(PanePartsMinWidth.filesize) + ItemTimestamp(item).tostr()
+        size_str = "\ud83d\udcc1" if item.isdir() else getFileSizeString(item.size())
+        size_elem = ckit.adjustStringWidth(
+            window,
+            size_str,
+            MinWidth.filesize,
+            ckit.ALIGN_RIGHT,
+            ckit.ELLIPSIS_NONE,
         )
 
-        width = max(40, width)
-        filename_width = width - len(str_size_time)
+        meta_elem = size_elem + ItemTimestamp(item).tostr()
+        area_width = max(MinWidth.area, width)
+        filename_width = area_width - len(meta_elem)
 
-        if item.isdir():
-            body, ext = item.getName(), None
-        else:
-            body, ext = ckit.splitExt(item.getName())
+        stem, ext = (
+            [item.getName(), None] if item.isdir() else ckit.splitExt(item.getName())
+        )
 
-        if ext:
-            body_width = min(width, filename_width - 6)
+        if not ext:
             return (
                 ckit.adjustStringWidth(
-                    window, body, body_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
+                    window, stem, filename_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
                 )
-                + ckit.adjustStringWidth(
-                    window, ext, 6, ckit.ALIGN_LEFT, ckit.ELLIPSIS_NONE
-                )
-                + str_size_time
+                + meta_elem
             )
+
+        stem_width = min(area_width, filename_width - MinWidth.ext)
         return (
             ckit.adjustStringWidth(
-                window, body, filename_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
+                window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
             )
-            + str_size_time
+            + ckit.adjustStringWidth(
+                window,
+                ext,
+                MinWidth.ext,
+                ckit.ALIGN_LEFT,
+                ckit.ELLIPSIS_NONE,
+            )
+            + meta_elem
         )
 
     window.itemformat = itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS
