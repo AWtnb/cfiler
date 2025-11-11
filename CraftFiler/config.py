@@ -965,38 +965,30 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(focus_by_timestamp, "A-Back", "A-B")
 
-    def adjust_pane_wifth() -> None:
+    def adjust_pane_width() -> None:
         pane = CPane()
         stems = [Path(f.getFullpath()).stem for f in pane.files]
         if len(stems) < 1:
             return
         longest = sorted(stems, key=len, reverse=True)[0]
-        stem_min_width = window.getStringWidth(longest)
-        ext_min_width = len(" .xxxx")
-        filesize_min_width = len(" 999.9M")
-        timestamp_min_width = len(" yyyy-MM-dd hh:mm:ss")
-        window.left_window_width = (
-            stem_min_width + ext_min_width + filesize_min_width + timestamp_min_width
+        min_width = (
+            window.getStringWidth(longest)
+            + MinWidth.ext
+            + MinWidth.size
+            + MinWidth.date
+            + MinWidth.time
         )
+        border_width = 1
+        window_width = window.width() - border_width
+        if window.focus == MainWindow.FOCUS_LEFT:
+            window.left_window_width = min(min_width, window_width)
+        else:
+            window.left_window_width = max(window_width - min_width, 0)
         window.updateThemePosSize()
         pane.repaint(PaintOption.Upper)
 
-    def toggle_pane_width() -> None:
-        half = (window.width() - 1) // 2
-        if window.focus == MainWindow.FOCUS_LEFT:
-            if window.left_window_width == half:
-                window.left_window_width = window.width() - 1
-            else:
-                window.left_window_width = half
-        else:
-            if window.left_window_width == half:
-                window.left_window_width = 0
-            else:
-                window.left_window_width = half
-        window.updateThemePosSize()
-        CPane().repaint(PaintOption.Upper)
+    Keybinder().bind(adjust_pane_width, "C-S")
 
-    Keybinder().bind(toggle_pane_width, "C-S")
 
     Keybinder().bind(lambda: CPane().focusOther(), "C-L")
 
