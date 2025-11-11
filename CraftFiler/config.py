@@ -186,19 +186,13 @@ def configure(window: MainWindow) -> None:
     else:
         ckit.CronTable.createDefaultCronTable()
 
-    class MinWidth:
-        time = 9
-        date = 11
-        filesize = 6
-        ext = 6
-        area = 40
-
     class ItemTimestamp:
         def __init__(self, item) -> None:
             self._time = item.time()
             self._now = time.localtime()
 
-        def date_elem(self) -> str:
+        @property
+        def date(self) -> str:
             t = self._time
             if t[0] == self._now[0]:
                 if t[1] == self._now[1] and t[2] == self._now[2]:
@@ -206,56 +200,44 @@ def configure(window: MainWindow) -> None:
                 return "{:02}-{:02}".format(t[1], t[2])
             return "{}-{:02}-{:02}".format(t[0], t[1], t[2])
 
-        def time_elem(self) -> str:
+        @property
+        def time(self) -> str:
             t = self._time
             return "{:02}:{:02}:{:02}".format(t[3], t[4], t[5])
 
-        def tostr(self) -> str:
-            return self.date_elem().rjust(MinWidth.date) + self.time_elem().rjust(
-                MinWidth.time
-            )
+    class MinWidth:
+        stem = 10
+        ext = 5
+        size = 7
+        date = 11
+        time = 9
 
     def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
         window: MainWindow, item: ItemDefaultProtocol, width: int, _
     ) -> str:
-        size_str = "\ud83d\udcc1" if item.isdir() else getFileSizeString(item.size())
-        size_elem = ckit.adjustStringWidth(
-            window,
-            size_str,
-            MinWidth.filesize,
-            ckit.ALIGN_RIGHT,
-            ckit.ELLIPSIS_NONE,
-        )
-
-        meta_elem = size_elem + ItemTimestamp(item).tostr()
-        area_width = max(MinWidth.area, width)
-        filename_width = area_width - len(meta_elem)
-
         stem, ext = (
-            [item.getName(), None] if item.isdir() else ckit.splitExt(item.getName())
+            [item.getName(), None]
+            if item.isdir()
+            else ckit.splitExt(item.getName(), MinWidth.ext)
         )
+        if ext is None:
+            ext = ""
+        ext_elem = ext.ljust(MinWidth.ext)
 
-        if not ext:
-            return (
-                ckit.adjustStringWidth(
-                    window, stem, filename_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
-                )
-                + meta_elem
-            )
+        timestamp = ItemTimestamp(item)
+        date_elem = timestamp.date.rjust(MinWidth.date)
+        time_elem = timestamp.time.rjust(MinWidth.time)
+        size_str = "\ud83d\udcc1" if item.isdir() else getFileSizeString(item.size())
+        size_elem = size_str.rjust(MinWidth.size)
 
-        stem_width = min(area_width, filename_width - MinWidth.ext)
+        fixed_elem = ext_elem + size_elem + date_elem + time_elem
+
+        stem_width = max(MinWidth.stem, width - len(fixed_elem))
         return (
             ckit.adjustStringWidth(
                 window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
             )
-            + ckit.adjustStringWidth(
-                window,
-                ext,
-                MinWidth.ext,
-                ckit.ALIGN_LEFT,
-                ckit.ELLIPSIS_NONE,
-            )
-            + meta_elem
+            + fixed_elem
         )
 
     window.itemformat = itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS
