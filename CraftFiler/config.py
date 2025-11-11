@@ -186,6 +186,11 @@ def configure(window: MainWindow) -> None:
     else:
         ckit.CronTable.createDefaultCronTable()
 
+    class PanePartsMinWidth:
+        date = 11
+        time = 9
+        filesize = 6
+
     class ItemTimestamp:
         def __init__(self, item) -> None:
             self._time = item.time()
@@ -195,8 +200,8 @@ def configure(window: MainWindow) -> None:
             t = self._time
             if t[0] == self._now[0]:
                 if t[1] == self._now[1] and t[2] == self._now[2]:
-                    return " " * 10
-                return " " * 5 + "{:02}-{:02}".format(t[1], t[2])
+                    return ""
+                return "{:02}-{:02}".format(t[1], t[2])
             return "{}-{:02}-{:02}".format(t[0], t[1], t[2])
 
         def _timestr(self) -> str:
@@ -204,7 +209,9 @@ def configure(window: MainWindow) -> None:
             return "{:02}:{:02}:{:02}".format(t[3], t[4], t[5])
 
         def tostr(self) -> str:
-            return self._datestr() + " " + self._timestr()
+            return self._datestr().rjust(
+                PanePartsMinWidth.date
+            ) + self._timestr().rjust(PanePartsMinWidth.time)
 
     def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
         window: MainWindow, item: ItemDefaultProtocol, width: int, _
@@ -212,9 +219,11 @@ def configure(window: MainWindow) -> None:
         if item.isdir():
             str_size = "\ud83d\udcc1"
         else:
-            str_size = getFileSizeString(item.size()).rjust(6)
+            str_size = getFileSizeString(item.size())
 
-        str_size_time = str_size + " " + ItemTimestamp(item).tostr()
+        str_size_time = (
+            str_size.rjust(PanePartsMinWidth.filesize) + ItemTimestamp(item).tostr()
+        )
 
         width = max(40, width)
         filename_width = width - len(str_size_time)
@@ -966,6 +975,22 @@ def configure(window: MainWindow) -> None:
             pane.focusByName(last.getName())
 
     Keybinder().bind(focus_by_timestamp, "A-Back", "A-B")
+
+    def adjust_pane_wifth() -> None:
+        pane = CPane()
+        stems = [Path(f.getFullpath()).stem for f in pane.files]
+        if len(stems) < 1:
+            return
+        longest = sorted(stems, key=len, reverse=True)[0]
+        stem_min_width = window.getStringWidth(longest)
+        ext_min_width = len(" .xxxx")
+        filesize_min_width = len(" 999.9M")
+        timestamp_min_width = len(" yyyy-MM-dd hh:mm:ss")
+        window.left_window_width = (
+            stem_min_width + ext_min_width + filesize_min_width + timestamp_min_width
+        )
+        window.updateThemePosSize()
+        pane.repaint(PaintOption.Upper)
 
     def toggle_pane_width() -> None:
         half = (window.width() - 1) // 2
