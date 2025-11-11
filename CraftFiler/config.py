@@ -215,23 +215,30 @@ def configure(window: MainWindow) -> None:
     def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
         window: MainWindow, item: ItemDefaultProtocol, width: int, _
     ) -> str:
-        stem, ext = (
-            [item.getName(), None]
-            if item.isdir()
-            else ckit.splitExt(item.getName(), MinWidth.ext)
-        )
-        if ext is None:
-            ext = ""
-        ext_elem = ext.ljust(MinWidth.ext)
-
         timestamp = ItemTimestamp(item)
         date_elem = timestamp.date.rjust(MinWidth.date)
         time_elem = timestamp.time.rjust(MinWidth.time)
         size_str = "\ud83d\udcc1" if item.isdir() else getFileSizeString(item.size())
         size_elem = size_str.rjust(MinWidth.size)
 
-        fixed_elem = ext_elem + size_elem + date_elem + time_elem
+        stem, ext = (
+            [item.getName(), None]
+            if item.isdir()
+            else ckit.splitExt(item.getName(), MinWidth.ext)
+        )
 
+        if not ext:
+            fixed_elem = size_elem + date_elem + time_elem
+            stem_width = max(MinWidth.stem + MinWidth.ext, width - len(fixed_elem))
+            return (
+                ckit.adjustStringWidth(
+                    window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
+                )
+                + fixed_elem
+            )
+
+        ext_elem = ext.ljust(MinWidth.ext)
+        fixed_elem = ext_elem + size_elem + date_elem + time_elem
         stem_width = max(MinWidth.stem, width - len(fixed_elem))
         return (
             ckit.adjustStringWidth(
@@ -967,16 +974,19 @@ def configure(window: MainWindow) -> None:
 
     def adjust_pane_width() -> None:
         pane = CPane()
-        stems = [Path(f.getFullpath()).stem for f in pane.files]
-        if len(stems) < 1:
+        max_width = None
+        for item in pane.items:
+            stem = item.getName() if item.isdir() else Path(item.getFullpath()).stem
+            w = window.getStringWidth(stem)
+            if not max_width:
+                max_width = w
+                continue
+            max_width = max(w, max_width)
+
+        if not max_width:
             return
-        longest = sorted(stems, key=len, reverse=True)[0]
         min_width = (
-            window.getStringWidth(longest)
-            + MinWidth.ext
-            + MinWidth.size
-            + MinWidth.date
-            + MinWidth.time
+            (max_width) + MinWidth.ext + MinWidth.size + MinWidth.date + MinWidth.time
         )
         border_width = 1
         window_width = window.width() - border_width
@@ -988,7 +998,6 @@ def configure(window: MainWindow) -> None:
         pane.repaint(PaintOption.Upper)
 
     Keybinder().bind(adjust_pane_width, "C-S")
-
 
     Keybinder().bind(lambda: CPane().focusOther(), "C-L")
 
