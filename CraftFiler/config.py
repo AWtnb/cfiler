@@ -12,6 +12,7 @@ import unicodedata
 import urllib.parse
 import urllib.request
 import webbrowser
+from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
 from winreg import HKEY_CURRENT_USER, HKEY_CLASSES_ROOT, OpenKey, QueryValueEx
 
@@ -30,29 +31,8 @@ from cfiler import *  # type: ignore
 
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
-from cfiler_mainwindow import (  # type: ignore
-    MainWindow,
-    PAINT_LEFT_LOCATION,
-    PAINT_LEFT_HEADER,
-    PAINT_LEFT_ITEMS,
-    PAINT_LEFT_FOOTER,
-    PAINT_RIGHT_LOCATION,
-    PAINT_RIGHT_HEADER,
-    PAINT_RIGHT_ITEMS,
-    PAINT_RIGHT_FOOTER,
-    PAINT_FOCUSED_LOCATION,
-    PAINT_FOCUSED_HEADER,
-    PAINT_FOCUSED_ITEMS,
-    PAINT_FOCUSED_FOOTER,
-    PAINT_VERTICAL_SEPARATOR,
-    PAINT_LOG,
-    PAINT_STATUS_BAR,
-    PAINT_LEFT,
-    PAINT_RIGHT,
-    PAINT_FOCUSED,
-    PAINT_UPPER,
-    PAINT_ALL,
-)
+import cfiler_mainwindow  # type: ignore
+from cfiler_mainwindow import MainWindow  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import (  # type: ignore
@@ -82,30 +62,28 @@ import cfiler_msgbox  # type: ignore
 import cfiler_debug  # type: ignore
 
 
-class PaintOption:
-    LeftLocation = PAINT_LEFT_LOCATION
-    LeftHeader = PAINT_LEFT_HEADER
-    LeftItems = PAINT_LEFT_ITEMS
-    LeftFooter = PAINT_LEFT_FOOTER
-    RightLocation = PAINT_RIGHT_LOCATION
-    RightHeader = PAINT_RIGHT_HEADER
-    RightItems = PAINT_RIGHT_ITEMS
-    RightFooter = PAINT_RIGHT_FOOTER
-    FocusedLocation = PAINT_FOCUSED_LOCATION
-    FocusedHeader = PAINT_FOCUSED_HEADER
-    FocusedItems = PAINT_FOCUSED_ITEMS
-    FocusedFooter = PAINT_FOCUSED_FOOTER
-    VerticalSeparator = PAINT_VERTICAL_SEPARATOR
-    Log = PAINT_LOG
-    StatusBar = PAINT_STATUS_BAR
-    Left = PAINT_LEFT
-    Right = PAINT_RIGHT
-    Focused = PAINT_FOCUSED
-    Upper = PAINT_UPPER
-    All = PAINT_ALL
-
-
-PO = PaintOption()
+class PaintOption(Enum):
+    LeftLocation = cfiler_mainwindow.PAINT_LEFT_LOCATION
+    LeftHeader = cfiler_mainwindow.PAINT_LEFT_HEADER
+    LeftItems = cfiler_mainwindow.PAINT_LEFT_ITEMS
+    LeftFooter = cfiler_mainwindow.PAINT_LEFT_FOOTER
+    RightLocation = cfiler_mainwindow.PAINT_RIGHT_LOCATION
+    RightHeader = cfiler_mainwindow.PAINT_RIGHT_HEADER
+    RightItems = cfiler_mainwindow.PAINT_RIGHT_ITEMS
+    RightFooter = cfiler_mainwindow.PAINT_RIGHT_FOOTER
+    FocusedLocation = cfiler_mainwindow.PAINT_FOCUSED_LOCATION
+    FocusedHeader = cfiler_mainwindow.PAINT_FOCUSED_HEADER
+    FocusedItems = cfiler_mainwindow.PAINT_FOCUSED_ITEMS
+    FocusedFooter = cfiler_mainwindow.PAINT_FOCUSED_FOOTER
+    VerticalSeparator = cfiler_mainwindow.PAINT_VERTICAL_SEPARATOR
+    Log = cfiler_mainwindow.PAINT_LOG
+    StatusBar = cfiler_mainwindow.PAINT_STATUS_BAR
+    Left = cfiler_mainwindow.PAINT_LEFT
+    Right = cfiler_mainwindow.PAINT_RIGHT
+    LeftOrRight = cfiler_mainwindow.PAINT_LEFT | cfiler_mainwindow.PAINT_RIGHT
+    Focused = cfiler_mainwindow.PAINT_FOCUSED
+    Upper = cfiler_mainwindow.PAINT_UPPER
+    All = cfiler_mainwindow.PAINT_ALL
 
 
 def delay(msec: int = 50) -> None:
@@ -439,8 +417,8 @@ def configure(window: MainWindow) -> None:
         def entity(self) -> PaneEntityProtocol:
             return self._pane
 
-        def repaint(self, option: PaintOption = PO.All) -> None:
-            window.paint(option)
+        def repaint(self, option: PaintOption = PaintOption.All) -> None:
+            window.paint(option.value)
 
         def refresh(self) -> None:
             window.subThreadCall(self.fileList.refresh, (False, True))
@@ -644,7 +622,7 @@ def configure(window: MainWindow) -> None:
             return self.pathByIndex(self.cursor)
 
         def applySelectionHighlight(self) -> None:
-            self.repaint(PO.Upper)
+            self.repaint(PaintOption.Upper)
 
         def isValidIndex(self, i: int) -> bool:
             if self.isBlank:
@@ -720,7 +698,7 @@ def configure(window: MainWindow) -> None:
 
         def scrollTo(self, i: int) -> None:
             self.scrollInfo.makeVisible(i, window.fileListItemPaneHeight(), 1)
-            self.repaint(PO.FocusedItems)
+            self.repaint(PaintOption.FocusedItems)
 
         def scrollToCursor(self) -> None:
             self.scrollTo(self.cursor)
@@ -846,7 +824,7 @@ def configure(window: MainWindow) -> None:
         def activate(self) -> None:
             if window.focus == MainWindow.FOCUS_RIGHT:
                 window.focus = MainWindow.FOCUS_LEFT
-            self.repaint(PO.Left | PO.Right)
+            self.repaint(PaintOption.LeftOrRight)
 
     class RightPane(CPane):
         def __init__(self) -> None:
@@ -855,7 +833,7 @@ def configure(window: MainWindow) -> None:
         def activate(self) -> None:
             if window.focus == MainWindow.FOCUS_LEFT:
                 window.focus = MainWindow.FOCUS_RIGHT
-            self.repaint(PO.Left | PO.Right)
+            self.repaint(PaintOption.LeftOrRight)
 
     def smart_cursorUp() -> None:
         pane = CPane()
@@ -1002,7 +980,7 @@ def configure(window: MainWindow) -> None:
             else:
                 window.left_window_width = half
         window.updateThemePosSize()
-        window.paint(PO.Upper)
+        window.paint(PaintOption.Upper)
 
     Keybinder().bind(toggle_pane_width, "C-S")
 
@@ -4174,14 +4152,14 @@ def configure(window: MainWindow) -> None:
             )
             pane.refresh()
             pane.focus(0)
-            pane.repaint(PO.Focused)
+            pane.repaint(PaintOption.Focused)
             CPane().unSelectAll()
 
     def clear_filter() -> None:
         pane = CPane()
         window.subThreadCall(pane.fileList.setFilter, (filter_Default("*"),))
         pane.refresh()
-        pane.repaint(PO.Focused)
+        pane.repaint(PaintOption.Focused)
 
     Keybinder().bind(clear_filter, "Q")
 
