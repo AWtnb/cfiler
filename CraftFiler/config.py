@@ -4324,9 +4324,6 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["C-Enter"] = open_original
     window.keymap["C-L"] = open_original
 
-    def get_fullpath() -> str:
-        return window.item.getFullpath()
-
     def get_content() -> str:
         return os.linesep.join(window.lines)
 
@@ -4337,11 +4334,13 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         if len(c) < 1:
             return
         ckit.setClipboardText(c)
+        pane = window.main_window.activePane()
+        name = pane.file_list.getItem(pane.cursor).getName()
         cfiler_msgbox.popMessageBox(
             window,
             cfiler_msgbox.MessageBox.TYPE_OK,
             "Copied:",
-            Path(get_fullpath()).name,
+            name,
         )
 
     window.keymap["C-C"] = copy_content
