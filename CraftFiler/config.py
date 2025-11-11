@@ -980,7 +980,7 @@ def configure(window: MainWindow) -> None:
             else:
                 window.left_window_width = half
         window.updateThemePosSize()
-        window.paint(PaintOption.Upper)
+        CPane().repaint(PaintOption.Upper)
 
     Keybinder().bind(toggle_pane_width, "C-S")
 
