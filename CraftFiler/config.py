@@ -986,8 +986,10 @@ def configure(window: MainWindow) -> None:
         if not max_width:
             return
         min_width = (
-            (max_width) + MinWidth.ext + MinWidth.size + MinWidth.date + MinWidth.time
+            max_width + MinWidth.ext + MinWidth.size + MinWidth.date + MinWidth.time
         )
+        if all([item.isdir() for item in pane.items]):
+            min_width = min_width - MinWidth.ext
         border_width = 1
         window_width = window.width() - border_width
         if window.focus == MainWindow.FOCUS_LEFT:
