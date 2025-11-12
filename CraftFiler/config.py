@@ -998,27 +998,32 @@ def configure(window: MainWindow) -> None:
     Keybinder().bind(focus_by_timestamp, "A-Back", "A-B")
 
     def adjust_pane_width() -> None:
-        class Base(NamedTuple):
-            item: Union[ItemDefaultProtocol, None]
+        class AdjustBase(NamedTuple):
+            name: Union[None, str]
             width: int
+            ext: str
 
         pane = CPane()
-        base = Base(None, 0)
+        longest = AdjustBase(None, 0, "")
 
-        for item in pane.items:
-            stem = item.getName() if item.isdir() else Path(item.getFullpath()).stem
-            w = window.getStringWidth(stem)
-            if base.item is None or base.width <= w:
-                base = Base(item, w)
+        for path in pane.paths:
+            p = Path(path)
+            name = p.name
+            w = window.getStringWidth(name)
+            if longest.name is None or longest.width <= w:
+                longest = AdjustBase(name, w, p.suffix)
 
-        if base.item is None or base.width < 1:
+        if longest.name is None or longest.width < 1:
             return
 
-        min_width = base.width + ElemWidth.date + ElemWidth.time
-        if base.item.isdir():
-            min_width = min_width + 2
+        min_width = longest.width + ElemWidth.date + ElemWidth.time
+        if longest.ext == "":
+            if pane.byIndex(pane.byName(longest.name)).isdir():
+                min_width = min_width + 2
+            else:
+                min_width = min_width + ElemWidth.size
         else:
-            min_width = min_width + ElemWidth.ext + ElemWidth.size
+            min_width = min_width - len(longest.ext) + ElemWidth.ext + ElemWidth.size
 
         border_width = 1
         window_width = window.width() - border_width
