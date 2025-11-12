@@ -205,47 +205,72 @@ def configure(window: MainWindow) -> None:
             t = self._time
             return "{:02}:{:02}:{:02}".format(t[3], t[4], t[5])
 
-    class MinWidth:
-        stem = 10
-        ext = 5
-        size = 7
+    class ElemWidth:
+        ext = 6
+        size = 6
         date = 11
         time = 9
 
     def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
-        window: MainWindow, item: ItemDefaultProtocol, width: int, _
+        window: MainWindow, item: ItemDefaultProtocol, pane_width: int, _
     ) -> str:
         timestamp = ItemTimestamp(item)
-        date_elem = timestamp.date.rjust(MinWidth.date)
-        time_elem = timestamp.time.rjust(MinWidth.time)
-        size_str = "\ud83d\udcc1" if item.isdir() else getFileSizeString(item.size())
-        size_elem = size_str.rjust(MinWidth.size)
+        date_elem = timestamp.date.rjust(ElemWidth.date)
+        time_elem = timestamp.time.rjust(ElemWidth.time)
+        size_elem = (
+            "\ud83d\udcc1"
+            if item.isdir()
+            else getFileSizeString(item.size()).rjust(ElemWidth.size)
+        )
+
+        meta_elem = size_elem + date_elem + time_elem
+        area_min_width = 40
+        area_width = max(area_min_width, pane_width)
+        filename_width = area_width - len(meta_elem)
 
         stem, ext = (
             [item.getName(), None]
             if item.isdir()
-            else ckit.splitExt(item.getName(), MinWidth.ext)
+            else ckit.splitExt(item.getName(), ElemWidth.ext)
         )
 
-        if not ext:
-            fixed_elem = size_elem + date_elem + time_elem
-            stem_width = max(MinWidth.stem + MinWidth.ext, width - len(fixed_elem))
+        if ext:
+            stem_width = filename_width - ElemWidth.ext
             return (
                 ckit.adjustStringWidth(
                     window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
                 )
-                + fixed_elem
+                + ckit.adjustStringWidth(
+                    window, ext, ElemWidth.ext, ckit.ALIGN_LEFT, ckit.ELLIPSIS_NONE
+                )
+                + meta_elem
             )
-
-        ext_elem = ext.ljust(MinWidth.ext)
-        fixed_elem = ext_elem + size_elem + date_elem + time_elem
-        stem_width = max(MinWidth.stem, width - len(fixed_elem))
         return (
             ckit.adjustStringWidth(
-                window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
+                window, stem, filename_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
             )
-            + fixed_elem
+            + meta_elem
         )
+
+        # if not ext:
+        #     fixed_elem = size_elem + date_elem + time_elem
+        #     stem_width = max(MinWidth.stem + MinWidth.ext, width - len(fixed_elem))
+        #     return (
+        #         ckit.adjustStringWidth(
+        #             window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
+        #         )
+        #         + fixed_elem
+        #     )
+
+        # ext_elem = ext.ljust(MinWidth.ext)
+        # fixed_elem = ext_elem + size_elem + date_elem + time_elem
+        # stem_width = max(MinWidth.stem, width - len(fixed_elem))
+        # return (
+        #     ckit.adjustStringWidth(
+        #         window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
+        #     )
+        #     + fixed_elem
+        # )
 
     window.itemformat = itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS
 
@@ -974,22 +999,21 @@ def configure(window: MainWindow) -> None:
 
     def adjust_pane_width() -> None:
         pane = CPane()
-        max_width = None
+        stem_area_width = 0
         for item in pane.items:
             stem = item.getName() if item.isdir() else Path(item.getFullpath()).stem
             w = window.getStringWidth(stem)
-            if not max_width:
-                max_width = w
-                continue
-            max_width = max(w, max_width)
+            stem_area_width = max(w, stem_area_width)
 
-        if not max_width:
+        if stem_area_width < 1:
             return
-        min_width = (
-            max_width + MinWidth.ext + MinWidth.size + MinWidth.date + MinWidth.time
-        )
+
+        min_width = stem_area_width + ElemWidth.date + ElemWidth.time
         if all([item.isdir() for item in pane.items]):
-            min_width = min_width - MinWidth.ext
+            min_width = min_width + 2
+        else:
+            min_width = min_width + ElemWidth.ext + ElemWidth.size
+
         border_width = 1
         window_width = window.width() - border_width
         if window.focus == MainWindow.FOCUS_LEFT:
