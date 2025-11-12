@@ -210,6 +210,7 @@ def configure(window: MainWindow) -> None:
         size = 6
         date = 11
         time = 9
+        area_min = 40
 
     def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
         window: MainWindow, item: ItemDefaultProtocol, pane_width: int, _
@@ -224,8 +225,7 @@ def configure(window: MainWindow) -> None:
         )
 
         meta_elem = size_elem + date_elem + time_elem
-        area_min_width = 40
-        area_width = max(area_min_width, pane_width)
+        area_width = max(ElemWidth.area_min, pane_width)
         filename_width = area_width - len(meta_elem)
 
         stem, ext = (
@@ -1016,14 +1016,10 @@ def configure(window: MainWindow) -> None:
         if longest.name is None or longest.width < 1:
             return
 
-        min_width = longest.width + ElemWidth.date + ElemWidth.time
-        if longest.ext == "":
-            if pane.byIndex(pane.byName(longest.name)).isdir():
-                min_width = min_width + 2
-            else:
-                min_width = min_width + ElemWidth.size
-        else:
-            min_width = min_width - len(longest.ext) + ElemWidth.ext + ElemWidth.size
+        min_width = longest.width + ElemWidth.size + ElemWidth.date + ElemWidth.time
+        if longest.ext != "":
+            min_width = min_width - len(longest.ext) + ElemWidth.ext
+        min_width = max(ElemWidth.area_min, min_width)
 
         border_width = 1
         window_width = window.width() - border_width
