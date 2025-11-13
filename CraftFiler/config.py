@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import time
 import unicodedata
 import urllib.parse
@@ -22,7 +23,6 @@ from PIL.ExifTags import TAGS
 
 from pathlib import Path
 from typing import List, Tuple, Callable, Union, NamedTuple, Iterator, Dict, Protocol
-import tempfile
 
 import ckit  # type: ignore
 import pyauto  # type: ignore
@@ -4365,10 +4365,15 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
 
     def open_original(_) -> None:
         pane = window.main_window.activePane()
+        focused_item_path = Path(pane.file_list.getItem(pane.cursor).getFullpath())
+        path = (
+            focused_item_path
+            if focused_item_path.suffix in [".docx", ".xlsx"]
+            else Path(window.item.getFullpath())
+        )
         visible = isinstance(pane.file_list.getLister(), lister_Default)
-        path = Path(window.item.getFullpath())
-        window.command_Close(None)
         pane.history.append(str(path.parent), path.name, visible, True)
+        window.command_Close(None)
         pyauto.shellExecute(None, str(path), "", "")
 
     window.keymap["C-Enter"] = open_original
