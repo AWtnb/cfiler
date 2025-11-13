@@ -2262,29 +2262,30 @@ def configure(window: MainWindow) -> None:
         if result < 0:
             return
 
-        def _from(path: str) -> str:
-            if result == 0:
-                return path
-            p = Path(path)
-            if result == 1:
-                return p.name
-            if result == 3:
-                content = read_openxml(path)
-                return content
-            return p.stem
-
         def _copy(job_item: ckit.JobItem) -> None:
-            lines = [_from(target) for target in targets]
+            lines = []
+            for target in targets:
+                if result == 0:
+                    lines.append(target)
+                    continue
+                p = Path(target)
+                if result == 1:
+                    lines.append(p.name)
+                    continue
+                if result == 3:
+                    content = read_openxml(target)
+                    lines.append(content)
+                    continue
+                lines.append(p.stem)
             ckit.setClipboardText("\n".join(lines))
             job_item.count = len(lines)
 
         def _finished(job_item: ckit.JobItem) -> None:
-            s = "Copied {} of ".format(menu[result])
+            s = f"Copied {job_item.count} {menu[result]}"
             if 1 < job_item.count:
-                s += "{} items.".format(job_item.count)
-            else:
-                s += "'{}'.".format(Path(targets[0]).name)
-            Kiritori.log(s)
+                s += "s"
+            s += "."
+            window.setStatusMessage(s, 2000)
 
         job = ckit.JobItem(_copy, _finished)
         window.taskEnqueue(job, create_new_queue=False)
