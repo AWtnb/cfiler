@@ -1023,18 +1023,20 @@ def configure(window: MainWindow) -> None:
 
         border_width = 1
         window_width = window.width() - border_width
-        half_width = window_width // 2
 
-        def _get_adjusted_width() -> int:
-            if window.focus == MainWindow.FOCUS_LEFT:
-                if min_width <= window.left_window_width:
-                    return half_width
-                return min(min_width, window_width)
+        left_width = window_width // 2
+        if window.focus == MainWindow.FOCUS_LEFT:
+            if min_width <= window.left_window_width:
+                left_width = min_width
+            else:
+                left_width = min(min_width, window_width)
+        else:
             if min_width <= window_width - window.left_window_width:
-                return half_width
-            return max(window_width - min_width, 0)
+                left_width = window_width - min_width
+            else:
+                left_width = max(window_width - min_width, 0)
 
-        window.left_window_width = _get_adjusted_width()
+        window.left_window_width = left_width
         window.updateThemePosSize()
         pane.repaint(PaintOption.Upper)
 
