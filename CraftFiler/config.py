@@ -3462,6 +3462,64 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(rename_ext, "S-N")
 
+    def clone_n() -> None:
+        pane = CPane()
+        if not pane.hasSelection:
+            return
+        if 1 < len(pane.selectedItems):
+            Kiritori.log("Caneled. (Select just 1 item)")
+            return
+
+        src_path = Path(pane.selectedItemPaths[0])
+        result = stringify(
+            window.commandLine(
+                title="connector,suffix,count",
+                text="-,01,2",
+            )
+        )
+
+        if len(result) < 1:
+            return
+
+        elems = result.split(",")
+        if len(elems) < 3:
+            if len(elems) < 2:
+                elems.append("0")
+            elems.append("1")
+        [connector, template, count] = elems
+        if len(template.strip()) < 1 or len(count.strip()) < 1:
+            return
+        if not template[-1].isdecimal() or not count.strip().isdecimal():
+            Kiritori.log("Invalid format.")
+            return
+
+        count = int(count.strip())
+        if count < 1:
+            return
+
+        def _clone(src: Path, conn: str, temp: str, cnt: int) -> None:
+            for i in range(int(temp), cnt + 1):
+                w = len(temp)
+                n = str(i)
+                tail = n.rjust(w, temp[0]) if 1 < w else n.rjust(w)
+                new_path = src.with_name(src.stem + conn + tail + src.suffix)
+                if smart_check_path(new_path):
+                    print(f"Skipped because of name dupl: {new_path.name}")
+                else:
+                    if src.is_dir():
+                        shutil.copytree(src, new_path)
+                    else:
+                        shutil.copy(src, new_path)
+                    print(f"Cloned: {new_path.name}")
+
+        def _show() -> None:
+            window.subThreadCall(_clone, (src_path, connector, template, count))
+            pane.refresh()
+
+        Kiritori.wrap(_show)
+
+    Keybinder().bind(clone_n, "C-S-C")
+
     def duplicate_with_new_stem() -> None:
         pane = CPane()
 
