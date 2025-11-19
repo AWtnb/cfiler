@@ -3375,10 +3375,12 @@ def configure(window: MainWindow) -> None:
 
     def rename_stem() -> None:
         pane = CPane()
+        if pane.isBlank:
+            return
         item = pane.focusedItem
 
         renamer = Renamer()
-        if not renamer.renamable(item) or pane.isBlank:
+        if not renamer.renamable(item):
             return
 
         ts = item.time()
