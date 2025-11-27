@@ -1990,37 +1990,33 @@ def configure(window: MainWindow) -> None:
 
     Keybinder().bind(on_paste, "C-V", "S-Insert")
 
-    class DriveHandler:
-
-        def __init__(self) -> None:
-            pane = CPane()
-            self._current_drive = Path(pane.currentPath).drive
-
-        def listup(self, include_current: bool = False) -> List[str]:
-            drives = []
-            for d in ckit.getDrives():
-                d += ":"
-                if d == self._current_drive and not include_current:
-                    continue
-                detail = ckit.getDriveDisplayName(d)
-                drives.append(d + detail[: detail.rfind("(")])
-            return drives
-
-        def parse(self, s: str) -> str:
-            sep = ":"
-            if sep in s:
-                return s[: s.find(sep) + 1]
-            return s
-
     def change_drive() -> None:
-        drive_handler = DriveHandler()
-        drives = drive_handler.listup()
 
-        result, mod = invoke_listwindow("Drive", drives)
+        class MenuItem:
+            sep = " "
+
+            def __init__(self, drive: str) -> None:
+                dn = ckit.getDriveDisplayName(drive)
+                detail = dn[: dn.rfind(" ")]
+                self.line = drive + self.sep + detail
+
+            @classmethod
+            def parse(cls, s: str) -> str:
+                return s[: s.find(cls.sep)]
+
+        current_drive = Path(CPane().currentPath).drive
+        menu = []
+        for d in ckit.getDrives():
+            d += ":"
+            if d == current_drive:
+                continue
+            menu.append(MenuItem(d).line)
+
+        result, mod = invoke_listwindow("Drive", menu)
         if result < 0:
             return
 
-        drive = drive_handler.parse(drives[result])
+        drive = MenuItem.parse(menu[result])
         open_path = DESKTOP_PATH if drive == "C:" else drive
         CPane(mod != ckit.MODKEY_SHIFT).openPath(open_path)
 
