@@ -2013,33 +2013,16 @@ def configure(window: MainWindow) -> None:
             return s
 
     def change_drive() -> None:
-        pane = CPane()
-
         drive_handler = DriveHandler()
         drives = drive_handler.listup()
 
-        def _listup_drives(
-            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-        ) -> tuple:
-            found = [
-                d for d in drives if d.lower().startswith(update_info.text.lower())
-            ]
-            return found, 0
+        result, mod = invoke_listwindow("Drive", drives)
+        if result < 0:
+            return
 
-        result = stringify(
-            window.commandLine(
-                title="ChangeDrive",
-                candidate_handler=_listup_drives,
-                auto_complete=True,
-            )
-        )
-        result = drive_handler.parse(result)
-        if len(result) < 1:
-            return
-        if result == "C:":
-            pane.openPath(DESKTOP_PATH)
-            return
-        pane.openPath(result)
+        drive = drive_handler.parse(drives[result])
+        open_path = DESKTOP_PATH if drive == "C:" else drive
+        CPane(mod != ckit.MODKEY_SHIFT).openPath(open_path)
 
     Keybinder().bind(change_drive, "D")
 
