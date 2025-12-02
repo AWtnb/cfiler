@@ -266,26 +266,6 @@ def configure(window: MainWindow) -> None:
             + meta_elem
         )
 
-        # if not ext:
-        #     fixed_elem = size_elem + date_elem + time_elem
-        #     stem_width = max(MinWidth.stem + MinWidth.ext, width - len(fixed_elem))
-        #     return (
-        #         ckit.adjustStringWidth(
-        #             window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
-        #         )
-        #         + fixed_elem
-        #     )
-
-        # ext_elem = ext.ljust(MinWidth.ext)
-        # fixed_elem = ext_elem + size_elem + date_elem + time_elem
-        # stem_width = max(MinWidth.stem, width - len(fixed_elem))
-        # return (
-        #     ckit.adjustStringWidth(
-        #         window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
-        #     )
-        #     + fixed_elem
-        # )
-
     window.itemformat = itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS
 
     def set_custom_theme() -> None:
@@ -2025,11 +2005,23 @@ def configure(window: MainWindow) -> None:
     def jump_input() -> None:
         pane = CPane()
 
+        def _format_sep(s: str) -> str:
+            return s.replace("/", os.sep)
+
         def _listup_names(update_info: ckit.ckit_widget.EditWidget.UpdateInfo) -> tuple:
+            t = _format_sep(update_info.text)
+            names = pane.names
+            if os.sep in t:
+                root = pane.currentPath
+                names = [
+                    str(p)[len(root) + 1 :]
+                    for p in Path(root, t[: t.rfind(os.sep)]).glob("*")
+                ]
+
             found = [
                 name
-                for name in pane.names
-                if name.lower().startswith(update_info.text.lower())
+                for name in names
+                if _format_sep(name).lower().startswith(t.lower())
             ]
             return found, 0
 
@@ -2042,7 +2034,7 @@ def configure(window: MainWindow) -> None:
         )
 
         if 0 < len(result):
-            pane.openPath(os.path.join(pane.currentPath, result))
+            pane.openPath(str(Path(pane.currentPath, result)))
 
     Keybinder.bind(jump_input, "F")
 
