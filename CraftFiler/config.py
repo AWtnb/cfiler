@@ -1419,7 +1419,13 @@ def configure(window: MainWindow) -> None:
 
         ba = BookmarkAlias()
 
-        alias = stringify(window.commandLine("Bookmark alias"))
+        specified = window.commandLine(
+            "Bookmark alias", text=ba.alias_of(pane.currentPath)
+        )
+        if specified is None:
+            return
+
+        alias = specified.strip()
         if len(alias) < 1:
             ba.clear_by_path(target)
             Kiritori.log("Removed all alias for '{}'".format(target))
