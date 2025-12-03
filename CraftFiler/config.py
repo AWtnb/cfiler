@@ -1189,16 +1189,22 @@ def configure(window: MainWindow) -> None:
     def get_default_browser() -> str:
         register_path = r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice"
         prog_id = None
-        with OpenKey(HKEY_CURRENT_USER, register_path) as key:
-            prog_id = str(QueryValueEx(key, "ProgId")[0])
+        try:
+            with OpenKey(HKEY_CURRENT_USER, register_path) as key:
+                prog_id = str(QueryValueEx(key, "ProgId")[0])
+        except Exception as e:
+            Kiritori.log(e)
 
         if not prog_id:
             return ""
 
         commandline = None
         register_path = r"{}\shell\open\command".format(prog_id)
-        with OpenKey(HKEY_CLASSES_ROOT, register_path) as key:
-            commandline = str(QueryValueEx(key, "")[0])
+        try:
+            with OpenKey(HKEY_CLASSES_ROOT, register_path) as key:
+                commandline = str(QueryValueEx(key, "")[0])
+        except Exception as e:
+            Kiritori.log(e)
 
         if not commandline:
             return ""
@@ -1227,7 +1233,7 @@ def configure(window: MainWindow) -> None:
             app_table["adobe"] = (
                 r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
             )
-            app_table["xedit"] = (
+            app_table["xEdit"] = (
                 r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
             )
             browser_path = get_default_browser()
