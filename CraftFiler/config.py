@@ -4506,7 +4506,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
             f"Lines {top + 1} - {min(len(lines), top + window.height() - 1)}",
         )
 
-    window.keymap["C-S-C"] = copy_displayed_lines
+    window.keymap["C-A-C"] = copy_displayed_lines
 
     def reload_with_encoding(_) -> None:
 
