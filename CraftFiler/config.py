@@ -3703,7 +3703,7 @@ def configure(window: MainWindow) -> None:
             return
 
         result, mod = window.commandLine(
-            "NewStem",
+            "Stem",
             candidate_handler=name_candidate_handler(True),
             return_modkey=True,
         )
