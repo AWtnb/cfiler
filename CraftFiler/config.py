@@ -4433,7 +4433,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["Home"] = to_top
 
     def to_bottom(_) -> None:
-        window.scroll_info.pos = window._numLines() - 1
+        window.scroll_info.pos = window._numLines() - (window.height() // 2)
         window.paint()
 
     window.keymap["E"] = to_bottom
