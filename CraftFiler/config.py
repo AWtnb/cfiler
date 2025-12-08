@@ -1813,11 +1813,7 @@ def configure(window: MainWindow) -> None:
     Keybinder.bind(ruled_mkdir, "S-A-N")
 
     class zyw:
-        exe_path = shutil.which("zyw.exe")
-
-        @classmethod
-        def check(cls) -> bool:
-            return cls.exe_path is not None
+        exe_name = "zyw.exe"
 
         @staticmethod
         def get_root(src: str) -> str:
@@ -1837,8 +1833,9 @@ def configure(window: MainWindow) -> None:
 
                 def __find(job_item: ckit.JobItem) -> None:
                     job_item.result = None
-                    if not cls.check():
-                        Kiritori.log("Exe not found: '{}'".format(cls.exe_path))
+                    exe_path = shutil.which(cls.exe_name)
+                    if exe_path is None:
+                        Kiritori.log("Exe not found: '{}'".format(cls.exe_name))
                         return
                     root = (
                         pane.currentPath
@@ -1846,7 +1843,7 @@ def configure(window: MainWindow) -> None:
                         else cls.get_root(pane.currentPath)
                     )
                     cmd = [
-                        cls.exe_path,
+                        exe_path,
                         "-exclude=_obsolete,node_modules",
                         "-all={}".format(search_all),
                         "-root={}".format(root),
