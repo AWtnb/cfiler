@@ -47,7 +47,7 @@ try {
 
     $backupName = "{0}{1}.txt" -f (Get-Item $src).BaseName, (Get-Date -Format "yyyyMMddHHmmss")
     $backupPath = $backupDir | Join-Path -ChildPath $backupName
-    Get-Content -Path $src -Encoding utf8 | Out-File -FilePath $backupPath -ErrorAction Stop -Encoding utf8
+    Get-Item $src | Copy-Item -Destination $backupPath
     "created backup '{0}'." -f $backupName | logWrite
 
     if ($backupCountBeforeRun -eq $maxGen) {
