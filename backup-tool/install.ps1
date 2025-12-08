@@ -2,7 +2,7 @@ param(
     [string]$backupDir = ($env:USERPROFILE | Join-Path -ChildPath "Dropbox" | Join-Path -ChildPath "CFiler-backup")
 )
 
-"Register scheduled task to backup cfiler.ini to ``{0}``" -f $backupDir | Write-Host -ForegroundColor Cyan
+"Register scheduled task to backup ``cfiler.ini`` to ``{0}``" -f $backupDir | Write-Host -ForegroundColor Cyan
 if ((Read-Host -Prompt "==> OK? (y/N)") -eq "y") {
 
     $config = Get-Content -Path $($PSScriptRoot | Join-Path -ChildPath "config.json") | ConvertFrom-Json
