@@ -979,11 +979,25 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         if pane.isBlank:
             return
+
         focused = pane.focusedItem
-        older = []
+        base = focused.time()
+
+        older: List[ItemDefaultProtocol] = []
+        sametime: List[ItemDefaultProtocol] = []
         for item in pane.selectedOrAllItems:
-            if item.time() < focused.time():
-                older.append(item)
+            ts = item.time()
+            if ts == base:
+                sametime.append(item)
+            else:
+                if ts < base:
+                    older.append(item)
+
+        if 0 < len(sametime):
+            idx = [item.getName() for item in sametime].index(focused.getName())
+            if 0 < idx:
+                pane.focusByName(sametime[idx - 1].getName())
+                return
 
         if 0 < len(older):
             last = sorted(older, key=lambda x: x.time())[-1]
