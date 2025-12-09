@@ -1243,15 +1243,20 @@ def configure(window: MainWindow) -> None:
             app_table["(associated app)"] = shell_exec
 
         if any([path.endswith(".pdf") for path in paths]):
-            app_table["sumatra"] = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
-            app_table["adobe"] = (
-                r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
+            sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
+            if smart_check_path(sumatra_path):
+                app_table["sumatra"] = sumatra_path
+
+            acrobat_path = (
+                r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"
             )
-            app_table["xEdit"] = (
-                r"C:\Program Files\Tracker Software\PDF Editor\PDFXEdit.exe"
-            )
-            browser_path = get_default_browser()
-            if browser_path:
+            if smart_check_path(acrobat_path):
+                app_table["adobe"] = acrobat_path
+
+            if (xedit_path := shutil.which("pdfxedit")) is not None:
+                app_table["xEdit"] = xedit_path
+
+            if (browser_path := get_default_browser()) != "":
                 app_table["browser"] = browser_path
 
         app_table["notepad"] = r"C:\Windows\System32\notepad.exe"
