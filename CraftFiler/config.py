@@ -17,9 +17,9 @@ from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
 from winreg import HKEY_CURRENT_USER, HKEY_CLASSES_ROOT, OpenKey, QueryValueEx
 
-from PIL import ImageGrab
-from PIL import Image as PILImage
-from PIL.ExifTags import TAGS
+from PIL import ImageGrab  # type: ignore
+from PIL import Image as PILImage  # type: ignore
+from PIL.ExifTags import TAGS  # type: ignore
 
 from pathlib import Path
 from typing import List, Tuple, Callable, Union, NamedTuple, Iterator, Dict, Protocol
@@ -4484,6 +4484,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
             "Copied:",
             name,
         )
+        window.command_Close(None)
 
     window.keymap["C-C"] = copy_content
     window.keymap["C-Insert"] = copy_content
