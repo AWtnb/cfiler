@@ -4483,12 +4483,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         ckit.setClipboardText(c)
         pane = window.main_window.activePane()
         name = pane.file_list.getItem(pane.cursor).getName()
-        cfiler_msgbox.popMessageBox(
-            window,
-            cfiler_msgbox.MessageBox.TYPE_OK,
-            "Copied:",
-            name,
-        )
+        print("\nContent copied:", name)
         window.command_Close(None)
 
     window.keymap["C-C"] = copy_content
