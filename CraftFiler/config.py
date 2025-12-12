@@ -4185,26 +4185,21 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         exts = []
         for item in pane.selectedOrAllItems:
-            ext = Path(item.getFullpath()).suffix
+            ext = Path(item.getFullpath()).suffix[1:]
             if ext and ext not in exts:
                 exts.append(ext)
 
         if len(exts) < 1:
             return
 
-        exts.sort(key=lambda ext: ext.lower())
-
-        cursor_pos = 0
-        if 0 < len(focused := Path(pane.focusedItemPath).suffix):
-            if focused in exts:
-                cursor_pos = exts.index(focused)
-
-        result, mod = invoke_listwindow("Select Extension", exts, cursor_pos)
+        result, mod = invoke_listwindow(
+            "Select Extension", exts, onkeypress="search_and_decide"
+        )
 
         if result < 0:
             return
 
-        Selector.byExtension(exts[result], mod == ckit.MODKEY_SHIFT)
+        Selector.byExtension("." + exts[result], mod == ckit.MODKEY_SHIFT)
 
     Keybinder.bind(select_byext, "S-X")
 
