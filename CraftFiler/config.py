@@ -1249,12 +1249,10 @@ def configure(window: MainWindow) -> None:
             acrobat_path = r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
             if smart_check_path(acrobat_path):
                 app_table["adobe"] = acrobat_path
-
-            acrobat_reader_path = (
-                r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"
-            )
-            if smart_check_path(acrobat_reader_path):
-                app_table["adobe-reader"] = acrobat_reader_path
+            else:
+                acrobat_reader_path = r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"
+                if smart_check_path(acrobat_reader_path):
+                    app_table["adobe-reader"] = acrobat_reader_path
 
             if (xedit_path := shutil.which("pdfxedit")) is not None:
                 app_table["xEdit"] = xedit_path
