@@ -22,7 +22,17 @@ from PIL import Image as PILImage  # type: ignore
 from PIL.ExifTags import TAGS  # type: ignore
 
 from pathlib import Path
-from typing import List, Tuple, Callable, Union, NamedTuple, Iterator, Dict, Protocol
+from typing import (
+    List,
+    Tuple,
+    Callable,
+    Union,
+    NamedTuple,
+    Iterator,
+    Dict,
+    Protocol,
+    Literal,
+)
 
 import ckit  # type: ignore
 import pyauto  # type: ignore
@@ -394,7 +404,6 @@ def configure(window: MainWindow) -> None:
             "C-Z": window.command_JumpHistory,
             "Back": window.command_JumpHistory,
             "C-D": window.command_Delete,
-            "C-A-D": window.command_SelectDrive,
             "P": window.command_FocusOther,
             "C-Right": window.command_FocusOther,
             "O": window.command_ChdirActivePaneToOther,
@@ -1098,8 +1107,12 @@ def configure(window: MainWindow) -> None:
         window.taskEnqueue(job, create_new_queue=False)
 
     def invoke_listwindow(
-        prompt: str, items: list, cursor_pos: int = 0
+        prompt: str,
+        items: list,
+        cursor_pos: int = 0,
+        onkeypress: Literal["navigate", "search", "search_and_decide"] = "navigate",
     ) -> Tuple[int, int]:
+
         pos = window.centerOfFocusedPaneInPixel()
         list_window = ListWindow(
             x=pos[0],
@@ -1113,8 +1126,8 @@ def configure(window: MainWindow) -> None:
             title=prompt,
             items=items,
             initial_select=cursor_pos,
-            onekey_search=False,
-            onekey_decide=False,
+            onekey_search=onkeypress.startswith("search"),
+            onekey_decide=onkeypress.endswith("decide"),
             return_modkey=True,
             keydown_hook=None,
             statusbar_handler=None,
@@ -1268,7 +1281,9 @@ def configure(window: MainWindow) -> None:
 
         names = list(app_table.keys())
 
-        result, _ = invoke_listwindow("open with:", names)
+        result, _ = invoke_listwindow(
+            "open with:", names, onkeypress="search_and_decide"
+        )
         if result < 0:
             return
 
@@ -2021,7 +2036,7 @@ def configure(window: MainWindow) -> None:
                 continue
             menu.append(MenuItem(d).line)
 
-        result, mod = invoke_listwindow("Drive", menu)
+        result, mod = invoke_listwindow("Drive", menu, onkeypress="search_and_decide")
         if result < 0:
             return
 
@@ -4413,19 +4428,22 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
             window.select += 1
         refresh()
 
-    window.keymap["A"] = to_top
     window.keymap["Home"] = to_top
-    window.keymap["E"] = to_bottom
     window.keymap["End"] = to_bottom
-    window.keymap["J"] = smart_cursorDown
     window.keymap["Down"] = smart_cursorDown
-    window.keymap["K"] = smart_cursorUp
     window.keymap["Up"] = smart_cursorUp
     window.keymap["C-J"] = window.command_CursorDownMark
     window.keymap["C-K"] = window.command_CursorUpMark
     for mod in ["", "S-"]:
-        for key in ["L", "Space", "Right"]:
+        for key in ["Space", "Right"]:
             window.keymap[mod + key] = window.command_Enter
+
+    if not window.onekey_search:
+        window.keymap["A"] = to_top
+        window.keymap["E"] = to_bottom
+        window.keymap["J"] = smart_cursorDown
+        window.keymap["K"] = smart_cursorUp
+        window.keymap["L"] = window.command_Enter
 
 
 def configure_TextViewer(window: ckit.TextWindow) -> None:
