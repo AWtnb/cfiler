@@ -1213,25 +1213,43 @@ def configure(window: MainWindow) -> None:
     Keybinder.bind(toggle_hidden, "C-S-H")
 
     def get_default_browser() -> str:
-        register_path = r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice"
-        prog_id = None
-        try:
-            with OpenKey(HKEY_CURRENT_USER, register_path) as key:
-                prog_id = str(QueryValueEx(key, "ProgId")[0])
-        except Exception as e:
-            Kiritori(window).log(e)
 
+        prog_id = None
+
+        def _set_prog_id() -> None:
+            registry_paths = [
+                r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoiceLatest\ProgId",
+                r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice",
+            ]
+            for path in registry_paths:
+                try:
+                    with OpenKey(HKEY_CURRENT_USER, path) as key:
+                        nonlocal prog_id
+                        prog_id = str(QueryValueEx(key, "ProgId")[0])
+                except Exception as e:
+                    msg = f"Failed to get ProgId by registry `{path}`\n{e}"
+                    if path != registry_paths[-1]:
+                        msg += "\n==> Try next path..."
+                    Kiritori(window).log(msg)
+
+        _set_prog_id()
         if not prog_id:
             return ""
 
         commandline = None
-        register_path = r"{}\shell\open\command".format(prog_id)
-        try:
-            with OpenKey(HKEY_CLASSES_ROOT, register_path) as key:
-                commandline = str(QueryValueEx(key, "")[0])
-        except Exception as e:
-            Kiritori(window).log(e)
 
+        def _set_commandline() -> None:
+            register_path = r"{}\shell\open\command".format(prog_id)
+            try:
+                with OpenKey(HKEY_CLASSES_ROOT, register_path) as key:
+                    nonlocal commandline
+                    commandline = str(QueryValueEx(key, "")[0])
+            except Exception as e:
+                Kiritori(window).log(
+                    f"Failed to get commandline by registry `{register_path}`\n{e}"
+                )
+
+        _set_commandline()
         if not commandline:
             return ""
 
