@@ -4210,9 +4210,7 @@ def configure(window: MainWindow) -> None:
         if len(exts) < 1:
             return
 
-        result, mod = invoke_listwindow(
-            "Select Extension", exts, onkeypress="search_and_decide"
-        )
+        result, mod = invoke_listwindow("Select Extension", exts)
 
         if result < 0:
             return
