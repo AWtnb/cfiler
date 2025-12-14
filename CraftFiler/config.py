@@ -1104,12 +1104,8 @@ def configure(window: MainWindow) -> None:
                 arc.close()
 
         def _finished(job_item: ckit.JobItem) -> None:
-            def __show() -> None:
-                print(job_item.name)
-                for line in job_item.tree:
-                    print("  ", line)
-
-            Kiritori(window).wrap(__show)
+            lines = [t for t in job_item.tree]
+            popResultWindow(window, f"[Peek] {job_item.name}", "\n".join(lines))
 
         job = ckit.JobItem(_peek, _finished)
         window.taskEnqueue(job, create_new_queue=False)
