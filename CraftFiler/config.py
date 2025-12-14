@@ -131,6 +131,8 @@ def smart_check_path(
 
 DESKTOP_PATH = os.path.expandvars(r"${USERPROFILE}\Desktop")
 
+CFILER_APPDATA_PATH = os.path.join(ckit.getAppDataPath(), "CraftFiler")
+
 
 def check_fzf() -> bool:
     return shutil.which("fzf.exe") is not None
@@ -2115,12 +2117,8 @@ def configure(window: MainWindow) -> None:
 
         def _eject(job_item: ckit.JobItem) -> None:
             job_item.result = None
-            cmd = (
-                "PowerShell -NoProfile -Command "
-                '$driveEject = New-Object -comObject Shell.Application; $driveEject.Namespace(17).ParseName("""{}\\""").InvokeVerb("""Eject""");Start-Sleep -Seconds 2'.format(
-                    current_drive
-                )
-            )
+            ps1 = os.path.join(CFILER_APPDATA_PATH, "powershell", "eject.ps1")
+            cmd = f'PowerShell -NoProfile -ExecutionPolicy Bypass -File "{ps1}" "{current_drive}"'
             proc = subprocess.run(
                 cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True
             )
@@ -4448,7 +4446,7 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
     window.keymap["C-J"] = window.command_CursorDownMark
     window.keymap["C-K"] = window.command_CursorUpMark
     for mod in ["", "S-"]:
-        for key in ["Space", "Right"]:
+        for key in ["Space", "Right", "C-L"]:
             window.keymap[mod + key] = window.command_Enter
 
     if not window.onekey_search:
@@ -4697,12 +4695,9 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         def _copy(_) -> None:
             item = window.items[window.cursor]
             path = item.getFullpath()
+            ps1 = os.path.join(CFILER_APPDATA_PATH, "powershell", "clipimg.ps1")
             cmd = (
-                "PowerShell -NoProfile -Command "
-                "Add-Type -AssemblyName System.Windows.Forms;"
-                "[Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('{}'));".format(
-                    path
-                )
+                f'PowerShell -NoProfile -ExecutionPolicy Bypass -File "{ps1}" "{path}"'
             )
             subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True)
 
