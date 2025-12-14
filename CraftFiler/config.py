@@ -178,6 +178,14 @@ def shell_exec(path: str, *args) -> None:
         print(e)
 
 
+def run_ps1(name: str, *args: str):
+    ps1 = os.path.join(CFILER_APPDATA_PATH, "powershell", f"{name}.ps1")
+    cmd = f'PowerShell -NoProfile -ExecutionPolicy Bypass -File "{ps1}"'
+    for a in args:
+        cmd += f' "{a}"'
+    return subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True)
+
+
 CallbackFunc = Callable[[], None]
 
 
@@ -2117,11 +2125,7 @@ def configure(window: MainWindow) -> None:
 
         def _eject(job_item: ckit.JobItem) -> None:
             job_item.result = None
-            ps1 = os.path.join(CFILER_APPDATA_PATH, "powershell", "eject.ps1")
-            cmd = f'PowerShell -NoProfile -ExecutionPolicy Bypass -File "{ps1}" "{current_drive}"'
-            proc = subprocess.run(
-                cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True
-            )
+            proc = run_ps1("eject", current_drive)
             if proc.returncode != 0:
                 if o := proc.stdout:
                     Kiritori(window).log(o)
@@ -4695,11 +4699,7 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         def _copy(_) -> None:
             item = window.items[window.cursor]
             path = item.getFullpath()
-            ps1 = os.path.join(CFILER_APPDATA_PATH, "powershell", "clipimg.ps1")
-            cmd = (
-                f'PowerShell -NoProfile -ExecutionPolicy Bypass -File "{ps1}" "{path}"'
-            )
-            subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True)
+            run_ps1("clipimg", path)
 
         def _finished(_) -> None:
             window.setTitle(
