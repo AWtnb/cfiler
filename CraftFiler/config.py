@@ -404,8 +404,6 @@ def configure(window: MainWindow) -> None:
 
     apply_cfiler_command(
         {
-            "C": window.command_Copy,
-            "M": window.command_Move,
             "S-Enter": window.command_View,
             "C-S-Q": window.command_CancelTask,
             "C-Comma": window.command_ConfigMenu,
