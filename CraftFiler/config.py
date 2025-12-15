@@ -1189,17 +1189,18 @@ def configure(window: MainWindow) -> None:
             ".docx",
             ".xlsx",
         ]:
-            menu = ["Open"]
+            menu = []
             if ext == ".docx":
-                menu.append("(peek text)")
+                menu.append("Peek")
             else:
-                menu.append("(peek text of sheet1)")
+                menu.append("Peek sheet1")
+            menu.append("Open")
             result, _ = invoke_listwindow("OpenXML file:", menu)
             if result != -1:
                 if result == 0:
-                    window.command_Execute(None)
-                else:
                     preview_openxml_content(focus_path)
+                else:
+                    window.command_Execute(None)
             return True
 
         if ext[1:].lower() in [
