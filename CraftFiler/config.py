@@ -3811,7 +3811,7 @@ def configure(window: MainWindow) -> None:
         right: int
         bottom: int
 
-    def to_home_position(force: bool) -> None:
+    def to_home_position() -> None:
         hwnd = window.getHWND()
         wnd = pyauto.Window.fromHWND(hwnd)
         main_monitor_info = None
@@ -3822,22 +3822,24 @@ def configure(window: MainWindow) -> None:
         if not main_monitor_info:
             return
 
-        rect = Rect(*wnd.getRect())
         main_monitor_rect = Rect(*main_monitor_info[1])
-        out_of_main_monitor = (
-            main_monitor_rect.right < rect.right
-            or rect.left < main_monitor_rect.left
-            or rect.top < main_monitor_rect.top
-            or main_monitor_rect.bottom < rect.bottom
+        main_monitor_half_rect = tuple(
+            [
+                (main_monitor_rect.right + main_monitor_rect.left) // 2,
+                0,
+                main_monitor_rect.right,
+                main_monitor_rect.bottom,
+            ]
         )
-        if force or out_of_main_monitor:
+        if wnd.getRect() == main_monitor_half_rect:
+            wnd.maximize()
+            window.command_MoveSeparatorCenter(None)
+        else:
             if wnd.isMaximized():
                 wnd.restore()
-            left = (main_monitor_rect.right - main_monitor_rect.left) // 2
-            wnd.setRect([left, 0, main_monitor_rect.right, main_monitor_rect.bottom])
-            window.command_MoveSeparatorCenter(None)
+            wnd.setRect(main_monitor_half_rect)
 
-    Keybinder.bind(lambda: to_home_position(True), "C-0")
+    Keybinder.bind(to_home_position, "C-0")
 
     class sorter_UnderscoreFirst:
         def __init__(self, order: int = 1) -> None:
