@@ -3946,6 +3946,19 @@ def configure(window: MainWindow) -> None:
 
     Keybinder.bind(edit_config, "C-E")
 
+    def make_shortcut() -> None:
+        pane = CPane()
+        target = pane.selectedItemNames
+        if len(target) < 1:
+            target.append(pane.focusedItem.getName())
+
+        other_pane_dir = CPane(False).currentPath
+        for name in target:
+            lnk_path = str(Path(other_pane_dir, name).with_suffix(".lnk"))
+            src_path = str(Path(pane.currentPath, name))
+            run_ps1("mklnk", src_path, lnk_path)
+            Kiritori(window).log(f"Created shortcut '{lnk_path}'")
+
     class FileHashDiff:
         def __init__(self, max_mb: int):
             self.max_mb = max_mb
@@ -4371,6 +4384,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "MakeShortcut": make_shortcut,
             "CleanTempFiles": remove_tempfiles,
             "RenamePhotoFile": rename_photo_file,
             "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
