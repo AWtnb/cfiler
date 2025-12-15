@@ -1303,9 +1303,7 @@ def configure(window: MainWindow) -> None:
 
         names = list(app_table.keys())
 
-        result, _ = invoke_listwindow(
-            "open with:", names, onkeypress="search_and_decide"
-        )
+        result, _ = invoke_listwindow("open with:", names)
         if result < 0:
             return
 
