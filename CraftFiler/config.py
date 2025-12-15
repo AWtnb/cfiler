@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import unicodedata
@@ -427,7 +428,6 @@ def configure(window: MainWindow) -> None:
             "A-S-F10": window.command_ContextMenuDir,
             "Apps": window.command_ContextMenu,
             "S-Apps": window.command_ContextMenuDir,
-            "C-N": window.command_DuplicateCfiler,
             "OpenBracket": window.command_MoveSeparatorLeft,
             "CloseBracket": window.command_MoveSeparatorRight,
             "Yen": window.command_MoveSeparatorCenter,
@@ -439,6 +439,16 @@ def configure(window: MainWindow) -> None:
             "C-S-R": window.command_BatchRename,
         }
     )
+
+    def new_cfiler_window() -> None:
+        exe_path = sys.executable
+        if smart_check_path(exe_path):
+            arg = f' -L"{DESKTOP_PATH}" -R"{DESKTOP_PATH}"'
+            shell_exec(exe_path, arg)
+        else:
+            Kiritori(window).log(f"{exe_path} not found.")
+
+    Keybinder.bind(new_cfiler_window, "C-N")
 
     class CPane:
         min_width = 20
