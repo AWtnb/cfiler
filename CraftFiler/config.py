@@ -3842,11 +3842,11 @@ def configure(window: MainWindow) -> None:
         )
         if wnd.getRect() == main_monitor_half_rect:
             wnd.maximize()
-            window.command_MoveSeparatorCenter(None)
         else:
             if wnd.isMaximized():
                 wnd.restore()
             wnd.setRect(main_monitor_half_rect)
+        window.command_MoveSeparatorCenter(None)
 
     Keybinder.bind(to_home_position, "C-0")
 
