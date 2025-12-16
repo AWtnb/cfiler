@@ -2098,13 +2098,13 @@ def configure(window: MainWindow) -> None:
                 for name in names
                 if _format_sep(name).lower().startswith(t.lower())
             ]
-            return found, 0
+            bookmarks = [item.getName() for item in pane.items if item.bookmark()]
+            return bookmarks + found, 0
 
         result = stringify(
             window.commandLine(
                 title="JumpInput",
                 candidate_handler=_listup_names,
-                auto_complete=True,
             )
         )
 
