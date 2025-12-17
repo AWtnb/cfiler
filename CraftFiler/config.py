@@ -2326,7 +2326,7 @@ def configure(window: MainWindow) -> None:
         if all([Path(path).suffix in [".docx", ".xlsx"] for path in targets]):
             menu.append("Text content")
 
-        result, _ = invoke_listwindow("Copy", menu, onkeypress="search_and_decide")
+        result, _ = invoke_listwindow("Copy", menu)
         if result < 0:
             return
 
