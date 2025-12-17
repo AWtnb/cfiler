@@ -3858,14 +3858,15 @@ def configure(window: MainWindow) -> None:
             def _sort_key(item) -> tuple:
                 dir_upper_flag = not item.isdir() if self.order == 1 else item.isdir()
                 name = item.getName()
+                stem, ext = os.path.splitext(name)
                 underscore_count = len(name) - len(name.lstrip("_"))
-                lower_name = name.lower()
                 return (
                     dir_upper_flag,
                     not name.startswith("."),
                     not name.startswith("_"),
                     (-1 * underscore_count),
-                    lower_name,
+                    stem.lower(),
+                    ext.lower(),
                 )
 
             items.sort(key=_sort_key, reverse=self.order == -1)
