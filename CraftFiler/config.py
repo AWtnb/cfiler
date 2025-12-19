@@ -14,63 +14,56 @@ import unicodedata
 import urllib.parse
 import urllib.request
 import webbrowser
-from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
-from winreg import HKEY_CURRENT_USER, HKEY_CLASSES_ROOT, OpenKey, QueryValueEx
-
-from PIL import ImageGrab  # type: ignore
-from PIL import Image as PILImage  # type: ignore
-from PIL.ExifTags import TAGS  # type: ignore
-
+from enum import Enum
 from pathlib import Path
 from typing import (
-    List,
-    Tuple,
     Callable,
-    Union,
-    NamedTuple,
-    Iterator,
     Dict,
-    Protocol,
+    Iterator,
+    List,
     Literal,
+    NamedTuple,
+    Protocol,
+    Tuple,
+    Union,
 )
+from winreg import HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, OpenKey, QueryValueEx
 
-import ckit  # type: ignore
-import pyauto  # type: ignore
-
-from cfiler import *  # type: ignore
-
+import cfiler_debug  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
 import cfiler_mainwindow  # type: ignore
-from cfiler_mainwindow import MainWindow  # type: ignore
+import cfiler_msgbox  # type: ignore
+
+# https://github.com/crftwr/cfiler/blob/master/cfiler_resource.py
+import cfiler_resource  # type: ignore
+import ckit  # type: ignore
+import pyauto  # type: ignore
+from cfiler import *  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import (  # type: ignore
     FileList,
-    item_Default,
-    lister_Default,
-    item_Empty,
     filter_Default,
+    item_Default,
+    item_Empty,
+    lister_Default,
 )
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow  # type: ignore
-
-# https://github.com/crftwr/cfiler/blob/master/cfiler_textviewer.py
-from cfiler_textviewer import TextViewer  # type: ignore
-
-# https://github.com/crftwr/cfiler/blob/master/cfiler_renamewindow.py
-from cfiler_resultwindow import popResultWindow  # type: ignore
+from cfiler_mainwindow import MainWindow  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_misc.py
 from cfiler_misc import getFileSizeString  # type: ignore
 
-# https://github.com/crftwr/cfiler/blob/master/cfiler_resource.py
-import cfiler_resource  # type: ignore
-
-import cfiler_msgbox  # type: ignore
-import cfiler_debug  # type: ignore
+# https://github.com/crftwr/cfiler/blob/master/cfiler_textviewer.py
+# https://github.com/crftwr/cfiler/blob/master/cfiler_renamewindow.py
+from cfiler_resultwindow import popResultWindow  # type: ignore
+from PIL import Image as PILImage  # type: ignore
+from PIL import ImageGrab  # type: ignore
+from PIL.ExifTags import TAGS  # type: ignore
 
 
 class PaintOption(Enum):
@@ -243,7 +236,6 @@ class Kiritori:
 
 
 def configure(window: MainWindow) -> None:
-
     if ckit.CronTable.defaultCronTable():
         ckit.CronTable.defaultCronTable().cancel()
         ckit.CronTable.defaultCronTable().clear()
@@ -376,7 +368,6 @@ def configure(window: MainWindow) -> None:
     )
 
     class Keybinder:
-
         @staticmethod
         def wrap(
             func: Callable[..., None],
@@ -833,7 +824,6 @@ def configure(window: MainWindow) -> None:
         def traverse(
             self, only_file: bool, *ignore_dirnames: str
         ) -> Iterator[ItemDefaultProtocol]:
-
             class FileListEntry:
                 def __init__(self, root: str, path: str) -> None:
                     self.root = root
@@ -1126,7 +1116,6 @@ def configure(window: MainWindow) -> None:
         cursor_pos: int = 0,
         onkeypress: Literal["navigate", "search", "search_and_decide"] = "navigate",
     ) -> Tuple[int, int]:
-
         pos = window.centerOfFocusedPaneInPixel()
         list_window = ListWindow(
             x=pos[0],
@@ -1155,7 +1144,6 @@ def configure(window: MainWindow) -> None:
         return result, mod
 
     def hook_enter() -> bool:
-
         pane = CPane()
         if pane.isBlank:
             pane.focusOther()
@@ -1228,7 +1216,6 @@ def configure(window: MainWindow) -> None:
     Keybinder.bind(toggle_hidden, "C-S-H")
 
     def get_default_browser() -> str:
-
         prog_id = None
 
         def _set_prog_id() -> None:
@@ -1412,7 +1399,6 @@ def configure(window: MainWindow) -> None:
             return d
 
     class FuzzyBookmark:
-
         def __init__(self) -> None:
             self._table = BookmarkAlias().to_dict()
 
@@ -1877,7 +1863,6 @@ def configure(window: MainWindow) -> None:
 
         @classmethod
         def invoke(cls, current_dir: bool, search_all: bool) -> CallbackFunc:
-
             def _wrapper() -> None:
                 pane = CPane()
                 if pane.isBlank:
@@ -2046,7 +2031,6 @@ def configure(window: MainWindow) -> None:
     Keybinder.bind(on_paste, "C-V", "S-Insert")
 
     def change_drive() -> None:
-
         class MenuItem:
             sep = " "
 
@@ -2558,7 +2542,6 @@ def configure(window: MainWindow) -> None:
     Keybinder.bind(to_root_of_index, "A-H")
 
     class SmartJumper:
-
         def __init__(self, by_prefix: bool):
             self.pane = CPane()
             self.dests = self.prefixEdges() if by_prefix else self.itemEdges()
@@ -2656,7 +2639,6 @@ def configure(window: MainWindow) -> None:
             self.pane.focus(idx)
 
     def smart_jumpDown(by_prefix: bool, selecting: bool) -> CallbackFunc:
-
         def _jumper() -> None:
             SmartJumper(by_prefix).down(selecting)
 
@@ -2668,7 +2650,6 @@ def configure(window: MainWindow) -> None:
     Keybinder.bind(smart_jumpDown(False, True), "S-C-J")
 
     def smart_jumpUp(by_prefix: bool, selecting: bool) -> CallbackFunc:
-
         def _jumper() -> None:
             SmartJumper(by_prefix).up(selecting)
 
@@ -3336,7 +3317,6 @@ def configure(window: MainWindow) -> None:
         def invoke(
             self,
         ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], Tuple[List[str], int]]:
-
             def _handler(
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
             ) -> Tuple[List[str], int]:
@@ -3346,7 +3326,6 @@ def configure(window: MainWindow) -> None:
             return _handler
 
     class NameSuffix(NameAffix):
-
         def __init__(
             self,
             with_timestamp: bool = False,
@@ -3411,7 +3390,6 @@ def configure(window: MainWindow) -> None:
         def invoke(
             self,
         ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], Tuple[List[str], int]]:
-
             def _filter(
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
             ) -> Tuple[List[str], int]:
@@ -4028,9 +4006,9 @@ def configure(window: MainWindow) -> None:
                     table[digest] = table.get(digest, []) + [name]
                     exts.add(ext)
 
-                def __files_to_compare() -> (
-                    Union[Iterator[ItemDefaultProtocol], List[ItemDefaultProtocol]]
-                ):
+                def __files_to_compare() -> Union[
+                    Iterator[ItemDefaultProtocol], List[ItemDefaultProtocol]
+                ]:
                     if with_selection:
                         sels = other_pane.selectedItems
                         other_pane.unSelectAll()
@@ -4432,7 +4410,6 @@ def configure(window: MainWindow) -> None:
 
 
 def configure_ListWindow(window: ckit.TextWindow) -> None:
-
     def refresh() -> None:
         window.scroll_info.makeVisible(
             window.select, window.itemsHeight(), window.scroll_margin
@@ -4579,7 +4556,6 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["C-A-C"] = copy_displayed_lines
 
     def reload_with_encoding(_) -> None:
-
         encodes = {
             "(Auto)": "",
             "S-JIS": "cp932",
