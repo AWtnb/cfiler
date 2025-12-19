@@ -40,7 +40,7 @@ import cfiler_msgbox  # type: ignore
 import cfiler_resource  # type: ignore
 import ckit  # type: ignore
 import pyauto  # type: ignore
-from cfiler import *  # type: ignore
+from cfiler import *  # type: ignore  # noqa: F403
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import (  # type: ignore
@@ -119,7 +119,7 @@ def smart_check_path(
     try:
         future = ThreadPoolExecutor(max_workers=1).submit(p.exists)
         return future.result(timeout_sec)
-    except:
+    except Exception:
         return False
 
 
@@ -2494,8 +2494,6 @@ def configure(window: MainWindow) -> None:
         if len(pane.dirs) < 1:
             return
 
-        root = pane.currentPath
-
         print("Searching for last-indexed dir under '{}' ...".format(pane.currentPath))
 
         def _traverse(job_item: ckit.JobItem) -> None:
@@ -2752,7 +2750,7 @@ def configure(window: MainWindow) -> None:
         def value(self) -> str:
             try:
                 return window.ini.get(self.ini_section, self._option_name)
-            except:
+            except Exception:
                 return ""
 
     class RenameInfo(NamedTuple):
