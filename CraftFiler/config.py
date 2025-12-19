@@ -3669,6 +3669,7 @@ def configure(window: MainWindow) -> None:
             items.append(item)
 
         if len(items) < 1:
+            pane.select(pane.cursor)
             return
 
         dests = []
