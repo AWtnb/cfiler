@@ -1399,14 +1399,28 @@ def configure(window: MainWindow) -> None:
             return d
 
     class FuzzyBookmark:
-        def __init__(self) -> None:
-            self._table = BookmarkAlias().to_dict()
+        def __init__(self, location: str) -> None:
+            self._table = dict(
+                sorted(
+                    BookmarkAlias().to_dict().items(),
+                    key=lambda item: (
+                        not item[1].startswith(location),
+                        item[0].lower(),
+                    ),
+                )
+            )
 
         def fzf(self) -> str:
             table = self._table
-            src = "\n".join(sorted(table.keys(), reverse=True))
+            src = "\n".join(table.keys())
             try:
-                cmd = ["fzf.exe", "--margin=1", "--no-color", "--input-border=sharp"]
+                cmd = [
+                    "fzf.exe",
+                    "--margin=1",
+                    "--no-color",
+                    "--input-border=sharp",
+                    "--layout=reverse",
+                ]
                 proc = subprocess.run(
                     cmd, input=src, capture_output=True, encoding="utf-8"
                 )
@@ -1429,7 +1443,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
 
         def _get_path(job_item: ckit.JobItem) -> None:
-            fb = FuzzyBookmark()
+            fb = FuzzyBookmark(pane.currentPath)
             job_item.path = fb.fzf()
 
         def _open(job_item: ckit.JobItem) -> None:
