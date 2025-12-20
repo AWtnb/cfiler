@@ -1400,9 +1400,14 @@ def configure(window: MainWindow) -> None:
 
     class FuzzyBookmark:
         def __init__(self, location: str) -> None:
+            items = [
+                item
+                for item in BookmarkAlias().to_dict().items()
+                if item[1] != location
+            ]
             self._table = dict(
                 sorted(
-                    BookmarkAlias().to_dict().items(),
+                    items,
                     key=lambda item: (
                         not item[1].startswith(location),
                         item[0].lower(),
