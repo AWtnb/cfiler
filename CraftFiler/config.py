@@ -941,8 +941,6 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_traverse, _finished)
         window.taskEnqueue(job, create_new_queue=False)
 
-    Keybinder.bind(copy_dir_tree, "C-T")
-
     def show_path_tree(path: str) -> None:
         if len(path) < 1:
             return
@@ -4406,6 +4404,7 @@ def configure(window: MainWindow) -> None:
             "UnzipSelections": extract_archives,
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
+            "CopyDirTree": copy_dir_tree,
             "Diffinity": diffinity,
             "MakeInternetShortcut": lambda: make_internet_shortcut(
                 ckit.getClipboardText().strip()
