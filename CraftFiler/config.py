@@ -1025,7 +1025,17 @@ def configure(window: MainWindow) -> None:
             width: int
             ext: str
 
+        border_width = 1
+        window_width = window.width() - border_width
+        half_width = window_width // 2
+
         pane = CPane()
+        if pane.isBlank:
+            window.left_window_width = half_width
+            window.updateThemePosSize()
+            pane.repaint(PaintOption.Upper)
+            return
+
         longest = AdjustBase(None, 0, "")
 
         for path in pane.paths:
@@ -1042,10 +1052,6 @@ def configure(window: MainWindow) -> None:
         if longest.ext != "":
             min_width = min_width - len(longest.ext) + ElemWidth.ext
         min_width = max(ElemWidth.area_min, min_width)
-
-        border_width = 1
-        window_width = window.width() - border_width
-        half_width = window_width // 2
 
         if window.focus == MainWindow.FOCUS_LEFT:
 
