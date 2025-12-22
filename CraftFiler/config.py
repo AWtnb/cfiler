@@ -434,8 +434,12 @@ def configure(window: MainWindow) -> None:
     def new_cfiler_window() -> None:
         exe_path = sys.executable
         if smart_check_path(exe_path):
-            arg = f' -L"{DESKTOP_PATH}" -R"{DESKTOP_PATH}"'
-            shell_exec(exe_path, arg)
+            slashed = DESKTOP_PATH.replace("\\", "/")
+            pyauto.shellExecute(
+                None,
+                exe_path,
+                f' -L"{slashed}" -R"{slashed}"',
+            )
         else:
             Kiritori(window).log(f"{exe_path} not found.")
 
