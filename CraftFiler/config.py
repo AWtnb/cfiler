@@ -1200,6 +1200,7 @@ def configure(window: MainWindow) -> None:
             return True
 
         if ext[1:].lower() in [
+            "tbx",
             "webp",
             "m4a",
             "mp4",
