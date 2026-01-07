@@ -3313,6 +3313,10 @@ def configure(window: MainWindow) -> None:
             sels = self.pane.selectedItemPaths + CPane(False).selectedItemPaths
             return sorted([self.to_stem(sel) for sel in sels])
 
+        @staticmethod
+        def len_ordered_unify(lines: List[str]) -> List[str]:
+            return [str(s) for s in sorted(set(lines), key=len)]
+
     class NamePrefix(NameAffix):
         def __init__(self) -> None:
             super().__init__()
@@ -3347,7 +3351,7 @@ def configure(window: MainWindow) -> None:
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
             ) -> Tuple[List[str], int]:
                 found = self.filter_by(update_info.text)
-                return self.selected + sorted(list(set(found)), key=len), 0
+                return self.selected + self.len_ordered_unify(found), 0
 
             return _handler
 
@@ -3420,7 +3424,7 @@ def configure(window: MainWindow) -> None:
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
             ) -> Tuple[List[str], int]:
                 found = self.filter_by(update_info.text)
-                return self.selected + sorted(list(set(found)), key=len), 0
+                return self.selected + self.len_ordered_unify(found), 0
 
             return _filter
 
@@ -3441,7 +3445,7 @@ def configure(window: MainWindow) -> None:
                 else suffix_handler.filter_by(s)
             )
 
-            return selected + sorted(list(set(found)), key=len), 0
+            return selected + NameAffix.len_ordered_unify(found), 0
 
         return _handler
 
