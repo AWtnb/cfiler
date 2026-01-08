@@ -922,6 +922,7 @@ def configure(window: MainWindow) -> None:
 
     def copy_dir_tree() -> None:
         pane = CPane()
+        selected_names = pane.selectedItemNames
         root = pane.currentPath
         window.setProgressValue(None)
 
@@ -931,7 +932,13 @@ def configure(window: MainWindow) -> None:
                 if job_item.isCanceled():
                     return
                 rel = item.getFullpath()[len(root) :].lstrip(os.sep)
-                job_item.paths.append(rel)
+                if len(selected_names) < 1 or any(
+                    [
+                        (rel == name or rel.startswith(name + os.sep))
+                        for name in selected_names
+                    ]
+                ):
+                    job_item.paths.append(rel)
 
         def _finished(job_item: ckit.JobItem) -> None:
             window.clearProgress()
