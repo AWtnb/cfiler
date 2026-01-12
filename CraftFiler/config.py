@@ -1244,14 +1244,12 @@ def configure(window: MainWindow) -> None:
                     with OpenKey(HKEY_CURRENT_USER, path) as key:
                         nonlocal prog_id
                         prog_id = str(QueryValueEx(key, "ProgId")[0])
-                except Exception as e:
-                    msg = f"Failed to get ProgId by registry `{path}`\n{e}"
-                    if path != registry_paths[-1]:
-                        msg += "\n==> Try next path..."
-                    Kiritori(window).log(msg)
+                except Exception:
+                    pass
 
         _set_prog_id()
         if not prog_id:
+            Kiritori(window).log("Failed to define default browser by registry ProgId.")
             return ""
 
         commandline = None
