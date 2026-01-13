@@ -1173,8 +1173,9 @@ def configure(window: MainWindow) -> None:
         if (
             pane.focusedItemPath.endswith(".zip")
             and pane.focusedItem.selected()
-            and pane.selectedItems.count == 1
+            and len(pane.selectedItems) == 1
         ):
+            print("aa")
             extract_archives()
             return True
 
