@@ -1170,6 +1170,14 @@ def configure(window: MainWindow) -> None:
             pane.openPath(focus_path)
             return True
 
+        if (
+            pane.focusedItemPath.endswith(".zip")
+            and pane.focusedItem.selected()
+            and pane.selectedItems.count == 1
+        ):
+            extract_archives()
+            return True
+
         if pane.focusedItem.size() == 0:
             window.command_Execute(None)
             return True
