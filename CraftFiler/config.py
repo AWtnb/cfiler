@@ -1320,7 +1320,7 @@ def configure(window: MainWindow) -> None:
         app_table["mery"] = os.path.expandvars(
             r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"
         )
-        app_table["vscode"] = lambda x: open_vscode(x)
+        app_table["vscode"] = lambda x: open_vscode(x, "--new-window")
 
         names = list(app_table.keys())
 
