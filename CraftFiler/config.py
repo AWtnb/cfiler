@@ -1959,8 +1959,10 @@ def configure(window: MainWindow) -> None:
     setup_zyw()
 
     def concatenate_pdf() -> None:
-        exe_path = shutil.which("go-pdfconc.exe")
+        exe_name = "go-pdfconc.exe"
+        exe_path = shutil.which(exe_name)
         if not exe_path:
+            Kiritori(window).log(f"'{exe_name}' not found!")
             return
 
         pane = CPane()
