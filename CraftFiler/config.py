@@ -1175,7 +1175,6 @@ def configure(window: MainWindow) -> None:
             and pane.focusedItem.selected()
             and len(pane.selectedItems) == 1
         ):
-            print("aa")
             extract_archives()
             return True
 
