@@ -4440,6 +4440,12 @@ def configure(window: MainWindow) -> None:
                 ckit.getClipboardText().strip()
             ),
             "RenamePseudoVoicing": rename_pseudo_voicing,
+            "RenameIndex": rename_index,
+            "RenameInsert": rename_insert,
+            "RenameExtension": rename_ext,
+            "RenameRegExp": rename_regexp,
+            "RenameStem": rename_stem,
+            "RenameSubstr": rename_substr,
             "FindSameFile": FileHashDiff(2).compare,
             "FromOtherNames": from_other_names,
             "FromActiveNames": from_active_names,
