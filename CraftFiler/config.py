@@ -3740,8 +3740,10 @@ def configure(window: MainWindow) -> None:
             ]
             return found, 0
 
+        placeholder = "" if len(pane.dirs) != 1 else pane.dirs[0].getName()
         result, mod = window.commandLine(
             prompt,
+            text=placeholder,
             candidate_handler=_listup_dests,
             return_modkey=True,
         )
