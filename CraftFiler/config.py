@@ -1421,23 +1421,21 @@ def configure(window: MainWindow) -> None:
             return d
 
     class BookmarkBackup:
-        section_names = ["BOOKMARK", "BOOKMARK_ALIAS"]
-
         def __init__(self, dest_dir: str, max_count: int) -> None:
             self.dest_dir = dest_dir
             self.max_count = max_count
 
         def get_content(self) -> str:
-            lines = []
-            for section_name in self.section_names:
-                lines.append(f"[{section_name}]")
-                try:
-                    for opt in window.ini.items(section_name):
-                        lines.append(f"{opt[0]} = {opt[1]}")
-                    lines.append("")
-                except configparser.NoSectionError:
-                    pass
-            return "\n".join(lines)
+            bookmarks = ["[BOOKMARK]"]
+            bookmark_aliases = ["[BOOKMARK_ALIAS]"]
+            ba = BookmarkAlias()
+            for i, path in enumerate(window.bookmark.getItems()):
+                bookmarks.append(f"bookmark_{i} = {path}")
+                alias = ba.alias_of(path)
+                if alias != "":
+                    bookmark_aliases.append(f"{alias} = {path}")
+
+            return "\n".join(bookmarks + [""] + bookmark_aliases)
 
         def run_backup(self) -> None:
             dest = Path(self.dest_dir)
@@ -1459,7 +1457,7 @@ def configure(window: MainWindow) -> None:
                 Kiritori(window).log(msg)
 
     BookmarkBackup(
-        os.path.expandvars(r"${USERPROFILE}\Documents\CFilerBookmarkBackup"), 30
+        os.path.expandvars(r"${USERPROFILE}\Documents\CFilerBookmarkBackup"), 100
     ).run_backup()
 
     class FuzzyBookmark:
