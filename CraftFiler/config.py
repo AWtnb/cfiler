@@ -1459,7 +1459,7 @@ def configure(window: MainWindow) -> None:
                 Kiritori(window).log(msg)
 
     BookmarkBackup(
-        os.path.expandvars(r"${USERPROFILE}\Documents\CFilerBookmarks"), 30
+        os.path.expandvars(r"${USERPROFILE}\Documents\CFilerBookmarkBackup"), 30
     ).run_backup()
 
     class FuzzyBookmark:
