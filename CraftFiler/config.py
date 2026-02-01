@@ -1420,6 +1420,48 @@ def configure(window: MainWindow) -> None:
                 d[leaf] = path
             return d
 
+    class BookmarkBackup:
+        section_names = ["BOOKMARK", "BOOKMARK_ALIAS"]
+
+        def __init__(self, dest_dir: str, max_count: int) -> None:
+            self.dest_dir = dest_dir
+            self.max_count = max_count
+
+        def get_content(self) -> str:
+            lines = []
+            for section_name in self.section_names:
+                lines.append(f"[{section_name}]")
+                try:
+                    for opt in window.ini.items(section_name):
+                        lines.append(f"{opt[0]} = {opt[1]}")
+                    lines.append("")
+                except configparser.NoSectionError:
+                    pass
+            return "\n".join(lines)
+
+        def run_backup(self) -> None:
+            dest = Path(self.dest_dir)
+            if not smart_check_path(dest):
+                dest.mkdir()
+            backups = sorted(dest.glob("*.txt"))
+            version_count = len(backups)
+            if 0 < version_count:
+                last_backup = backups[-1]
+                if last_backup.read_text("utf-8") == self.get_content():
+                    return
+            ts = datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
+            new_backup_path = dest / f"backup_{ts}.txt"
+            new_backup_path.write_text(self.get_content(), encoding="utf-8")
+            if self.max_count < version_count + 1:
+                oldest = backups[0]
+                msg = f"[BACKUP] Removed oldest file '{oldest.name}'."
+                oldest.unlink()
+                Kiritori(window).log(msg)
+
+    BookmarkBackup(
+        os.path.expandvars(r"${USERPROFILE}\Documents\CFilerBookmarks"), 30
+    ).run_backup()
+
     class FuzzyBookmark:
         def __init__(self, location: str) -> None:
             items = [
@@ -1513,14 +1555,11 @@ def configure(window: MainWindow) -> None:
                     "Canceled. Select just 1 item (or nothing to bookmark current location)."
                 )
                 return
-            else:
-                target = pane.selectedItemPaths[0]
+            target = pane.selectedItemPaths[0]
 
         ba = BookmarkAlias()
 
-        specified = window.commandLine(
-            "Bookmark alias", text=ba.alias_of(pane.currentPath)
-        )
+        specified = window.commandLine("Bookmark alias", text=ba.alias_of(target))
         if specified is None:
             return
 
@@ -4138,7 +4177,9 @@ def configure(window: MainWindow) -> None:
                 right_path = right_pane.selectedItemPaths[0]
 
         if not left_path or not right_path:
-            Kiritori(window).log("Select 1 item for each pane to compare.")
+            Kiritori(window).log(
+                "Select 1 item for each pane or 2 items in one pane to compare."
+            )
             return
 
         shell_exec(exe_path, left_path, right_path)
