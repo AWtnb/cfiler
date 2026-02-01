@@ -1416,7 +1416,7 @@ def configure(window: MainWindow) -> None:
             for path in window.bookmark.getItems():
                 leaf = self.to_last_elem(path)
                 if 0 < len(a := self.alias_of(path)):
-                    leaf = "{}[{}]".format(a, self.to_last_elem(path))
+                    leaf = f"{a}  <== {path}"
                 d[leaf] = path
             return d
 
