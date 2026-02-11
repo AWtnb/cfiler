@@ -3,6 +3,7 @@ import datetime
 import fnmatch
 import hashlib
 import inspect
+import json
 import os
 import re
 import shutil
@@ -475,9 +476,11 @@ def configure(window: MainWindow) -> None:
         bookmarks = [p for p in window.bookmark.getItems()]
         if path in bookmarks:
             window.bookmark.remove(path)
+            _ = okini("--remove", path)
             Kiritori(window).log("Unbookmarked: '{}'".format(path))
         else:
             window.bookmark.append(path)
+            _ = okini("--add", path)
             Kiritori(window).log("Bookmarked: '{}'".format(path))
 
     def fuzzy_bookmark() -> None:
@@ -485,10 +488,24 @@ def configure(window: MainWindow) -> None:
             Kiritori(window).log("fzf not found.")
             return
 
+        if shutil.which("okini") is None:
+            Kiritori(window).log("okini not found.")
+            return
+
+        bookmark_json = os.path.expandvars(r"${APPDATA}\okini\bookmarks.json")
+        if not smart_check_path(bookmark_json):
+            Kiritori(window).log("okini's bookmarks.json not found.")
+            return
+
+        bookmarks = []
+        with open(bookmark_json, "r", encoding="utf-8") as f:
+            [bookmarks.append(data) for data in json.load(f)]
+
         def _select(job_item: ckit.JobItem) -> None:
             job_item.bookmark_name = ""
-            bookmarks = okini("--list")
-            if bookmarks == "":
+
+            names = "\n".join([bm["name"] for bm in bookmarks])
+            if names == "":
                 return
             cmd = [
                 "fzf.exe",
@@ -498,7 +515,7 @@ def configure(window: MainWindow) -> None:
                 "--layout=reverse",
             ]
             proc = subprocess.run(
-                cmd, input=bookmarks, capture_output=True, encoding="utf-8"
+                cmd, input=names, capture_output=True, encoding="utf-8"
             )
             if proc.returncode != 0:
                 if e := proc.stderr:
@@ -510,8 +527,9 @@ def configure(window: MainWindow) -> None:
             name = job_item.bookmark_name
             if name == "":
                 return
-            path = okini("--search", name)
-            CPane().openPath(path)
+            for bm in bookmarks:
+                if bm["name"] == name:
+                    CPane().openPath(bm["path"])
 
         job = ckit.JobItem(_select, _open)
         window.taskEnqueue(job, create_new_queue=False)
