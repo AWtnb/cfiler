@@ -61,9 +61,9 @@ from cfiler_misc import getFileSizeString  # type: ignore
 # https://github.com/crftwr/cfiler/blob/master/cfiler_textviewer.py
 # https://github.com/crftwr/cfiler/blob/master/cfiler_renamewindow.py
 from cfiler_resultwindow import popResultWindow  # type: ignore
-from PIL import Image as PILImage  # type: ignore
-from PIL import ImageGrab  # type: ignore
-from PIL.ExifTags import TAGS  # type: ignore
+from PIL import Image as PILImage
+from PIL import ImageGrab
+from PIL.ExifTags import TAGS
 
 
 class PaintOption(Enum):
@@ -367,29 +367,6 @@ def configure(window: MainWindow) -> None:
         ]
     )
 
-    class Keybinder:
-        @staticmethod
-        def wrap(
-            func: Callable[..., None],
-        ) -> Callable[[ckit.ckit_command.CommandInfo], None]:
-            if len(inspect.signature(func).parameters) < 1:
-
-                def _callback(_) -> None:
-                    func()
-
-                return _callback
-
-            return func
-
-        @classmethod
-        def bind(
-            cls,
-            func: Callable[..., None],
-            *keys: str,
-        ) -> None:
-            for key in keys:
-                window.keymap[key] = cls.wrap(func)
-
     def apply_cfiler_command(mapping: dict) -> None:
         for key, func in mapping.items():
             window.keymap[key] = func
@@ -430,6 +407,139 @@ def configure(window: MainWindow) -> None:
             "C-S-R": window.command_BatchRename,
         }
     )
+
+    class Keybinder:
+        @staticmethod
+        def wrap(
+            func: Callable[..., None],
+        ) -> Callable[[ckit.ckit_command.CommandInfo], None]:
+            if len(inspect.signature(func).parameters) < 1:
+
+                def _callback(_) -> None:
+                    func()
+
+                return _callback
+
+            return func
+
+        @classmethod
+        def bind(
+            cls,
+            func: Callable[..., None],
+            *keys: str,
+        ) -> None:
+            for key in keys:
+                window.keymap[key] = cls.wrap(func)
+
+    def okini(*params: str) -> str:
+        cli = "okini"
+        exe = shutil.which(cli)
+        if exe is None:
+            Kiritori(window).log(f"{cli} not found.")
+            return ""
+        cmd = ["okini"] + list(params)
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            encoding="utf-8",
+            creationflags=subprocess.CREATE_NO_WINDOW,
+        )
+        if proc.returncode != 0:
+            Kiritori(window).log(proc.stderr)
+            return ""
+        return proc.stdout.strip()
+
+    def toggle_bookmark() -> None:
+        pane = CPane(True)
+        item = pane.focusedItem
+        path = item.getFullpath()
+        dirname, filename = ckit.splitPath(path)
+
+        if filename.lower() in window.bookmark.listDir(dirname):
+            window.bookmark.remove(path)
+            _ = okini("--remove", pane.focusedItemPath)
+        else:
+            _ = okini("--add", pane.focusedItemPath)
+            window.bookmark.append(path)
+
+        pane.refresh()
+        pane.repaint()
+        other_pane = CPane(False)
+        other_pane.refresh()
+        other_pane.repaint()
+
+    Keybinder.bind(toggle_bookmark, "C-B")
+
+    def bookmark_here() -> None:
+        path = CPane().currentPath
+        bookmarks = [p for p in window.bookmark.getItems()]
+        if path in bookmarks:
+            window.bookmark.remove(path)
+            Kiritori(window).log("Unbookmarked: '{}'".format(path))
+        else:
+            window.bookmark.append(path)
+            Kiritori(window).log("Bookmarked: '{}'".format(path))
+
+    def fuzzy_bookmark() -> None:
+        if not check_fzf():
+            Kiritori(window).log("fzf not found.")
+            return
+
+        def _select(job_item: ckit.JobItem) -> None:
+            job_item.bookmark_name = ""
+            bookmarks = okini("--list")
+            if bookmarks == "":
+                return
+            cmd = [
+                "fzf.exe",
+                "--margin=1",
+                "--no-color",
+                "--input-border=sharp",
+                "--layout=reverse",
+            ]
+            proc = subprocess.run(
+                cmd, input=bookmarks, capture_output=True, encoding="utf-8"
+            )
+            if proc.returncode != 0:
+                if e := proc.stderr:
+                    Kiritori(window).log(e)
+                    return
+            job_item.bookmark_name = proc.stdout.strip()
+
+        def _open(job_item: ckit.JobItem) -> None:
+            name = job_item.bookmark_name
+            if name == "":
+                return
+            path = okini("--search", name)
+            CPane().openPath(path)
+
+        job = ckit.JobItem(_select, _open)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    Keybinder.bind(fuzzy_bookmark, "B")
+
+    def set_bookmark_alias() -> None:
+        pane = CPane()
+        target = pane.currentPath
+        if pane.hasSelection:
+            if 1 < len(pane.selectedItems):
+                Kiritori(window).log(
+                    "Canceled. Select just 1 item (or nothing to bookmark current location)."
+                )
+                return
+            target = pane.selectedItemPaths[0]
+
+        alias = stringify(window.commandLine("Bookmark alias"))
+        if alias == "":
+            return
+
+        okini("--add", target, alias)
+
+        if target not in window.bookmark.getItems():
+            window.bookmark.append(target)
+            if target != pane.currentPath:
+                pane.refresh()
+        Kiritori(window).log("Registered '{}' as alias for '{}'".format(alias, target))
 
     def new_cfiler_window() -> None:
         exe_path = sys.executable
@@ -1379,201 +1489,6 @@ def configure(window: MainWindow) -> None:
         LeftPane().activate()
 
     Keybinder.bind(swap_pane, "S")
-
-    class BookmarkAlias:
-        ini_section = "BOOKMARK_ALIAS"
-
-        def __init__(self) -> None:
-            try:
-                window.ini.add_section(self.ini_section)
-            except configparser.DuplicateSectionError:
-                pass
-
-        def register(self, name: str, path: str) -> None:
-            window.ini.set(self.ini_section, name, path)
-
-        def clear_by_path(self, path: str) -> None:
-            for opt in window.ini.items(self.ini_section):
-                if opt[1] == path:
-                    window.ini.remove_option(self.ini_section, opt[0])
-
-        @staticmethod
-        def to_last_elem(path: str) -> str:
-            path = path.rstrip(os.sep)
-            p = Path(path)
-            if 0 < len(p.name):
-                return p.name
-            return path.split(os.sep)[-1]
-
-        def alias_of(self, path: str) -> str:
-            for opt in window.ini.items(self.ini_section):
-                if opt[1] == path:
-                    return opt[0]
-            return ""
-
-        def to_dict(self) -> Dict[str, str]:
-            d = {}
-            for path in window.bookmark.getItems():
-                leaf = self.to_last_elem(path)
-                if 0 < len(a := self.alias_of(path)):
-                    leaf = f"{a}  <== {path}"
-                d[leaf] = path
-            return d
-
-    class BookmarkBackup:
-        def __init__(self, dest_dir: str, max_count: int) -> None:
-            self.dest_dir = dest_dir
-            self.max_count = max_count
-
-        def get_content(self) -> str:
-            bookmarks = ["[BOOKMARK]"]
-            bookmark_aliases = ["[BOOKMARK_ALIAS]"]
-            ba = BookmarkAlias()
-            for i, path in enumerate(window.bookmark.getItems()):
-                bookmarks.append(f"bookmark_{i} = {path}")
-                alias = ba.alias_of(path)
-                if alias != "":
-                    bookmark_aliases.append(f"{alias} = {path}")
-
-            return "\n".join(bookmarks + [""] + bookmark_aliases)
-
-        def run_backup(self) -> None:
-            dest = Path(self.dest_dir)
-            if not smart_check_path(dest):
-                dest.mkdir()
-            backups = sorted(dest.glob("*.txt"))
-            version_count = len(backups)
-            if 0 < version_count:
-                last_backup = backups[-1]
-                if last_backup.read_text("utf-8") == self.get_content():
-                    return
-            ts = datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
-            new_backup_path = dest / f"backup_{ts}.txt"
-            new_backup_path.write_text(self.get_content(), encoding="utf-8")
-            if self.max_count < version_count + 1:
-                oldest = backups[0]
-                msg = f"[BACKUP] Removed oldest file '{oldest.name}'."
-                oldest.unlink()
-                Kiritori(window).log(msg)
-
-    BookmarkBackup(
-        os.path.expandvars(r"${USERPROFILE}\Documents\CFilerBookmarkBackup"), 100
-    ).run_backup()
-
-    class FuzzyBookmark:
-        def __init__(self, location: str) -> None:
-            items = [
-                item
-                for item in BookmarkAlias().to_dict().items()
-                if item[1] != location
-            ]
-            self._table = dict(
-                sorted(
-                    items,
-                    key=lambda item: (
-                        not item[1].startswith(location),
-                        item[0].lower(),
-                    ),
-                )
-            )
-
-        def fzf(self) -> str:
-            table = self._table
-            src = "\n".join(table.keys())
-            try:
-                cmd = [
-                    "fzf.exe",
-                    "--margin=1",
-                    "--no-color",
-                    "--input-border=sharp",
-                    "--layout=reverse",
-                ]
-                proc = subprocess.run(
-                    cmd, input=src, capture_output=True, encoding="utf-8"
-                )
-                if proc.returncode != 0:
-                    if o := proc.stdout:
-                        Kiritori(window).log(o)
-                    if e := proc.stderr:
-                        Kiritori(window).log(e)
-                    return ""
-                return table.get(proc.stdout.strip(), "")
-            except Exception as e:
-                Kiritori(window).log(e)
-                return ""
-
-    def fuzzy_bookmark() -> None:
-        if not check_fzf():
-            Kiritori(window).log("fzf.exe not found.")
-            return
-
-        pane = CPane()
-
-        def _get_path(job_item: ckit.JobItem) -> None:
-            fb = FuzzyBookmark(pane.currentPath)
-            job_item.path = fb.fzf()
-
-        def _open(job_item: ckit.JobItem) -> None:
-            path = job_item.path
-            if 0 < len(path):
-                pane.openPath(path)
-
-        job = ckit.JobItem(_get_path, _open)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    Keybinder.bind(fuzzy_bookmark, "B")
-
-    def cleanup_alias_for_unbookmarked() -> None:
-        cleared = []
-        section_name = BookmarkAlias.ini_section
-        bookmarks = window.bookmark.getItems()
-        for opt in window.ini.items(section_name):
-            alias, path = opt[:2]
-            if path not in bookmarks:
-                window.ini.remove_option(section_name, alias)
-                cleared.append((alias, path))
-
-        def _display() -> None:
-            if 0 < len(cleared):
-                if len(cleared) == 1:
-                    print("Removed alias for unbookmarked:")
-                else:
-                    print("Removed aliases for unbookmarked:")
-                for c in cleared:
-                    print("- '{}' for '{}'".format(*c))
-
-        Kiritori(window).wrap(_display)
-
-    def set_bookmark_alias() -> None:
-        pane = CPane()
-        target = pane.currentPath
-        if pane.hasSelection:
-            if 1 < len(pane.selectedItems):
-                Kiritori(window).log(
-                    "Canceled. Select just 1 item (or nothing to bookmark current location)."
-                )
-                return
-            target = pane.selectedItemPaths[0]
-
-        ba = BookmarkAlias()
-
-        specified = window.commandLine("Bookmark alias", text=ba.alias_of(target))
-        if specified is None:
-            return
-
-        alias = specified.strip()
-        if len(alias) < 1:
-            ba.clear_by_path(target)
-            Kiritori(window).log("Removed all alias for '{}'".format(target))
-            return
-
-        ba.register(alias, target)
-
-        if target not in window.bookmark.getItems():
-            window.bookmark.append(target)
-            if target != pane.currentPath:
-                pane.refresh()
-        Kiritori(window).log("Registered '{}' as alias for '{}'".format(alias, target))
 
     def read_openxml(path: str) -> str:
         go_tool = {
@@ -4439,16 +4354,6 @@ def configure(window: MainWindow) -> None:
                 Kiritori(window).log(e)
                 return
 
-    def bookmark_here() -> None:
-        path = CPane().currentPath
-        bookmarks = [p for p in window.bookmark.getItems()]
-        if path in bookmarks:
-            window.bookmark.remove(path)
-            Kiritori(window).log("Unbookmarked: '{}'".format(path))
-        else:
-            window.bookmark.append(path)
-            Kiritori(window).log("Bookmarked: '{}'".format(path))
-
     def reset_hotkey() -> None:
         window.ini.set("HOTKEY", "activate_vk", "0")
         window.ini.set("HOTKEY", "activate_mod", "0")
@@ -4465,7 +4370,6 @@ def configure(window: MainWindow) -> None:
             "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
             "ZipSelections": compress_files,
             "SetBookmarkAlias": set_bookmark_alias,
-            "CleanupBookmarkAlias": cleanup_alias_for_unbookmarked,
             "BookmarkHere": bookmark_here,
             "DocxToTxt": docx_to_txt,
             "EjectCurrentDrive": eject_current_drive,
