@@ -62,9 +62,9 @@ from cfiler_misc import getFileSizeString  # type: ignore
 # https://github.com/crftwr/cfiler/blob/master/cfiler_textviewer.py
 # https://github.com/crftwr/cfiler/blob/master/cfiler_renamewindow.py
 from cfiler_resultwindow import popResultWindow  # type: ignore
-from PIL import Image as PILImage
-from PIL import ImageGrab
-from PIL.ExifTags import TAGS
+from PIL import Image as PILImage  # ty:ignore[unresolved-import]
+from PIL import ImageGrab  # ty:ignore[unresolved-import]
+from PIL.ExifTags import TAGS  # ty:ignore[unresolved-import]
 
 
 class PaintOption(Enum):
