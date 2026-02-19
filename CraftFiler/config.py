@@ -483,7 +483,7 @@ def configure(window: MainWindow) -> None:
             _ = okini("--add", path)
             Kiritori(window).log("Bookmarked: '{}'".format(path))
 
-    def fuzzy_bookmark() -> None:
+    def fuzzy_bookmark(local_only: bool) -> None:
         if not check_fzf():
             Kiritori(window).log("fzf not found.")
             return
@@ -497,9 +497,16 @@ def configure(window: MainWindow) -> None:
             Kiritori(window).log("okini's bookmarks.json not found.")
             return
 
+        pane = CPane()
+
         bookmarks = []
         with open(bookmark_json, "r", encoding="utf-8") as f:
-            [bookmarks.append(data) for data in json.load(f)]
+            for data in json.load(f):
+                if local_only and not data["path"].startswith(
+                    pane.currentPath + os.sep
+                ):
+                    continue
+                bookmarks.append(data)
 
         def _select(job_item: ckit.JobItem) -> None:
             job_item.bookmark_name = ""
@@ -529,12 +536,13 @@ def configure(window: MainWindow) -> None:
                 return
             for bm in bookmarks:
                 if bm["name"] == name:
-                    CPane().openPath(bm["path"])
+                    pane.openPath(bm["path"])
 
         job = ckit.JobItem(_select, _open)
         window.taskEnqueue(job, create_new_queue=False)
 
-    Keybinder.bind(fuzzy_bookmark, "B")
+    Keybinder.bind(lambda: fuzzy_bookmark(False), "B")
+    Keybinder.bind(lambda: fuzzy_bookmark(True), "A-S-B")
 
     def set_bookmark_alias() -> None:
         pane = CPane()
@@ -2095,13 +2103,13 @@ def configure(window: MainWindow) -> None:
                 for name in names
                 if _format_sep(name).lower().startswith(t.lower())
             ]
-            bookmarks = [item.getName() for item in pane.items if item.bookmark()]
-            return bookmarks + found, 0
+            return found, 0
 
         result = stringify(
             window.commandLine(
                 title="JumpInput",
                 candidate_handler=_listup_names,
+                auto_complete=True,
             )
         )
 
