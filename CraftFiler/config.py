@@ -880,34 +880,33 @@ def configure(window: MainWindow) -> None:
             self.openPath(os.path.join(self.currentPath, name))
 
         def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
-            if self.currentPath == path:
-                if focus_name is not None:
-                    self.focusByName(focus_name)
+            if self.currentPath == path and focus_name is not None:
+                self.focusByName(focus_name)
                 return
+
             target = Path(path)
             if not smart_check_path(target):
-                Kiritori(window).log("invalid path: '{}'".format(path))
+                Kiritori(window).log(f"invalid path: '{path}'")
                 return
+
             if target.is_file():
-                path = str(target.parent)
-                focus_name = target.name
-            else:
-                if focus_name is None:
+                self.openPath(str(target.parent), target.name)
+                return
 
-                    def _last_focused_name(hist_item: list) -> Union[str, None]:
-                        dir_path = hist_item[0]
-                        if dir_path.startswith(path):
-                            if dir_path == path:
-                                return hist_item[1]
-                            return dir_path[len(path) + 1 :].split(os.sep)[0]
-                        return None
+            if focus_name is None:
 
-                    for hist_item in (
-                        self.entity.history.items + self._other.history.items
-                    ):
-                        focus_name = _last_focused_name(hist_item)
-                        if focus_name is not None:
-                            break
+                def _last_focused_name(hist_item: list) -> Union[str, None]:
+                    dir_path = hist_item[0]
+                    if dir_path.startswith(path):
+                        if dir_path == path:
+                            return hist_item[1]
+                        return dir_path[len(path) + 1 :].split(os.sep)[0]
+                    return None
+
+                for hist_item in self.entity.history.items + self._other.history.items:
+                    focus_name = _last_focused_name(hist_item)
+                    if focus_name is not None:
+                        break
 
             lister = lister_Default(window, path)
             window.jumpLister(self.entity, lister, focus_name)
@@ -2106,8 +2105,8 @@ def configure(window: MainWindow) -> None:
             )
         )
 
-        if 0 < len(result):
-            pane.openPath(str(Path(pane.currentPath, result)))
+        if result != "":
+            pane.openPath(os.path.join(pane.currentPath, result))
 
     Keybinder.bind(jump_input, "F")
 
