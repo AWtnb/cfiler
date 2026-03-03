@@ -571,7 +571,9 @@ def configure(window: MainWindow) -> None:
             found.sort(key=len)
             placeholder = "_".join(found)
 
-        alias = stringify(window.commandLine("Bookmark alias", text=placeholder))
+        alias = stringify(
+            window.commandLine("Bookmark alias", text=placeholder, selection=[0, 0])
+        )
         if alias == "":
             return
 
