@@ -452,11 +452,10 @@ def configure(window: MainWindow) -> None:
 
     def toggle_bookmark() -> None:
         pane = CPane(True)
-        item = pane.focusedItem
-        path = item.getFullpath()
-        dirname, filename = ckit.splitPath(path)
+        path = pane.focusedItemPath
+        dirname, filename = os.path.split(path)
 
-        if filename.lower() in window.bookmark.listDir(dirname):
+        if filename in window.bookmark.listDir(dirname):
             window.bookmark.remove(path)
             _ = okini("--remove", pane.focusedItemPath)
         else:
