@@ -561,15 +561,16 @@ def configure(window: MainWindow) -> None:
                 return
             target = pane.selectedItemPaths[0]
 
-        placeholder = ""
+        placeholder = str(Path(target).name)
         bookmarks = get_okini_bookmarks()
         if bookmarks is not None:
             found = []
             for bm in bookmarks:
                 if bm["path"] == target:
                     found.append(bm["name"])
-            found.sort(key=len)
-            placeholder = "_".join(found)
+            if 0 < len(found):
+                found.sort(key=len)
+                placeholder = "_".join(found)
 
         alias = stringify(
             window.commandLine("Bookmark alias", text=placeholder, selection=[0, 0])
