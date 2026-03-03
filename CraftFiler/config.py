@@ -467,8 +467,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane(True)
         path = pane.focusedItemPath
         dirname, filename = os.path.split(path)
-
-        if filename in window.bookmark.listDir(dirname):
+        if filename.lower() in window.bookmark.listDir(dirname):
             window.bookmark.remove(path)
             _ = okini("--remove", pane.focusedItemPath)
         else:
