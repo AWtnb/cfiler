@@ -450,6 +450,19 @@ def configure(window: MainWindow) -> None:
             return ""
         return proc.stdout.strip()
 
+    def get_okini_bookmarks() -> Union[List[Dict[str, str]], None]:
+        bookmark_json = os.path.expandvars(r"${APPDATA}\okini\bookmarks.json")
+        if not smart_check_path(bookmark_json):
+            Kiritori(window).log("okini's bookmarks.json not found.")
+            return None
+
+        bookmarks = []
+        with open(bookmark_json, "r", encoding="utf-8") as f:
+            for data in json.load(f):
+                bookmarks.append(data)
+
+        return bookmarks
+
     def toggle_bookmark() -> None:
         pane = CPane(True)
         path = pane.focusedItemPath
@@ -491,21 +504,15 @@ def configure(window: MainWindow) -> None:
             Kiritori(window).log("okini not found.")
             return
 
-        bookmark_json = os.path.expandvars(r"${APPDATA}\okini\bookmarks.json")
-        if not smart_check_path(bookmark_json):
-            Kiritori(window).log("okini's bookmarks.json not found.")
-            return
-
         pane = CPane()
 
-        bookmarks = []
-        with open(bookmark_json, "r", encoding="utf-8") as f:
-            for data in json.load(f):
-                if local_only and not data["path"].startswith(
-                    pane.currentPath + os.sep
-                ):
-                    continue
-                bookmarks.append(data)
+        bookmarks = get_okini_bookmarks()
+        if bookmarks is None:
+            return
+
+        if local_only:
+            pref = pane.currentPath + os.sep
+            bookmarks = [bm for bm in bookmarks if bm["path"].startswith(pref)]
 
         def _select(job_item: ckit.JobItem) -> None:
             job_item.bookmark_name = ""
@@ -554,7 +561,17 @@ def configure(window: MainWindow) -> None:
                 return
             target = pane.selectedItemPaths[0]
 
-        alias = stringify(window.commandLine("Bookmark alias"))
+        placeholder = ""
+        bookmarks = get_okini_bookmarks()
+        if bookmarks is not None:
+            found = []
+            for bm in bookmarks:
+                if bm["path"] == target:
+                    found.append(bm["name"])
+            found.sort(key=len)
+            placeholder = "_".join(found)
+
+        alias = stringify(window.commandLine("Bookmark alias", text=placeholder))
         if alias == "":
             return
 
