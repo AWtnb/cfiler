@@ -2095,7 +2095,7 @@ def configure(window: MainWindow) -> None:
             return
 
         drive = MenuItem.parse(menu[result])
-        open_path = DESKTOP_PATH if drive == "C:" else drive
+        open_path = DESKTOP_PATH if drive == "C:" else f"{drive}\\"
         CPane(mod != ckit.MODKEY_SHIFT).openPath(open_path)
 
     Keybinder.bind(change_drive, "D")
