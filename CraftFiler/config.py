@@ -2283,12 +2283,13 @@ def configure(window: MainWindow) -> None:
         if not pane.hasSelection:
             return
 
-        placeholder = "extract_{}".format(
-            datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
+        placeholder = (
+            Path(pane.selectedItemPaths[0]).stem
+            if len(pane.selectedItems) == 1
+            else "extract_{}".format(
+                datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
+            )
         )
-        if len(pane.selectedItems) == 1:
-            p = pane.selectedItemPaths[0]
-            placeholder = Path(p).stem
 
         result = stringify(
             window.commandLine(
@@ -2305,6 +2306,8 @@ def configure(window: MainWindow) -> None:
 
         pane.mkdir(result, False)
         extract_path = os.path.join(pane.currentPath, result)
+
+        pane.focusByName(result)
 
         if shutil.which("7z") is not None:
             extract_with_7zip(extract_path, *pane.selectedItemPaths)
