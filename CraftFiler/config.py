@@ -1475,6 +1475,10 @@ def configure(window: MainWindow) -> None:
         )
         app_table["vscode"] = lambda x: open_vscode(x, "--new-window")
 
+        smooth_csv_path = r"C:\Program Files\SmoothCSV\smoothcsv-app.exe"
+        if smart_check_path(smooth_csv_path):
+            app_table["smooth csv"] = smooth_csv_path
+
         names = list(app_table.keys())
 
         result, _ = invoke_listwindow("open with:", names)
