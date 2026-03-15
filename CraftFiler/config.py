@@ -1958,6 +1958,65 @@ def configure(window: MainWindow) -> None:
 
     setup_zyw()
 
+    def change_image_type() -> None:
+        exe_name = "magick.exe"
+        imagemagick = shutil.which(exe_name)
+
+        kiritori = Kiritori(window)
+        if imagemagick is None:
+            kiritori.log(f"{exe_name} not found!")
+            return
+
+        pane = CPane()
+        targets = pane.selectedItemPaths
+        if len(targets) < 1:
+            return
+
+        ext = stringify(window.commandLine("NewExtension"))
+        if ext == "":
+            return
+
+        if not ext.startswith("."):
+            ext = "." + ext
+
+        num = len(targets)
+        msg = f"Converting {num} item"
+        if 1 < num:
+            msg += "s"
+        msg += f" to {ext}:\n"
+
+        def _convert(job_item: ckit.JobItem) -> None:
+            job_item.converted_names = []
+
+            kiritori._draw_header()
+            print(msg)
+
+            for i, path in enumerate(targets, start=1):
+                p = Path(path)
+                new_path = p.with_name(p.stem + ext)
+                cmd = [imagemagick, path, str(new_path)]
+                proc = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    encoding="utf-8",
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                )
+                if proc.returncode != 0:
+                    print(proc.stderr)
+                else:
+                    print(f"[{i:02}/{num:02}]{new_path.name}")
+                    job_item.converted_names.append(p.name)
+
+        def _finish(job_item: ckit.JobItem) -> None:
+            names = job_item.converted_names
+            for name in names:
+                pane.unSelectByName(name)
+            if 0 < len(names):
+                kiritori._draw_footer()
+
+        job = ckit.JobItem(_convert, _finish)
+        window.taskEnqueue(job, create_new_queue=False)
+
     def concatenate_pdf() -> None:
         exe_name = "go-pdfconc.exe"
         exe_path = shutil.which(exe_name)
@@ -4415,6 +4474,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "ChangeImageType": change_image_type,
             "MakeShortcut": make_shortcut,
             "CleanTempFiles": remove_tempfiles,
             "RenamePhotoFile": rename_photo_file,
