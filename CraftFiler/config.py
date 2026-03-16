@@ -216,24 +216,24 @@ class Kiritori:
     def get_width(self) -> int:
         return self.window.width()
 
-    def _draw_header(self) -> None:
+    def draw_header(self) -> None:
         print("\n{}".format(self.sep * self.get_width()))
 
-    def _draw_footer(self) -> None:
+    def draw_footer(self) -> None:
         ts = datetime.datetime.today().strftime(
             " %Y-%m-%d %H:%M:%S.%f {}".format(self.sep * 2)
         )
         print("{}\n".format(ts.rjust(self.get_width(), self.sep)))
 
     def log(self, s) -> None:
-        self._draw_header()
+        self.draw_header()
         print(s)
-        self._draw_footer()
+        self.draw_footer()
 
     def wrap(self, func: CallbackFunc) -> None:
-        self._draw_header()
+        self.draw_header()
         func()
-        self._draw_footer()
+        self.draw_footer()
 
 
 def configure(window: MainWindow) -> None:
@@ -1109,20 +1109,22 @@ def configure(window: MainWindow) -> None:
         if len(path) < 1:
             return
 
-        def _show() -> None:
-            p = Path(path)
-            stack = [p.name]
-            for parent in p.parents:
-                if n := parent.name:
-                    stack.append(n)
-                if smart_check_path(os.path.join(parent, ".root")):
-                    break
-            stack.reverse()
-            for i, s in enumerate(stack):
-                b = "" if i == 0 else " \u2514"
-                print(b, s)
+        krtr = Kiritori(window)
+        krtr.draw_header()
 
-        Kiritori(window).wrap(_show)
+        p = Path(path)
+        stack = [p.name]
+        for parent in p.parents:
+            if n := parent.name:
+                stack.append(n)
+            if smart_check_path(os.path.join(parent, ".root")):
+                break
+        stack.reverse()
+        for i, s in enumerate(stack):
+            b = "" if i == 0 else " \u2514"
+            print(b, s)
+
+        krtr.draw_footer()
 
     Keybinder.bind(lambda: show_path_tree(CPane().focusedItemPath), "Y")
 
@@ -1962,9 +1964,9 @@ def configure(window: MainWindow) -> None:
         exe_name = "magick.exe"
         imagemagick = shutil.which(exe_name)
 
-        kiritori = Kiritori(window)
+        krtr = Kiritori(window)
         if imagemagick is None:
-            kiritori.log(f"{exe_name} not found!")
+            krtr.log(f"{exe_name} not found!")
             return
 
         pane = CPane()
@@ -1988,7 +1990,7 @@ def configure(window: MainWindow) -> None:
         def _convert(job_item: ckit.JobItem) -> None:
             job_item.converted_names = []
 
-            kiritori._draw_header()
+            krtr.draw_header()
             print(msg)
 
             for i, path in enumerate(targets, start=1):
@@ -2012,7 +2014,7 @@ def configure(window: MainWindow) -> None:
             for name in names:
                 pane.unSelectByName(name)
             if 0 < len(names):
-                kiritori._draw_footer()
+                krtr.draw_footer()
 
         job = ckit.JobItem(_convert, _finish)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2933,11 +2935,9 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        def _func() -> None:
-            for info in infos:
-                renamer.execute(info.orgPath, info.newName)
-
-        Kiritori(window).wrap(_func)
+        Kiritori(window).wrap(
+            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
+        )
 
     Keybinder.bind(rename_substr, "S-S")
 
@@ -3013,11 +3013,9 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        def _func() -> None:
-            for info in infos:
-                renamer.execute(info.orgPath, info.newName)
-
-        Kiritori(window).wrap(_func)
+        Kiritori(window).wrap(
+            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
+        )
 
     Keybinder.bind(rename_insert, "S-I")
 
@@ -3106,11 +3104,9 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        def _func() -> None:
-            for info in infos:
-                renamer.execute(info.orgPath, info.newName)
-
-        Kiritori(window).wrap(_func)
+        Kiritori(window).wrap(
+            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
+        )
 
     def rename_lightroom_photo_from_dropbox() -> None:
         renamer = Renamer()
@@ -3151,11 +3147,9 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        def _func() -> None:
-            for info in infos:
-                renamer.execute(info.orgPath, info.newName)
-
-        Kiritori(window).wrap(_func)
+        Kiritori(window).wrap(
+            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
+        )
 
     def rename_index() -> None:
         renamer = Renamer()
@@ -3272,11 +3266,9 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        def _func() -> None:
-            for info in infos:
-                renamer.execute(info.orgPath, info.newName)
-
-        Kiritori(window).wrap(_func)
+        Kiritori(window).wrap(
+            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
+        )
 
     Keybinder.bind(rename_index, "A-S-I")
 
@@ -3366,11 +3358,9 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        def _func() -> None:
-            for info in infos:
-                renamer.execute(info.orgPath, info.newName)
-
-        Kiritori(window).wrap(_func)
+        Kiritori(window).wrap(
+            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
+        )
 
     Keybinder.bind(rename_regexp, "S-R")
 
@@ -3559,10 +3549,9 @@ def configure(window: MainWindow) -> None:
 
         new_name = new_stem + focused_path.suffix
 
-        def _func() -> None:
-            renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
-
-        Kiritori(window).wrap(_func)
+        Kiritori(window).wrap(
+            lambda: renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
+        )
 
     Keybinder.bind(rename_stem, "N")
 
@@ -3610,14 +3599,13 @@ def configure(window: MainWindow) -> None:
 
         new_name = focused_path.stem + new_ext
 
-        def _func() -> None:
-            renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
-
-        Kiritori(window).wrap(_func)
+        Kiritori(window).wrap(
+            lambda: renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
+        )
 
     Keybinder.bind(rename_ext, "S-N")
 
-    def clone_n() -> None:
+    def multiple_selected_item() -> None:
         pane = CPane()
         if not pane.hasSelection:
             return
@@ -3667,13 +3655,13 @@ def configure(window: MainWindow) -> None:
                         shutil.copy(src, new_path)
                     print(f"Cloned: {new_path.name}")
 
-        def _show() -> None:
-            window.subThreadCall(_clone, (src_path, connector, template, count))
-            pane.refresh()
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        window.subThreadCall(_clone, (src_path, connector, template, count))
+        pane.refresh()
+        krtr.draw_footer()
 
-        Kiritori(window).wrap(_show)
-
-    Keybinder.bind(clone_n, "C-S-C")
+    Keybinder.bind(multiple_selected_item, "C-S-C")
 
     def duplicate_with_new_stem() -> None:
         pane = CPane()
@@ -4492,6 +4480,7 @@ def configure(window: MainWindow) -> None:
             "ClearFilter": clear_filter,
             "CopyDirTree": copy_dir_tree,
             "Diffinity": diffinity,
+            "MultipleSelectedItem": multiple_selected_item,
             "MakeInternetShortcut": lambda: make_internet_shortcut(
                 ckit.getClipboardText().strip()
             ),
