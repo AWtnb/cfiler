@@ -216,23 +216,20 @@ class Kiritori:
     def get_width(self) -> int:
         return self.window.width()
 
-    def draw_header(self) -> None:
-        print("\n{}".format(self.sep * self.get_width()))
-
-    def draw_footer(self) -> None:
-        ts = datetime.datetime.today().strftime(
+    def get_timestamp(self) -> str:
+        return datetime.datetime.today().strftime(
             " %Y-%m-%d %H:%M:%S.%f {}".format(self.sep * 2)
         )
-        print("{}\n".format(ts.rjust(self.get_width(), self.sep)))
+
+    def draw_header(self) -> None:
+        print("{}\n".format(self.get_timestamp().ljust(self.get_width(), self.sep)))
+
+    def draw_footer(self) -> None:
+        print("{}\n".format(self.get_timestamp().rjust(self.get_width(), self.sep)))
 
     def log(self, s) -> None:
         self.draw_header()
         print(s)
-        self.draw_footer()
-
-    def wrap(self, func: CallbackFunc) -> None:
-        self.draw_header()
-        func()
         self.draw_footer()
 
 
@@ -1623,16 +1620,16 @@ def configure(window: MainWindow) -> None:
         if len(paths) < 1:
             return
 
-        def _log() -> None:
-            count = len(paths)
-            msg = "Removed {} temp file".format(count)
-            if 1 < count:
-                msg += "s"
-            print(msg)
-            for p in paths:
-                print("-", p)
-
-        Kiritori(window).wrap(_log)
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        count = len(paths)
+        msg = "Removed {} temp file".format(count)
+        if 1 < count:
+            msg += "s"
+        print(msg)
+        for p in paths:
+            print("-", p)
+        krtr.draw_footer()
 
     def register_tempfile_cleaner_cron() -> None:
         temp_dir = tempfile.gettempdir()
@@ -1664,18 +1661,21 @@ def configure(window: MainWindow) -> None:
     register_tempfile_cleaner_cron()
 
     def docx_to_txt() -> None:
+
         def _convert(path: str) -> None:
             if not path.endswith(".docx"):
                 return
 
             def __read(job_item: ckit.JobItem) -> None:
+                print(f"Reading '{path}'...")
                 job_item.result = read_openxml(path)
 
             def __write(job_item: ckit.JobItem) -> None:
                 new_path = Path(path).with_suffix(".txt")
                 if smart_check_path(new_path):
-                    Kiritori(window).log("Path duplicates: '{}'".format(new_path))
+                    print(f"==> Skipped ({new_path.name} already exists)")
                 else:
+                    print("==> Converted")
                     new_path.write_text(job_item.result, encoding="utf-8")
 
             job = ckit.JobItem(__read, __write)
@@ -1686,8 +1686,11 @@ def configure(window: MainWindow) -> None:
         if len(paths) < 1:
             paths = [pane.focusedItemPath]
 
+        krtr = Kiritori(window)
+        krtr.draw_header()
         for path in paths:
             _convert(path)
+        krtr.draw_footer()
 
     class RuledDir:
         sep = "_"
@@ -2935,9 +2938,10 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        Kiritori(window).wrap(
-            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
-        )
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        krtr.draw_footer()
 
     Keybinder.bind(rename_substr, "S-S")
 
@@ -3013,9 +3017,10 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        Kiritori(window).wrap(
-            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
-        )
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        krtr.draw_footer()
 
     Keybinder.bind(rename_insert, "S-I")
 
@@ -3104,9 +3109,10 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        Kiritori(window).wrap(
-            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
-        )
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        krtr.draw_footer()
 
     def rename_lightroom_photo_from_dropbox() -> None:
         renamer = Renamer()
@@ -3147,9 +3153,10 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        Kiritori(window).wrap(
-            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
-        )
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        krtr.draw_footer()
 
     def rename_index() -> None:
         renamer = Renamer()
@@ -3266,9 +3273,10 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        Kiritori(window).wrap(
-            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
-        )
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        krtr.draw_footer()
 
     Keybinder.bind(rename_index, "A-S-I")
 
@@ -3358,9 +3366,10 @@ def configure(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        Kiritori(window).wrap(
-            lambda: [renamer.execute(info.orgPath, info.newName) for info in infos]
-        )
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        krtr.draw_footer()
 
     Keybinder.bind(rename_regexp, "S-R")
 
@@ -3549,9 +3558,10 @@ def configure(window: MainWindow) -> None:
 
         new_name = new_stem + focused_path.suffix
 
-        Kiritori(window).wrap(
-            lambda: renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
-        )
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
+        krtr.draw_footer()
 
     Keybinder.bind(rename_stem, "N")
 
@@ -3599,9 +3609,10 @@ def configure(window: MainWindow) -> None:
 
         new_name = focused_path.stem + new_ext
 
-        Kiritori(window).wrap(
-            lambda: renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
-        )
+        krtr = Kiritori(window)
+        krtr.draw_header()
+        renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
+        krtr.draw_footer()
 
     Keybinder.bind(rename_ext, "S-N")
 
@@ -4076,7 +4087,10 @@ def configure(window: MainWindow) -> None:
             _, dirname = os.path.split(pane.currentPath)
             _, other_dirname = os.path.split(other_pane.currentPath)
 
+            krtr = Kiritori(window)
+
             def _scan(job_item: ckit.JobItem) -> None:
+                krtr.draw_header()
                 targets = []
                 for item in pane.selectedOrAllItems:
                     pane.unSelectByName(item.getName())
@@ -4086,7 +4100,7 @@ def configure(window: MainWindow) -> None:
                 if len(targets) < 1:
                     return
 
-                Kiritori(window).log("comparing md5 hash")
+                print("Comparing md5 hash\n")
 
                 window.setProgressValue(None)
 
@@ -4135,29 +4149,25 @@ def configure(window: MainWindow) -> None:
             def _finish(job_item: ckit.JobItem) -> None:
                 window.clearProgress()
                 if job_item.isCanceled():
-                    Kiritori(window).log("Canceled.")
-                    return
-
-                def _show() -> None:
-                    print("Finished.\n")
+                    print("\nCanceled.")
+                else:
+                    print("\nFinished.\n")
                     if not job_item.clones or len(job_item.clones) < 1:
                         print("(There was no clone)")
-                        return
+                    else:
+                        for name, clone_names in job_item.clones.items():
+                            pane.selectByName(name)
+                            other_pane.selectByNames(
+                                [n for n in clone_names if os.sep not in n]
+                            )
 
-                    for name, clone_names in job_item.clones.items():
-                        pane.selectByName(name)
-                        other_pane.selectByNames(
-                            [n for n in clone_names if os.sep not in n]
-                        )
-
-                        filler = " " * self.count_bytes(name)
-                        for i, n in enumerate(clone_names):
-                            if i == 0:
-                                print(name, "==", n)
-                            else:
-                                print(filler, "==", n)
-
-                Kiritori(window).wrap(_show)
+                            filler = " " * self.count_bytes(name)
+                            for i, n in enumerate(clone_names):
+                                if i == 0:
+                                    print(name, "==", n)
+                                else:
+                                    print(filler, "==", n)
+                    krtr.draw_footer()
 
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
