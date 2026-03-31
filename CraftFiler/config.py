@@ -2330,7 +2330,7 @@ def configure(window: MainWindow) -> None:
                         seven_zip,
                         "x",
                         target,
-                        "-o{}".format(dest),
+                        f"-o{dest}",
                         "-y",
                     ]
                     proc = subprocess.run(
@@ -2349,7 +2349,7 @@ def configure(window: MainWindow) -> None:
                     return
 
         def _finished(_) -> None:
-            Kiritori(window).log("展開完了")
+            Kiritori(window).log(f"展開完了 '{dest}'")
 
         job = ckit.JobItem(_extract, _finished)
         window.taskEnqueue(job, create_new_queue=False)
