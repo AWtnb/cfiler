@@ -1677,35 +1677,34 @@ def configure(window: MainWindow) -> None:
 
     def docx_to_txt() -> None:
 
-        def _convert(path: str) -> None:
-            if not path.endswith(".docx"):
-                return
-
-            def __read(job_item: ckit.JobItem) -> None:
-                print(f"Reading '{path}'...")
-                job_item.result = read_openxml(path)
-
-            def __write(job_item: ckit.JobItem) -> None:
-                new_path = Path(path).with_suffix(".txt")
-                if smart_check_path(new_path):
-                    print(f"==> Skipped ({new_path.name} already exists)")
-                else:
-                    print("==> Converted")
-                    new_path.write_text(job_item.result, encoding="utf-8")
-
-            job = ckit.JobItem(__read, __write)
-            window.taskEnqueue(job, create_new_queue=False)
-
         pane = CPane()
         paths = pane.selectedItemPaths
         if len(paths) < 1:
             paths = [pane.focusedItemPath]
 
         krtr = Kiritori(window)
-        krtr.draw_header()
-        for path in paths:
-            _convert(path)
-        krtr.draw_footer()
+
+        def _read(job_item: ckit.JobItem) -> None:
+            krtr.draw_header()
+
+            for i, path in enumerate(paths, start=1):
+                if not path.endswith(".docx"):
+                    continue
+                print(f"[{i:02}/{len(paths):02}]Reading '{path}'...")
+
+                new_path = Path(path).with_suffix(".txt")
+                content = read_openxml(path)
+                if smart_check_path(new_path):
+                    print(f"==> Skipped ({new_path.name} already exists)")
+                else:
+                    new_path.write_text(content, encoding="utf-8")
+                    print("==> Converted")
+
+        def _write(job_item: ckit.JobItem) -> None:
+            krtr.draw_footer()
+
+        job = ckit.JobItem(_read, _write)
+        window.taskEnqueue(job, create_new_queue=False)
 
     class RuledDir:
         sep = "_"
