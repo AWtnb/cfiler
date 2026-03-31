@@ -221,15 +221,16 @@ class Kiritori:
             " %Y-%m-%d %H:%M:%S.%f {}".format(self.sep * 2)
         )
 
-    def draw_header(self) -> None:
-        print("{}\n".format(self.get_timestamp().ljust(self.get_width(), self.sep)))
+    def draw_header(self, title: str) -> None:
+        if not title.endswith(":"):
+            title = f"{title}:"
+        print(f"{self.get_timestamp().ljust(self.get_width(), self.sep)}\n\n{title}\n")
 
     def draw_footer(self) -> None:
         print("{}\n".format(self.get_timestamp().rjust(self.get_width(), self.sep)))
 
     def log(self, s) -> None:
-        self.draw_header()
-        print(s)
+        self.draw_header(s)
         self.draw_footer()
 
 
@@ -1122,7 +1123,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header(f"Tree of '{path}'")
 
         p = Path(path)
         stack = [p.name]
@@ -1636,12 +1637,12 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header()
         count = len(paths)
         msg = "Removed {} temp file".format(count)
         if 1 < count:
             msg += "s"
-        print(msg)
+        krtr.draw_header(msg)
+
         for p in paths:
             print("-", p)
         krtr.draw_footer()
@@ -1685,12 +1686,12 @@ def configure(window: MainWindow) -> None:
         krtr = Kiritori(window)
 
         def _read(job_item: ckit.JobItem) -> None:
-            krtr.draw_header()
+            krtr.draw_header("Converting docx")
 
             for i, path in enumerate(paths, start=1):
                 if not path.endswith(".docx"):
                     continue
-                print(f"[{i:02}/{len(paths):02}]Reading '{path}'...")
+                print(f"[{i:02}/{len(paths):02}]{Path(path).name}")
 
                 new_path = Path(path).with_suffix(".txt")
                 content = read_openxml(path)
@@ -2007,8 +2008,7 @@ def configure(window: MainWindow) -> None:
         def _convert(job_item: ckit.JobItem) -> None:
             job_item.converted_names = []
 
-            krtr.draw_header()
-            print(msg)
+            krtr.draw_header(msg)
 
             for i, path in enumerate(targets, start=1):
                 p = Path(path)
@@ -2349,7 +2349,7 @@ def configure(window: MainWindow) -> None:
                     return
 
         def _finished(_) -> None:
-            pass
+            Kiritori(window).log("展開完了")
 
         job = ckit.JobItem(_extract, _finished)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2953,7 +2953,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Renaming")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3032,7 +3032,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Renaming")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3124,7 +3124,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Renaming")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3168,7 +3168,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Renaming")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3288,7 +3288,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Renaming")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3381,7 +3381,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Renaming")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3573,7 +3573,7 @@ def configure(window: MainWindow) -> None:
         new_name = new_stem + focused_path.suffix
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Renaming")
         renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
         krtr.draw_footer()
 
@@ -3624,7 +3624,7 @@ def configure(window: MainWindow) -> None:
         new_name = focused_path.stem + new_ext
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Renaming")
         renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
         krtr.draw_footer()
 
@@ -3681,7 +3681,7 @@ def configure(window: MainWindow) -> None:
                     print(f"Cloned: {new_path.name}")
 
         krtr = Kiritori(window)
-        krtr.draw_header()
+        krtr.draw_header("Making clone:")
         window.subThreadCall(_clone, (src_path, connector, template, count))
         pane.refresh()
         krtr.draw_footer()
@@ -4104,7 +4104,6 @@ def configure(window: MainWindow) -> None:
             krtr = Kiritori(window)
 
             def _scan(job_item: ckit.JobItem) -> None:
-                krtr.draw_header()
                 targets = []
                 for item in pane.selectedOrAllItems:
                     pane.unSelectByName(item.getName())
@@ -4114,7 +4113,7 @@ def configure(window: MainWindow) -> None:
                 if len(targets) < 1:
                     return
 
-                print("Comparing md5 hash\n")
+                krtr.draw_header("Comparing md5 hash:")
 
                 window.setProgressValue(None)
 
