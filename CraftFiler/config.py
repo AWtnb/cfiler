@@ -1057,16 +1057,31 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         if pane.isBlank:
             return
-        latest = None
-        for item in pane.selectedOrAllItems:
-            if latest is None:
-                latest = item
-                continue
-            if latest.time() <= item.time():
-                latest = item
 
-        if latest:
-            pane.focusByName(latest.getName())
+        candidates: List[ItemDefaultProtocol] = []
+        for item in pane.selectedOrAllItems:
+            if len(candidates) == 0:
+                candidates.append(item)
+                continue
+            latest = candidates[-1]
+            if latest.time() <= item.time():
+                if latest.time() == item.time():
+                    candidates.append(item)
+                else:
+                    candidates = [item]
+
+        if len(candidates) < 1:
+            return
+
+        if 1 < len(candidates):
+            current_focused = pane.focusedItem.getName()
+            for c in candidates:
+                name = c.getName()
+                if name != current_focused:
+                    pane.focusByName(name)
+                    return
+
+        pane.focusByName(candidates[0].getName())
 
     Keybinder.bind(focus_latest_item, "A-N")
 
