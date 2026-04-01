@@ -2321,7 +2321,11 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
+        krtr = Kiritori(window)
+
         def _extract(_) -> None:
+            krtr.draw_header(f"Extracting as '{dest}'...")
+
             for target in targets:
                 try:
                     cmd = [
@@ -2347,7 +2351,8 @@ def configure(window: MainWindow) -> None:
                     return
 
         def _finished(_) -> None:
-            Kiritori(window).log(f"Extracted as '{dest}'")
+            print("Finished")
+            krtr.draw_footer()
 
         job = ckit.JobItem(_extract, _finished)
         window.taskEnqueue(job, create_new_queue=False)
