@@ -222,8 +222,6 @@ class Kiritori:
         )
 
     def draw_header(self, title: str) -> None:
-        if not title.endswith(":"):
-            title = f"{title}:"
         print(f"{self.get_timestamp().ljust(self.get_width(), self.sep)}\n\n{title}\n")
 
     def draw_footer(self) -> None:
@@ -2349,7 +2347,7 @@ def configure(window: MainWindow) -> None:
                     return
 
         def _finished(_) -> None:
-            Kiritori(window).log(f"展開完了 '{dest}'")
+            Kiritori(window).log(f"Extracted as '{dest}'")
 
         job = ckit.JobItem(_extract, _finished)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2953,7 +2951,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header("Renaming")
+        krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3032,7 +3030,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header("Renaming")
+        krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3124,7 +3122,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header("Renaming")
+        krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3168,7 +3166,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header("Renaming")
+        krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3288,7 +3286,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header("Renaming")
+        krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3381,7 +3379,7 @@ def configure(window: MainWindow) -> None:
             return
 
         krtr = Kiritori(window)
-        krtr.draw_header("Renaming")
+        krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
@@ -3573,7 +3571,7 @@ def configure(window: MainWindow) -> None:
         new_name = new_stem + focused_path.suffix
 
         krtr = Kiritori(window)
-        krtr.draw_header("Renaming")
+        krtr.draw_header("Renaming:")
         renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
         krtr.draw_footer()
 
@@ -3624,7 +3622,7 @@ def configure(window: MainWindow) -> None:
         new_name = focused_path.stem + new_ext
 
         krtr = Kiritori(window)
-        krtr.draw_header("Renaming")
+        krtr.draw_header("Renaming:")
         renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
         krtr.draw_footer()
 
