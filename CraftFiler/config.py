@@ -2351,6 +2351,7 @@ def configure(window: MainWindow) -> None:
         def _finished(_) -> None:
             print("Finished")
             krtr.draw_footer()
+            CPane().focusByName(Path(dest).name)
 
         job = ckit.JobItem(_extract, _finished)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2387,10 +2388,7 @@ def configure(window: MainWindow) -> None:
             Kiritori(window).log("'{}' already exists.".format(result))
             return
 
-        pane.mkdir(result, False)
         extract_path = os.path.join(pane.currentPath, result)
-
-        pane.focusByName(result)
 
         if shutil.which("7z") is not None:
             extract_with_7zip(extract_path, *pane.selectedItemPaths)
