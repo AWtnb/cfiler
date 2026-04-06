@@ -1072,15 +1072,13 @@ def configure(window: MainWindow) -> None:
         if len(candidates) < 1:
             return
 
-        if 1 < len(candidates):
-            current_focused = pane.focusedItem.getName()
-            for c in candidates:
-                name = c.getName()
-                if name != current_focused:
-                    pane.focusByName(name)
-                    return
-
-        pane.focusByName(candidates[0].getName())
+        candidate_names = [c.getName() for c in candidates]
+        current_focused = pane.focusedItem.getName()
+        try:
+            idx = candidate_names.index(current_focused)
+            pane.focusByName(candidate_names[(idx + 1) % len(candidate_names)])
+        except ValueError:
+            pane.focusByName(candidate_names[0])
 
     Keybinder.bind(focus_latest_item, "A-N")
 
