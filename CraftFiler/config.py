@@ -2351,7 +2351,9 @@ def configure(window: MainWindow) -> None:
         def _finished(_) -> None:
             print("Finished")
             krtr.draw_footer()
-            CPane().focusByName(Path(dest).name)
+            pane = CPane()
+            pane.refresh()
+            pane.focusByName(Path(dest).name)
 
         job = ckit.JobItem(_extract, _finished)
         window.taskEnqueue(job, create_new_queue=False)
