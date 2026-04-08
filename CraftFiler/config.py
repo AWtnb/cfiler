@@ -1681,13 +1681,14 @@ def configure(window: MainWindow) -> None:
 
         krtr = Kiritori(window)
 
-        def _read(job_item: ckit.JobItem) -> None:
+        def _read(_: ckit.JobItem) -> None:
             krtr.draw_header("Converting docx")
 
             for i, path in enumerate(paths, start=1):
                 if not path.endswith(".docx"):
                     continue
-                print(f"[{i:02}/{len(paths):02}]{Path(path).name}")
+                docx_name = Path(path).name
+                print(f"[{i:02}/{len(paths):02}]{docx_name}")
 
                 new_path = Path(path).with_suffix(".txt")
                 content = read_openxml(path)
@@ -1696,8 +1697,9 @@ def configure(window: MainWindow) -> None:
                 else:
                     new_path.write_text(content, encoding="utf-8")
                     print("==> Converted")
+                    pane.unSelectByName(docx_name)
 
-        def _write(job_item: ckit.JobItem) -> None:
+        def _write(_: ckit.JobItem) -> None:
             krtr.draw_footer()
 
         job = ckit.JobItem(_read, _write)
