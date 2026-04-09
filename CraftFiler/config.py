@@ -828,29 +828,33 @@ def configure(window: MainWindow) -> None:
                 return False
             return True
 
-        def toggleSelection(self, i: int) -> None:
+        def toggleSelection(self, i: int, flush: bool = True) -> None:
             if self.isValidIndex(i):
                 self.fileList.selectItem(i, None)
-                self.applySelectionHighlight()
+                if flush:
+                    self.applySelectionHighlight()
 
-        def setSelectionState(self, i: int, state: bool) -> None:
+        def setSelectionState(self, i: int, state: bool, flush: bool) -> None:
             if self.isValidIndex(i):
                 self.fileList.selectItem(i, state)
-                self.applySelectionHighlight()
+                if flush:
+                    self.applySelectionHighlight()
 
-        def select(self, i: int) -> None:
-            self.setSelectionState(i, True)
+        def select(self, i: int, flush: bool = True) -> None:
+            self.setSelectionState(i, True, flush)
 
         def selectAll(self) -> None:
             for i in range(self.count):
-                self.select(i)
+                self.select(i, False)
+            self.applySelectionHighlight()
 
-        def unSelect(self, i: int) -> None:
-            self.setSelectionState(i, False)
+        def unSelect(self, i: int, flush: bool = True) -> None:
+            self.setSelectionState(i, False, flush)
 
         def unSelectAll(self) -> None:
             for i in range(self.count):
-                self.unSelect(i)
+                self.unSelect(i, False)
+            self.applySelectionHighlight()
 
         def selectByName(self, name: str) -> None:
             i = self.byName(name)
@@ -2477,35 +2481,26 @@ def configure(window: MainWindow) -> None:
             CPane().selectAll()
 
         @staticmethod
-        def clear() -> None:
-            pane = CPane()
-            pane.unSelect(pane.cursor)
-
-        @staticmethod
-        def toggleAll() -> None:
-            pane = CPane()
-            for i in range(pane.count):
-                pane.toggleSelection(i)
-
-        @staticmethod
         def toTop() -> None:
             pane = CPane()
             if pane.cursor < pane.selectionTop:
                 for i in range(pane.count):
                     if i <= pane.cursor:
-                        pane.select(i)
+                        pane.select(i, False)
             else:
                 for item in pane.selectedOrAllItems:
                     i = pane.byName(item.getName())
                     if i <= pane.cursor:
-                        pane.toggleSelection(i)
+                        pane.toggleSelection(i, False)
+            pane.applySelectionHighlight()
 
         @staticmethod
         def clearToTop() -> None:
             pane = CPane()
             for i in range(pane.count):
                 if i <= pane.cursor:
-                    pane.unSelect(i)
+                    pane.unSelect(i, False)
+            pane.applySelectionHighlight()
 
         @staticmethod
         def toBottom() -> None:
@@ -2513,19 +2508,21 @@ def configure(window: MainWindow) -> None:
             if pane.selectionBottom < pane.cursor:
                 for i in range(pane.count):
                     if pane.cursor <= i:
-                        pane.select(i)
+                        pane.select(i, False)
             else:
                 for item in pane.selectedOrAllItems:
                     i = pane.byName(item.getName())
                     if pane.cursor <= i:
-                        pane.toggleSelection(i)
+                        pane.toggleSelection(i, False)
+            pane.applySelectionHighlight()
 
         @staticmethod
         def clearToBottom() -> None:
             pane = CPane()
             for i in range(pane.count):
                 if pane.cursor < i:
-                    pane.unSelect(i)
+                    pane.unSelect(i, False)
+            pane.applySelectionHighlight()
 
         @staticmethod
         def files() -> None:
