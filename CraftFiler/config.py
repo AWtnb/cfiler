@@ -2184,7 +2184,7 @@ def configure(window: MainWindow) -> None:
 
     Keybinder.bind(change_drive, "D")
 
-    def jump_input() -> None:
+    def go_to() -> None:
         pane = CPane()
 
         def _format_sep(s: str) -> str:
@@ -2209,7 +2209,7 @@ def configure(window: MainWindow) -> None:
 
         result = stringify(
             window.commandLine(
-                title="JumpInput",
+                title="GoTo",
                 candidate_handler=_listup_names,
                 auto_complete=True,
             )
@@ -2218,7 +2218,7 @@ def configure(window: MainWindow) -> None:
         if result != "":
             pane.openPath(os.path.join(pane.currentPath, result))
 
-    Keybinder.bind(jump_input, "F")
+    Keybinder.bind(go_to, "G")
 
     def eject_current_drive() -> None:
         pane = CPane()
