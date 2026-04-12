@@ -3091,7 +3091,7 @@ def configure(window: MainWindow) -> None:
             ts = self.get_timestamp().strftime(fmt)
             return ts + "_" + self.name
 
-    def rename_photo_file() -> None:
+    def rename_photo_file_by_exifdate() -> None:
         renamer = Renamer()
 
         targets = []
@@ -4488,7 +4488,7 @@ def configure(window: MainWindow) -> None:
             "ChangeImageType": change_image_type,
             "MakeShortcut": make_shortcut,
             "CleanTempFiles": remove_tempfiles,
-            "RenamePhotoFile": rename_photo_file,
+            "RenamePhotoFileByExifDate": rename_photo_file_by_exifdate,
             "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
             "ZipSelections": compress_files,
             "SetBookmarkAlias": set_bookmark_alias,
