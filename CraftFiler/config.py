@@ -1086,6 +1086,15 @@ def configure(window: MainWindow) -> None:
 
     Keybinder.bind(focus_latest_item, "A-N")
 
+    def select_empty_dir() -> None:
+        pane = CPane()
+        for d in pane.dirs:
+            path = Path(d.getFullpath())
+            if not any(path.iterdir()):
+                pane.selectByName(path.name)
+
+    Keybinder.bind(select_empty_dir, "A-E")
+
     def copy_dir_tree() -> None:
         pane = CPane()
         selected_names = pane.selectedItemNames
@@ -4300,7 +4309,7 @@ def configure(window: MainWindow) -> None:
         if result:
             Selector.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    Keybinder.bind(select_stem_startswith, "Caret", "A-A")
+    Keybinder.bind(select_stem_startswith, "Caret")
 
     def select_stem_endswith() -> None:
         result, mod = window.commandLine(
@@ -4312,7 +4321,7 @@ def configure(window: MainWindow) -> None:
         if result:
             Selector.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
 
-    Keybinder.bind(select_stem_endswith, "S-4", "A-E")
+    Keybinder.bind(select_stem_endswith, "S-4")
 
     def select_stem_contains() -> None:
         result, mod = window.commandLine("Contains", return_modkey=True)
