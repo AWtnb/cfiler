@@ -1989,6 +1989,26 @@ def configure(window: MainWindow) -> None:
 
     setup_zyw()
 
+    class ImageMagickConfig:
+        ini_section = "IMAGE_MAGICK_CONFIG"
+
+        def __init__(self, option_name: str) -> None:
+            try:
+                window.ini.add_section(self.ini_section)
+            except configparser.DuplicateSectionError:
+                pass
+            self._option_name = option_name
+
+        def register(self, value: str) -> None:
+            window.ini.set(self.ini_section, self._option_name, value)
+
+        @property
+        def value(self) -> str:
+            try:
+                return window.ini.get(self.ini_section, self._option_name)
+            except Exception:
+                return ""
+
     def change_image_type() -> None:
         exe_name = "magick.exe"
         imagemagick = shutil.which(exe_name)
@@ -2003,12 +2023,19 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        ext = stringify(window.commandLine("NewExtension"))
+        image_magick_config_ext = ImageMagickConfig("ext")
+        placeholder = ""
+        if 0 < len(last := image_magick_config_ext.value):
+            placeholder = last
+
+        ext = stringify(window.commandLine("NewExtension", text=placeholder))
         if ext == "":
             return
 
         if not ext.startswith("."):
             ext = "." + ext
+
+        image_magick_config_ext.register(ext)
 
         num = len(targets)
         msg = f"Converting {num} item"
