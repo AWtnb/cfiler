@@ -2845,7 +2845,7 @@ def configure(window: MainWindow) -> None:
         CPane(False).openPath(parent, current_name)
         pane.focusOther()
 
-    Keybinder.bind(open_parent_to_other, "S-U", "S-H")
+    Keybinder.bind(open_parent_to_other, "S-U")
 
     def on_vscode() -> None:
         pane = CPane()
@@ -4468,7 +4468,7 @@ def configure(window: MainWindow) -> None:
             return True
 
         def __str__(self) -> str:
-            return "[FILTERING {}]".format(self.root)
+            return "[{}]▲".format(self.root)
 
     def hide_unselected() -> None:
         pane = CPane()
@@ -4481,6 +4481,8 @@ def configure(window: MainWindow) -> None:
             pane.focus(0)
             pane.repaint(PaintOption.Focused)
             CPane().unSelectAll()
+    
+    Keybinder.bind(hide_unselected, "S-H")
 
     def clear_filter() -> None:
         pane = CPane()
