@@ -4468,7 +4468,7 @@ def configure(window: MainWindow) -> None:
             return True
 
         def __str__(self) -> str:
-            return "[{}]▲".format(self.root)
+            return "\U0001f50d[{}]".format(Path(self.root).name)
 
     def hide_unselected() -> None:
         pane = CPane()
@@ -4481,7 +4481,7 @@ def configure(window: MainWindow) -> None:
             pane.focus(0)
             pane.repaint(PaintOption.Focused)
             CPane().unSelectAll()
-    
+
     Keybinder.bind(hide_unselected, "S-H")
 
     def clear_filter() -> None:
