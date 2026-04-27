@@ -4644,6 +4644,24 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
     window.keymap["E"] = to_bottom
     window.keymap["End"] = to_bottom
 
+    def open_with_smooth_csv(_) -> None:
+        smooth_csv_path = r"C:\Program Files\SmoothCSV\smoothcsv-app.exe"
+        if not smart_check_path(smooth_csv_path):
+            return
+
+        pane = window.main_window.activePane()
+        path = Path(window.item.getFullpath())
+
+        focused_item_path = Path(pane.file_list.getItem(pane.cursor).getFullpath())
+        if focused_item_path.suffix not in [".docx", ".xlsx"]:
+            visible = isinstance(pane.file_list.getLister(), lister_Default)
+            pane.history.append(str(path.parent), path.name, visible, True)
+
+        window.command_Close(None)
+        pyauto.shellExecute(None, smooth_csv_path, str(path), "")
+
+    window.keymap["C-S-Enter"] = open_with_smooth_csv
+
     def open_original(_) -> None:
         pane = window.main_window.activePane()
         focused_item_path = Path(pane.file_list.getItem(pane.cursor).getFullpath())
