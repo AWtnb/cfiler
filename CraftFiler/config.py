@@ -1519,6 +1519,21 @@ def configure(window: MainWindow) -> None:
 
     Keybinder.bind(open_with, "C-O")
 
+    def open_with_smooth_csv(_) -> None:
+        smooth_csv_path = r"C:\Program Files\SmoothCSV\smoothcsv-app.exe"
+        if not smart_check_path(smooth_csv_path):
+            return
+
+        pane = CPane()
+        target = pane.selectedItemPaths
+        if len(target) < 1:
+            target = [pane.focusedItemPath]
+
+        for p in target:
+            shell_exec(smooth_csv_path, p)
+
+    Keybinder.bind(open_with_smooth_csv, "Comma")
+
     def quick_move() -> None:
         pane = CPane()
         if not pane.hasSelection:
