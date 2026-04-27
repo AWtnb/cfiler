@@ -4661,7 +4661,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         pyauto.shellExecute(None, smooth_csv_path, str(path), "")
 
     window.keymap["C-S-Enter"] = open_with_smooth_csv
-    window.keymap["A-S-C"] = open_with_smooth_csv
+    window.keymap["Comma"] = open_with_smooth_csv
 
     def open_original(_) -> None:
         pane = window.main_window.activePane()
