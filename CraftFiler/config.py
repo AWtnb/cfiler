@@ -3670,8 +3670,6 @@ def configure(window: MainWindow) -> None:
         )
 
         new_ext = stringify(new_ext)
-        if len(new_ext) < 1:
-            return
 
         new_name = focused_path.stem + new_ext
 
