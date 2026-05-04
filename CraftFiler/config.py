@@ -2272,6 +2272,58 @@ def configure(window: MainWindow) -> None:
 
     Keybinder.bind(go_to, "G")
 
+    def to_ghq_repo() -> None:
+        ghq_root = os.path.expandvars(r"${USERPROFILE}\ghq")
+        if not smart_check_path(ghq_root):
+            Kiritori(window).log(f"'{ghq_root}' not found.")
+            return
+
+        exe_name = "ghq.exe"
+        exe_path = shutil.which(exe_name)
+        if exe_path is None:
+            Kiritori(window).log(f"cannnot find {exe_name}...")
+            return
+
+        def _listup(job_item: ckit.JobItem) -> None:
+            job_item.rel_paths = None
+            proc = subprocess.run(
+                ["ghq", "list"],
+                capture_output=True,
+                encoding="utf-8",
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            if proc.returncode != 0:
+                if e := proc.stderr:
+                    Kiritori(window).log(e)
+                    return
+            job_item.rel_paths = proc.stdout.splitlines()
+
+        def _open(job_item: ckit.JobItem) -> None:
+            if job_item.rel_paths is None:
+                return
+
+            rel_paths = job_item.rel_paths
+            if len(rel_paths) < 1:
+                Kiritori(window).log(f"No repos are cloned in {ghq_root}")
+                return
+
+            result, mod = invoke_listwindow("Open (or Edit with C-Enter)", rel_paths)
+            if result == -1:
+                return
+            full_path = str(Path(ghq_root) / rel_paths[result])
+
+            if mod == ckit.MODKEY_CTRL:
+                open_vscode(full_path)
+                return
+
+            pane = CPane()
+            pane.openPath(full_path)
+
+        job = ckit.JobItem(_listup, _open)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    Keybinder.bind(to_ghq_repo, "S-G")
+
     def eject_current_drive() -> None:
         pane = CPane()
         current = pane.currentPath
