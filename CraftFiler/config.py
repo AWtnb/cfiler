@@ -2270,7 +2270,7 @@ def configure(window: MainWindow) -> None:
         if result != "":
             pane.openPath(os.path.join(pane.currentPath, result))
 
-    Keybinder.bind(go_to, "G")
+    Keybinder.bind(go_to, "C-G")
 
     def to_ghq_repo() -> None:
         ghq_root = os.path.expandvars(r"${USERPROFILE}\ghq")
@@ -2322,7 +2322,7 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_listup, _open)
         window.taskEnqueue(job, create_new_queue=False)
 
-    Keybinder.bind(to_ghq_repo, "S-G")
+    Keybinder.bind(to_ghq_repo, "G")
 
     def eject_current_drive() -> None:
         pane = CPane()
