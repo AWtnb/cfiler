@@ -2307,7 +2307,9 @@ def configure(window: MainWindow) -> None:
                 Kiritori(window).log(f"No repos are cloned in {ghq_root}")
                 return
 
-            result, mod = invoke_listwindow("Open (or Edit with C-Enter)", rel_paths)
+            result, mod = invoke_listwindow(
+                "Enter = Open / C-Enter = Edit with VSCode", rel_paths
+            )
             if result == -1:
                 return
             full_path = str(Path(ghq_root) / rel_paths[result])
@@ -4669,6 +4671,7 @@ def configure_ListWindow(window: ckit.TextWindow) -> None:
     window.keymap["Up"] = smart_cursorUp
     window.keymap["C-J"] = window.command_CursorDownMark
     window.keymap["C-K"] = window.command_CursorUpMark
+    window.keymap["C-Enter"] = window.command_Enter
     for mod in ["", "S-"]:
         for key in ["Space", "Right", "C-L"]:
             window.keymap[mod + key] = window.command_Enter
