@@ -2285,41 +2285,37 @@ def configure(window: MainWindow) -> None:
             return
 
         def _listup(job_item: ckit.JobItem) -> None:
-            job_item.rel_paths = None
-            proc = subprocess.run(
+            job_item.rel_path = None
+
+            ghq_result = subprocess.run(
                 ["ghq", "list"],
                 capture_output=True,
                 encoding="utf-8",
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
-            if proc.returncode != 0:
-                if e := proc.stderr:
+            if ghq_result.returncode != 0:
+                if e := ghq_result.stderr:
                     Kiritori(window).log(e)
                     return
-            job_item.rel_paths = proc.stdout.splitlines()
+
+            fzf_result = subprocess.run(
+                ["fzf"],
+                input=ghq_result.stdout,
+                capture_output=True,
+                encoding="utf-8",
+            )
+            if fzf_result.returncode != 0:
+                if e := fzf_result.stderr:
+                    Kiritori(window).log(e)
+                    return
+
+            job_item.rel_path = fzf_result.stdout.strip()
 
         def _open(job_item: ckit.JobItem) -> None:
-            if job_item.rel_paths is None:
-                return
-
-            rel_paths = job_item.rel_paths
-            if len(rel_paths) < 1:
-                Kiritori(window).log(f"No repos are cloned in {ghq_root}")
-                return
-
-            result, mod = invoke_listwindow(
-                "Enter = Open / C-Enter = Edit with VSCode", rel_paths
-            )
-            if result == -1:
-                return
-            full_path = str(Path(ghq_root) / rel_paths[result])
-
-            if mod == ckit.MODKEY_CTRL:
-                open_vscode(full_path)
-                return
-
-            pane = CPane()
-            pane.openPath(full_path)
+            if job_item.rel_path is not None:
+                path = Path(ghq_root) / job_item.rel_path
+                pane = CPane()
+                pane.openPath(str(path))
 
         job = ckit.JobItem(_listup, _open)
         window.taskEnqueue(job, create_new_queue=False)
