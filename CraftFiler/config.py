@@ -218,14 +218,14 @@ class Kiritori:
 
     def get_timestamp(self) -> str:
         return datetime.datetime.today().strftime(
-            " %Y-%m-%d %H:%M:%S.%f {}".format(self.sep * 2)
+            f" %Y-%m-%d %H:%M:%S.%f {self.sep * 2}"
         )
 
     def draw_header(self, title: str) -> None:
         print(f"{self.get_timestamp().ljust(self.get_width(), self.sep)}\n\n{title}\n")
 
     def draw_footer(self) -> None:
-        print("{}\n".format(self.get_timestamp().rjust(self.get_width(), self.sep)))
+        print(f"{self.get_timestamp().rjust(self.get_width(), self.sep)}\n")
 
     def log(self, s) -> None:
         self.draw_header(s)
@@ -250,13 +250,13 @@ def configure(window: MainWindow) -> None:
             if t[0] == self._now[0]:
                 if t[1] == self._now[1] and t[2] == self._now[2]:
                     return ""
-                return "{:02}-{:02}".format(t[1], t[2])
-            return "{}-{:02}-{:02}".format(t[0], t[1], t[2])
+                return f"{t[1]:02}-{t[2]:02}"
+            return f"{t[0]}-{t[1]:02}-{t[2]:02}"
 
         @property
         def time(self) -> str:
             t = self._time
-            return "{:02}:{:02}:{:02}".format(t[3], t[4], t[5])
+            return f"{t[3]:02}:{t[4]:02}:{t[5]:02}"
 
     class ElemWidth:
         ext = 6
@@ -484,11 +484,11 @@ def configure(window: MainWindow) -> None:
         if path in bookmarks:
             window.bookmark.remove(path)
             _ = okini("--remove", path)
-            Kiritori(window).log("Unbookmarked: '{}'".format(path))
+            Kiritori(window).log(f"Unbookmarked: '{path}'")
         else:
             window.bookmark.append(path)
             _ = okini("--add", path)
-            Kiritori(window).log("Bookmarked: '{}'".format(path))
+            Kiritori(window).log(f"Bookmarked: '{path}'")
 
     def fuzzy_bookmark(local_only: bool) -> None:
         if not check_fzf():
@@ -579,7 +579,7 @@ def configure(window: MainWindow) -> None:
             window.bookmark.append(target)
             if target != pane.currentPath:
                 pane.refresh()
-        Kiritori(window).log("Registered '{}' as alias for '{}'".format(alias, target))
+        Kiritori(window).log(f"Registered '{alias}' as alias for '{target}'")
 
     def new_cfiler_window() -> None:
         exe_path = sys.executable
@@ -943,7 +943,7 @@ def configure(window: MainWindow) -> None:
                 return
             dp = Path(self.currentPath, name)
             if smart_check_path(dp) and dp.is_file():
-                Kiritori(window).log("file '{}' already exists.".format(name))
+                Kiritori(window).log(f"file '{name}' already exists.")
                 return
             window.subThreadCall(self.lister.touch, (name,))
             self.refresh()
@@ -955,7 +955,7 @@ def configure(window: MainWindow) -> None:
                 return
             dp = Path(self.currentPath, name)
             if smart_check_path(dp) and dp.is_dir():
-                Kiritori(window).log("directory '{}' already exists.".format(name))
+                Kiritori(window).log(f"directory '{name}' already exists.")
                 self.focusByName(name)
                 return
             window.subThreadCall(self.lister.mkdir, (name, None))
@@ -1122,7 +1122,7 @@ def configure(window: MainWindow) -> None:
             else:
                 lines = "\n".join(sorted(job_item.paths))
                 ckit.setClipboardText(lines)
-                Kiritori(window).log("Copied tree: {}".format(root))
+                Kiritori(window).log(f"Copied tree: {root}")
 
         job = ckit.JobItem(_traverse, _finished)
         window.taskEnqueue(job, create_new_queue=False)
@@ -1155,7 +1155,7 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return
 
-        print("Searching for newest file under '{}' ...".format(pane.currentPath))
+        print(f"Searching for newest file under '{pane.currentPath}' ...")
 
         def _scan(job_item: ckit.JobItem) -> None:
             job_item.latest = None
@@ -1441,7 +1441,7 @@ def configure(window: MainWindow) -> None:
         commandline = None
 
         def _set_commandline() -> None:
-            register_path = r"{}\shell\open\command".format(prog_id)
+            register_path = rf"{prog_id}\shell\open\command"
             try:
                 with OpenKey(HKEY_CLASSES_ROOT, register_path) as key:
                     nonlocal commandline
@@ -1588,12 +1588,12 @@ def configure(window: MainWindow) -> None:
 
         exe_path = shutil.which(go_tool)
         if not exe_path:
-            Kiritori(window).log("'{}' not found...".format(go_tool))
+            Kiritori(window).log(f"'{go_tool}' not found...")
             return ""
         try:
             cmd = [
                 exe_path,
-                "-src={}".format(path),
+                f"-src={path}",
             ]
             proc = subprocess.run(
                 cmd,
@@ -1656,14 +1656,14 @@ def configure(window: MainWindow) -> None:
                     os.remove(os.path.join(temp_dir, file))
                     paths.append(file)
                 except Exception as e:
-                    Kiritori(window).log("Failed to remove temp file : {}".format(e))
+                    Kiritori(window).log(f"Failed to remove temp file : {e}")
 
         if len(paths) < 1:
             return
 
         krtr = Kiritori(window)
         count = len(paths)
-        msg = "Removed {} temp file".format(count)
+        msg = f"Removed {count} temp file"
         if 1 < count:
             msg += "s"
         krtr.draw_header(msg)
@@ -1685,12 +1685,10 @@ def configure(window: MainWindow) -> None:
                             p.unlink()
                             count += 1
                     except Exception as e:
-                        Kiritori(window).log(
-                            "Failed to remove temp file :{}\n{}".format(file, e)
-                        )
+                        Kiritori(window).log(f"Failed to remove temp file :{file}\n{e}")
 
             if 0 < count:
-                msg = "Removed {} tempfile".format(count)
+                msg = f"Removed {count} tempfile"
                 if 1 < count:
                     msg += "s"
                 msg += " for preview."
@@ -1950,7 +1948,7 @@ def configure(window: MainWindow) -> None:
             return src
 
         @classmethod
-        def invoke(cls, current_dir: bool, search_all: bool) -> CallbackFunc:
+        def invoke(cls, skip_file: bool) -> CallbackFunc:
             def _wrapper() -> None:
                 pane = CPane()
                 if pane.isBlank:
@@ -1960,18 +1958,14 @@ def configure(window: MainWindow) -> None:
                     job_item.result = None
                     exe_path = shutil.which(cls.exe_name)
                     if exe_path is None:
-                        Kiritori(window).log("Exe not found: '{}'".format(cls.exe_name))
+                        Kiritori(window).log(f"Exe not found: '{cls.exe_name}'")
                         return
-                    root = (
-                        pane.currentPath
-                        if current_dir
-                        else cls.get_root(pane.currentPath)
-                    )
+                    root = cls.get_root(pane.currentPath)
                     cmd = [
                         exe_path,
                         "-exclude=_obsolete,node_modules",
-                        "-all={}".format(search_all),
-                        "-root={}".format(root),
+                        f"-all={not skip_file}",
+                        f"-root={root}",
                     ]
                     delay()
                     proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
@@ -1994,16 +1988,8 @@ def configure(window: MainWindow) -> None:
 
             return _wrapper
 
-    def setup_zyw() -> None:
-        for key, params in {
-            "S-Z": (False, False),
-            "Z": (False, True),
-            "S-F": (True, False),
-            "C-F": (True, True),
-        }.items():
-            Keybinder.bind(zyw.invoke(*params), key)
-
-    setup_zyw()
+    Keybinder.bind(zyw.invoke(skip_file=True), "Z")
+    Keybinder.bind(zyw.invoke(skip_file=False), "S-Z")
 
     def fuzzy_focus() -> None:
         pane = CPane()
@@ -2164,7 +2150,7 @@ def configure(window: MainWindow) -> None:
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
                 if proc.returncode != 0:
-                    Kiritori(window).log("ERROR: {}".format(proc.stdout))
+                    Kiritori(window).log(f"ERROR: {proc.stdout}")
             except Exception as e:
                 Kiritori(window).log(e)
 
@@ -2176,14 +2162,14 @@ def configure(window: MainWindow) -> None:
                 pane.refresh()
                 name = basename + ".pdf"
                 pane.focusByName(name)
-                Kiritori(window).log("Concatenated as '{}':\n\n{}".format(name, src))
+                Kiritori(window).log(f"Concatenated as '{name}':\n\n{src}")
 
         job = ckit.JobItem(_conc, _finish)
         window.taskEnqueue(job, create_new_queue=False)
 
     def make_internet_shortcut(url: str = "") -> None:
         if not url.startswith("http"):
-            Kiritori(window).log("invalid url: '{}'".format(url))
+            Kiritori(window).log(f"invalid url: '{url}'")
             return
 
         def _access(job_item: ckit.JobItem) -> None:
@@ -2213,14 +2199,14 @@ def configure(window: MainWindow) -> None:
             name = stringify(
                 window.commandLine(
                     "Shortcut title",
-                    text="{} - {}".format(title, domain),
+                    text=f"{title} - {domain}",
                     selection=[0, len(title)],
                 )
             )
             if len(name) < 1:
                 print("Canceled.\n")
                 return
-            lines.append("URL={}".format(url))
+            lines.append(f"URL={url}")
             if not name.endswith(".url"):
                 name = name + ".url"
             Path(CPane().currentPath, name).write_text(
@@ -2381,12 +2367,12 @@ def configure(window: MainWindow) -> None:
                 if e := proc.stderr:
                     Kiritori(window).log(e)
                 return
-            job_item.result = "Ejected drive '{}'".format(current_drive)
+            job_item.result = f"Ejected drive '{current_drive}'"
 
         def _finished(job_item: ckit.JobItem) -> None:
             if job_item.result is None:
                 pane.openPath(current)
-                Kiritori(window).log("Failed to eject drive '{}'".format(current_drive))
+                Kiritori(window).log(f"Failed to eject drive '{current_drive}'")
             else:
                 Kiritori(window).log(job_item.result)
 
@@ -2441,7 +2427,7 @@ def configure(window: MainWindow) -> None:
             result += ".zip"
 
         if pane.byName(result) != -1:
-            Kiritori(window).log("'{}' already exists.".format(result))
+            Kiritori(window).log(f"'{result}' already exists.")
             return
 
         zip_path = os.path.join(pane.currentPath, result)
@@ -2517,9 +2503,7 @@ def configure(window: MainWindow) -> None:
         placeholder = (
             Path(pane.selectedItemPaths[0]).stem
             if len(pane.selectedItems) == 1
-            else "extract_{}".format(
-                datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
-            )
+            else f"extract_{datetime.datetime.today().strftime('%Y%m%d-%H%M%S')}"
         )
 
         result = stringify(
@@ -2532,7 +2516,7 @@ def configure(window: MainWindow) -> None:
             return
 
         if pane.byName(result) != -1:
-            Kiritori(window).log("'{}' already exists.".format(result))
+            Kiritori(window).log(f"'{result}' already exists.")
             return
 
         extract_path = os.path.join(pane.currentPath, result)
@@ -2553,7 +2537,7 @@ def configure(window: MainWindow) -> None:
         pane = CPane()
         p = pane.currentPath
         ckit.setClipboardText(p)
-        window.setStatusMessage("copied current path: '{}'".format(p), 3000)
+        window.setStatusMessage(f"copied current path: '{p}'", 3000)
 
     Keybinder.bind(copy_current_path, "C-A-P")
 
@@ -2757,7 +2741,7 @@ def configure(window: MainWindow) -> None:
         if len(pane.dirs) < 1:
             return
 
-        print("Searching for last-indexed dir under '{}' ...".format(pane.currentPath))
+        print(f"Searching for last-indexed dir under '{pane.currentPath}' ...")
 
         def _traverse(job_item: ckit.JobItem) -> None:
             job_item.result = None
@@ -2985,11 +2969,11 @@ def configure(window: MainWindow) -> None:
             new_path = org_path.with_name(new_name)
             if smart_check_path(new_path):
                 if new_path.name in [c.name for c in new_path.parent.iterdir()]:
-                    print("'{}' already exists!".format(new_name))
+                    print(f"'{new_name}' already exists!")
                     return
             try:
                 window.subThreadCall(org_path.rename, (str(new_path),))
-                print("Renamed: {}\n     ==> {}\n".format(org_path.name, new_name))
+                print(f"Renamed: {org_path.name}\n     ==> {new_name}\n")
                 self._pane.refresh()
                 if focus:
                     self._pane.focusByName(new_name)
@@ -3078,11 +3062,9 @@ def configure(window: MainWindow) -> None:
 
                 new_name = _get_new_stem() + org_path.suffix
                 infos.append(RenameInfo(org_path, new_name))
-                lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
+                lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
 
-            lines.append(
-                "\noffset: {}\nlength: {}\nOK? (Enter / Esc)".format(offset, length)
-            )
+            lines.append(f"\noffset: {offset}\nlength: {length}\nOK? (Enter / Esc)")
 
             return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
@@ -3159,9 +3141,9 @@ def configure(window: MainWindow) -> None:
 
                 new_name = _get_new_stem() + org_path.suffix
                 infos.append(RenameInfo(org_path, new_name))
-                lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
+                lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
 
-            lines.append("\ninsert: {}\nat: {}\nOK? (Enter / Esc)".format(ins, pos))
+            lines.append(f"\ninsert: {ins}\nat: {pos}\nOK? (Enter / Esc)")
 
             return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
@@ -3249,9 +3231,7 @@ def configure(window: MainWindow) -> None:
                 photo = PhotoFile(path)
                 new_name = photo.rename("%Y_%m%d_%H%M%S00")
                 infos.append(RenameInfo(Path(path), new_name))
-                lines.append(
-                    "Rename: {}\n    ==> {}\n".format(item.getName(), new_name)
-                )
+                lines.append(f"Rename: {item.getName()}\n    ==> {new_name}\n")
 
             lines.append("\ninsert timestamp:\nOK? (Enter / Esc)")
 
@@ -3293,9 +3273,7 @@ def configure(window: MainWindow) -> None:
                     )
                 new_name = date_ts + "-IMG_" + time_ts + p.suffix
                 infos.append(RenameInfo(p, new_name))
-                lines.append(
-                    "Rename: {}\n    ==> {}\n".format(item.getName(), new_name)
-                )
+                lines.append(f"Rename: {item.getName()}\n    ==> {new_name}\n")
 
             lines.append("\ninsert timestamp:\nOK? (Enter / Esc)")
 
@@ -3411,12 +3389,10 @@ def configure(window: MainWindow) -> None:
                 new_name = stem[:pos] + ni.fill(idx) + stem[pos:] + org_path.suffix
                 idx = ni.increment(idx)
                 infos.append(RenameInfo(org_path, new_name))
-                lines.append("Rename: {}\n    ==> {}\n".format(org_path.name, new_name))
+                lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
 
             lines.append(
-                "\ninsert (start={}, step={}, skips={}):\nOK? (Enter / Esc)".format(
-                    ni.start, ni.step, ni.skips
-                )
+                f"\ninsert (start={ni.start}, step={ni.step}, skips={ni.skips}):\nOK? (Enter / Esc)"
             )
 
             return infos, popResultWindow(window, "Preview", "\n".join(lines))
@@ -3499,17 +3475,13 @@ def configure(window: MainWindow) -> None:
                 new_name = reg.sub(rc.to_str, org_path.stem) + org_path.suffix
                 if org_path.name != new_name:
                     infos.append(RenameInfo(org_path, new_name))
-                    lines.append(
-                        "Rename: {}\n    ==> {}\n".format(org_path.name, new_name)
-                    )
+                    lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
 
             if len(lines) < 1:
                 lines.append("Nothing will be renamed.")
             else:
                 lines.append(
-                    "\nregexp: {}\nnew text: {}\nOK? (Enter / Esc)".format(
-                        reg, rc.to_str
-                    )
+                    f"\nregexp: {reg}\nnew text: {rc.to_str}\nOK? (Enter / Esc)"
                 )
 
             return infos, popResultWindow(window, "Preview", "\n".join(lines))
@@ -3689,7 +3661,7 @@ def configure(window: MainWindow) -> None:
             return
 
         ts = item.time()
-        item_timestamp = "{}{:02}{:02}".format(ts[0], ts[1], ts[2])
+        item_timestamp = f"{ts[0]}{ts[1]:02}{ts[2]:02}"
         additional_suffix = [item_timestamp]
 
         focused_path = Path(item.getFullpath())
@@ -4043,7 +4015,7 @@ def configure(window: MainWindow) -> None:
         new_name = stem + ext
         new_path = os.path.join(pane.currentPath, new_name)
         if smart_check_path(new_path):
-            Kiritori(window).log("'{}' already exists.".format(stem))
+            Kiritori(window).log(f"'{stem}' already exists.")
             return
 
         pane.touch(new_name)
@@ -4128,7 +4100,7 @@ def configure(window: MainWindow) -> None:
     def reload_config() -> None:
         window.configure()
         ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
-        window.setStatusMessage("Reloaded config.py | {}".format(ts), 2000)
+        window.setStatusMessage(f"Reloaded config.py | {ts}", 2000)
 
     Keybinder.bind(reload_config, "C-R", "F5")
 
@@ -4182,7 +4154,7 @@ def configure(window: MainWindow) -> None:
     def edit_config() -> None:
         config_dir = os.path.join(os.environ.get("APPDATA", ""), "CraftFiler")
         if not smart_check_path(config_dir):
-            Kiritori(window).log("cannot find config dir: {}".format(config_dir))
+            Kiritori(window).log(f"cannot find config dir: {config_dir}")
             return
         dir_path = config_dir
         if (real_path := os.path.realpath(config_dir)) != config_dir:
@@ -4229,7 +4201,7 @@ def configure(window: MainWindow) -> None:
             return digest
 
         def progress(self, name: str) -> None:
-            print("checking first {}MB of: {}".format(self.max_mb, name))
+            print(f"checking first {self.max_mb}MB of: {name}")
 
         def compare(self) -> None:
             pane = CPane()
@@ -4569,7 +4541,7 @@ def configure(window: MainWindow) -> None:
             return True
 
         def __str__(self) -> str:
-            return "\U0001f50d[{}]".format(Path(self.root).name)
+            return f"\U0001f50d[{Path(self.root).name}]"
 
     def hide_unselected() -> None:
         pane = CPane()
@@ -4603,7 +4575,7 @@ def configure(window: MainWindow) -> None:
         for src_path in active_pane.selectedItemPaths:
             junction_path = Path(dest, Path(src_path).name)
             if smart_check_path(junction_path):
-                Kiritori(window).log("'{}' already exists.".format(junction_path))
+                Kiritori(window).log(f"'{junction_path}' already exists.")
                 return
             try:
                 cmd = ["cmd", "/c", "mklink", "/J", str(junction_path), src_path]
@@ -4962,9 +4934,7 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
         path = item.getFullpath()
         ckit.setClipboardText(path)
         window.setTitle(
-            "{} - [ {} ] path copied!".format(
-                cfiler_resource.cfiler_appname, window.items[window.cursor].name
-            )
+            f"{cfiler_resource.cfiler_appname} - [ {window.items[window.cursor].name} ] path copied!"
         )
 
     window.keymap["C-S-C"] = copy_path_to_clioboard
@@ -4977,9 +4947,7 @@ def configure_ImageViewer(window: ckit.TextWindow) -> None:
 
         def _finished(_) -> None:
             window.setTitle(
-                "{} - [ {} ] copied!".format(
-                    cfiler_resource.cfiler_appname, window.items[window.cursor].name
-                )
+                f"{cfiler_resource.cfiler_appname} - [ {window.items[window.cursor].name} ] copied!"
             )
 
         job = ckit.JobItem(_copy, _finished)
