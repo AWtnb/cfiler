@@ -2005,6 +2005,43 @@ def configure(window: MainWindow) -> None:
 
     setup_zyw()
 
+    def fuzzy_focus() -> None:
+        pane = CPane()
+        names = pane.names
+        if len(names) < 1:
+            return
+
+        def _select(job_item: ckit.JobItem) -> None:
+            job_item.selected = None
+            proc = subprocess.run(
+                [
+                    "fzf.exe",
+                    "--margin=1",
+                    "--no-color",
+                    "--input-border=sharp",
+                    "--layout=reverse",
+                ],
+                input="\n".join(names),
+                capture_output=True,
+                encoding="utf-8",
+            )
+
+            if proc.returncode != 0:
+                if e := proc.stderr:
+                    Kiritori(window).log(e)
+                    return
+            job_item.selected = proc.stdout.strip()
+
+        def _focus(job_item: ckit.JobItem) -> None:
+            name = job_item.selected
+            if name is not None:
+                pane.focusByName(name)
+
+        job = ckit.JobItem(_select, _focus)
+        window.taskEnqueue(job, create_new_queue=False)
+
+    Keybinder.bind(fuzzy_focus, "C-F")
+
     class ImageMagickConfig:
         ini_section = "IMAGE_MAGICK_CONFIG"
 
