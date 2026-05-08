@@ -2335,7 +2335,7 @@ def configure(window: MainWindow) -> None:
             job_item.rel_path = fzf_result.stdout.strip()
 
         def _open(job_item: ckit.JobItem) -> None:
-            if job_item.rel_path is not None:
+            if job_item.rel_path:
                 path = Path(ghq_root) / job_item.rel_path
                 pane = CPane()
                 pane.openPath(str(path))
