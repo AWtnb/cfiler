@@ -4294,14 +4294,7 @@ def configure(window: MainWindow) -> None:
             job = ckit.JobItem(_scan, _finish)
             window.taskEnqueue(job, create_new_queue=False)
 
-    def diffinity() -> None:
-        exe_path = shutil.which("Diffinity")
-        if exe_path is None:
-            Kiritori(window).log("cannnot find diffinity.exe...")
-            return
-
-        exe_path = resolve_scoop_shim(exe_path)
-
+    def diff_files(with_diffinity: bool) -> None:
         pane = CPane()
         left_path = ""
         right_path = ""
@@ -4325,7 +4318,32 @@ def configure(window: MainWindow) -> None:
             )
             return
 
-        shell_exec(exe_path, left_path, right_path)
+        if with_diffinity:
+            exe_path = shutil.which("Diffinity")
+            if exe_path is None:
+                Kiritori(window).log("cannnot find diffinity.exe...")
+                return
+
+            exe_path = resolve_scoop_shim(exe_path)
+            shell_exec(exe_path, left_path, right_path)
+            return
+
+        exe_path = shutil.which("code")
+        if exe_path is None:
+            Kiritori(window).log("cannnot find vscode...")
+            return
+
+        def _open_code(_) -> None:
+            open_vscode(
+                "--new-window",
+                "--disable-extensions",
+                "--diff",
+                left_path,
+                right_path,
+            )
+
+        job = ckit.JobItem(_open_code, lambda _: None)
+        window.taskEnqueue(job, create_new_queue=False)
 
     def from_other_names() -> None:
         pane = CPane()
@@ -4613,7 +4631,8 @@ def configure(window: MainWindow) -> None:
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
             "CopyDirTree": copy_dir_tree,
-            "Diffinity": diffinity,
+            "Diffinity": lambda: diff_files(False),
+            "DiffWithVSCode": lambda: diff_files(True),
             "MultipleSelectedItem": multiple_selected_item,
             "MakeInternetShortcut": lambda: make_internet_shortcut(
                 ckit.getClipboardText().strip()
