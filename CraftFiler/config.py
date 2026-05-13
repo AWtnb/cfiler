@@ -4631,8 +4631,8 @@ def configure(window: MainWindow) -> None:
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
             "CopyDirTree": copy_dir_tree,
-            "Diffinity": lambda: diff_files(False),
-            "DiffWithVSCode": lambda: diff_files(True),
+            "Diffinity": lambda: diff_files(with_diffinity=True),
+            "DiffWithVSCode": lambda: diff_files(with_diffinity=False),
             "MultipleSelectedItem": multiple_selected_item,
             "MakeInternetShortcut": lambda: make_internet_shortcut(
                 ckit.getClipboardText().strip()
