@@ -2336,10 +2336,23 @@ def configure(window: MainWindow) -> None:
             job_item.rel_path = fzf_result.stdout.strip()
 
         def _open(job_item: ckit.JobItem) -> None:
-            if job_item.rel_path:
-                path = Path(ghq_root) / job_item.rel_path
+            if job_item.rel_path is None:
+                return
+
+            path = str(Path(ghq_root) / job_item.rel_path)
+            result = cfiler_msgbox.popMessageBox(
+                window,
+                cfiler_msgbox.MessageBox.TYPE_YESNO,
+                "Confirm",
+                f"{path}\n==> Open with VSCode?",
+            )
+            if result == cfiler_msgbox.MessageBox.RESULT_YES:
+                open_vscode(path)
+                return
+
+            if result == cfiler_msgbox.MessageBox.RESULT_NO:
                 pane = CPane()
-                pane.openPath(str(path))
+                pane.openPath(path)
 
         job = ckit.JobItem(_listup, _open)
         window.taskEnqueue(job, create_new_queue=False)
