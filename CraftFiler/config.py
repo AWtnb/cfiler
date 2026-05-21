@@ -1530,7 +1530,8 @@ def configure(window: MainWindow) -> None:
             target = [pane.focusedItemPath]
 
         for p in target:
-            shell_exec(smooth_csv_path, p)
+            if Path(p).suffix in [".csv", ".txt"]:
+                shell_exec(smooth_csv_path, p)
 
     Keybinder.bind(open_with_smooth_csv, "Comma")
 
@@ -4745,14 +4746,13 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         path = Path(window.item.getFullpath())
 
         focused_item_path = Path(pane.file_list.getItem(pane.cursor).getFullpath())
-        if focused_item_path.suffix not in [".docx", ".xlsx", ".pdf"]:
+        if focused_item_path.suffix not in [".docx", ".xlsx"]:
             visible = isinstance(pane.file_list.getLister(), lister_Default)
             pane.history.append(str(path.parent), path.name, visible, True)
 
         window.command_Close(None)
         pyauto.shellExecute(None, smooth_csv_path, str(path), "")
 
-    window.keymap["C-S-Enter"] = open_with_smooth_csv
     window.keymap["Comma"] = open_with_smooth_csv
 
     def open_original(_) -> None:
