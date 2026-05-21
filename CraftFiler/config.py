@@ -4745,7 +4745,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         path = Path(window.item.getFullpath())
 
         focused_item_path = Path(pane.file_list.getItem(pane.cursor).getFullpath())
-        if focused_item_path.suffix not in [".docx", ".xlsx"]:
+        if focused_item_path.suffix not in [".docx", ".xlsx", ".pdf"]:
             visible = isinstance(pane.file_list.getLister(), lister_Default)
             pane.history.append(str(path.parent), path.name, visible, True)
 
