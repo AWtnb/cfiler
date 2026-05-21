@@ -535,9 +535,34 @@ def configure(window: MainWindow) -> None:
             name = job_item.bookmark_name
             if name == "":
                 return
+
+            path = None
             for bm in bookmarks:
                 if bm["name"] == name:
-                    pane.openPath(bm["path"])
+                    path = bm["path"]
+                    break
+            if path is None:
+                return
+
+            pane = CPane()
+
+            path_with_git = os.path.join(path, ".git")
+            if not smart_check_path(path_with_git):
+                pane.openPath(path)
+                return
+
+            result = cfiler_msgbox.popMessageBox(
+                window,
+                cfiler_msgbox.MessageBox.TYPE_YESNO,
+                "Confirm",
+                f"{path}\n==> Open with VSCode?",
+            )
+            if result == cfiler_msgbox.MessageBox.RESULT_YES:
+                open_vscode(path)
+                return
+
+            if result == cfiler_msgbox.MessageBox.RESULT_NO:
+                pane.openPath(path)
 
         job = ckit.JobItem(_select, _open)
         window.taskEnqueue(job, create_new_queue=False)
