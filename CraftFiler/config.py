@@ -4822,6 +4822,7 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         pane = window.main_window.activePane()
         name = pane.file_list.getItem(pane.cursor).getName()
         Kiritori(window.main_window).log(f"Content copied: {name}")
+        delay(120)
         window.command_Close(None)
 
     window.keymap["C-C"] = copy_content
