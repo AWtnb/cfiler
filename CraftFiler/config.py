@@ -2052,7 +2052,7 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_select, _focus)
         window.taskEnqueue(job, create_new_queue=False)
 
-    Keybinder.bind(fuzzy_focus, "C-F")
+    Keybinder.bind(fuzzy_focus, "S-F")
 
     class ImageMagickConfig:
         ini_section = "IMAGE_MAGICK_CONFIG"
@@ -2361,7 +2361,7 @@ def configure(window: MainWindow) -> None:
             job_item.rel_path = fzf_result.stdout.strip()
 
         def _open(job_item: ckit.JobItem) -> None:
-            if job_item.rel_path is None:
+            if not job_item.rel_path:
                 return
 
             path = str(Path(ghq_root) / job_item.rel_path)
