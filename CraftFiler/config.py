@@ -551,18 +551,7 @@ def configure(window: MainWindow) -> None:
                 pane.openPath(path)
                 return
 
-            result = cfiler_msgbox.popMessageBox(
-                window,
-                cfiler_msgbox.MessageBox.TYPE_YESNO,
-                "Confirm",
-                f"{path}\n==> Open with VSCode?",
-            )
-            if result == cfiler_msgbox.MessageBox.RESULT_YES:
-                open_vscode(path)
-                return
-
-            if result == cfiler_msgbox.MessageBox.RESULT_NO:
-                pane.openPath(path)
+            open_git_managed_dir(path)
 
         job = ckit.JobItem(_select, _open)
         window.taskEnqueue(job, create_new_queue=False)
@@ -1359,6 +1348,33 @@ def configure(window: MainWindow) -> None:
         window.activate()
         list_window.destroy()
         return result, mod
+
+    def open_git_managed_dir(dir_path: str) -> None:
+        class App(Enum):
+            CFILER = "CFiler"
+            VSCODE = "VSCode"
+            LAZYGIT = "lazygit"
+
+        apps = [App.CFILER, App.VSCODE]
+
+        if shutil.which(App.LAZYGIT.value) is not None:
+            apps.append(App.LAZYGIT)
+
+        result, _ = invoke_listwindow("Open with:", [app.value for app in apps])
+        if result < 0:
+            return
+
+        selected = apps[result]
+
+        if selected == App.VSCODE:
+            open_vscode(dir_path)
+            return
+
+        if selected == App.LAZYGIT:
+            shell_exec(App.LAZYGIT.value, "-p", dir_path)
+            return
+
+        CPane().openPath(dir_path)
 
     def hook_enter() -> bool:
         pane = CPane()
@@ -2321,6 +2337,19 @@ def configure(window: MainWindow) -> None:
 
     Keybinder.bind(go_to, "C-G")
 
+    def traverse_dir(root: Path, max_depth: int, current_depth: int = 0) -> List[Path]:
+        if max_depth <= current_depth:
+            return []
+
+        dirs = []
+        for path in sorted(root.iterdir()):
+            if not path.is_dir():
+                continue
+            dirs.append(path)
+            dirs.extend(traverse_dir(path, max_depth, current_depth + 1))
+
+        return dirs
+
     def to_ghq_repo() -> None:
         ghq_root = os.path.expandvars(r"${USERPROFILE}\ghq")
         if not smart_check_path(ghq_root):
@@ -2336,20 +2365,16 @@ def configure(window: MainWindow) -> None:
         def _listup(job_item: ckit.JobItem) -> None:
             job_item.rel_path = None
 
-            ghq_result = subprocess.run(
-                ["ghq", "list"],
-                capture_output=True,
-                encoding="utf-8",
-                creationflags=subprocess.CREATE_NO_WINDOW,
-            )
-            if ghq_result.returncode != 0:
-                if e := ghq_result.stderr:
-                    Kiritori(window).log(e)
-                    return
+            root = Path(ghq_root)
+            rels = []
+            for p in traverse_dir(root, 3):
+                rel = str(p.relative_to(root))
+                if 1 < rel.count(os.sep):
+                    rels.append(rel)
 
             fzf_result = subprocess.run(
                 ["fzf"],
-                input=ghq_result.stdout,
+                input="\n".join(rels),
                 capture_output=True,
                 encoding="utf-8",
             )
@@ -2365,19 +2390,7 @@ def configure(window: MainWindow) -> None:
                 return
 
             path = str(Path(ghq_root) / job_item.rel_path)
-            result = cfiler_msgbox.popMessageBox(
-                window,
-                cfiler_msgbox.MessageBox.TYPE_YESNO,
-                "Confirm",
-                f"{path}\n==> Open with VSCode?",
-            )
-            if result == cfiler_msgbox.MessageBox.RESULT_YES:
-                open_vscode(path)
-                return
-
-            if result == cfiler_msgbox.MessageBox.RESULT_NO:
-                pane = CPane()
-                pane.openPath(path)
+            open_git_managed_dir(path)
 
         job = ckit.JobItem(_listup, _open)
         window.taskEnqueue(job, create_new_queue=False)
