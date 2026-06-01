@@ -1,6 +1,5 @@
 import configparser
 import datetime
-import fnmatch
 import hashlib
 import inspect
 import json
@@ -1141,37 +1140,16 @@ def configure(window: MainWindow) -> None:
         job = ckit.JobItem(_traverse, _finished)
         window.taskEnqueue(job, create_new_queue=False)
 
-    def show_path_tree(path: str) -> None:
-        if len(path) < 1:
-            return
-
-        krtr = Kiritori(window)
-        krtr.draw_header(f"Tree of '{path}'")
-
-        p = Path(path)
-        stack = [p.name]
-        for parent in p.parents:
-            if n := parent.name:
-                stack.append(n)
-            if smart_check_path(os.path.join(parent, ".root")):
-                break
-        stack.reverse()
-        for i, s in enumerate(stack):
-            b = "" if i == 0 else " \u2514"
-            print(b, s)
-
-        krtr.draw_footer()
-
-    Keybinder.bind(lambda: show_path_tree(CPane().focusedItemPath), "Y")
-
     def open_latest_under_tree() -> None:
         pane = CPane()
         if pane.isBlank:
             return
 
-        print(f"Searching for newest file under '{pane.currentPath}' ...")
+        krtr = Kiritori(window)
+        root = pane.currentPath
 
         def _scan(job_item: ckit.JobItem) -> None:
+            krtr.draw_header(f"Searching for newest file under '{root}' ...")
             job_item.latest = None
             for item in pane.traverse(True, "_obsolete"):
                 if job_item.latest is None:
@@ -1184,12 +1162,14 @@ def configure(window: MainWindow) -> None:
             if job_item.latest:
                 p = job_item.latest.getFullpath()
                 pane.openPath(p)
-                show_path_tree(p)
+                rel = Path(p).relative_to(Path(root))
+                print(f"==> '{rel}'")
+            krtr.draw_footer()
 
         job = ckit.JobItem(_scan, _open)
         window.taskEnqueue(job, create_new_queue=False)
 
-    Keybinder.bind(open_latest_under_tree, "C-S-A-N")
+    Keybinder.bind(open_latest_under_tree, "S-A-N")
 
     def focus_by_timestamp() -> None:
         pane = CPane()
@@ -1220,6 +1200,22 @@ def configure(window: MainWindow) -> None:
             pane.focusByName(last.getName())
 
     Keybinder.bind(focus_by_timestamp, "A-Back", "A-B")
+
+    def open_lazygit() -> None:
+        pane = CPane()
+        path = pane.currentPath
+
+        lazygit = "lazygit"
+        if shutil.which(lazygit) is None:
+            Kiritori(window).log(f"'{lazygit}' not found...")
+            return
+
+        if smart_check_path(os.path.join(path, ".git")):
+            shell_exec(lazygit, "-p", path)
+        else:
+            shell_exec(lazygit)
+
+    Keybinder.bind(open_lazygit, "A-S-L")
 
     def adjust_pane_width() -> None:
         class AdjustBase(NamedTuple):
@@ -1773,210 +1769,6 @@ def configure(window: MainWindow) -> None:
 
         job = ckit.JobItem(_read, _write)
         window.taskEnqueue(job, create_new_queue=False)
-
-    class RuledDir:
-        sep = "_"
-
-        def __init__(self) -> None:
-            self.pane = CPane()
-            self.reg = re.compile(r"^[0-9]+")
-            self.dirnames = [d.getName() for d in self.pane.dirs]
-
-        def candidates(self) -> List[str]:
-            return [
-                "#_prepare",
-                "#_main",
-                "#_finished",
-            ]
-
-        @classmethod
-        def _to_prefix(cls, s: str) -> str:
-            if s.endswith(cls.sep):
-                return s
-            if cls.sep in s:
-                return s[: s.rfind(cls.sep)] + cls.sep
-            return s
-
-        def _prefixes(self) -> List[str]:
-            return [self._to_prefix(d) for d in self.dirnames]
-
-        @classmethod
-        def _to_suffix(cls, s: str) -> str:
-            if s.startswith(cls.sep):
-                return s
-            if cls.sep in s:
-                return s[s.find(cls.sep) :]
-            return s
-
-        def _suffixes(self) -> List[str]:
-            return [self._to_suffix(d) for d in self.dirnames]
-
-        def _remove_existing(self) -> List[str]:
-            menu = []
-            sufs = self._suffixes()
-            pres = self._prefixes()
-            for m in self.candidates():
-                root = m.replace("/", os.sep).split(os.sep)[0]
-                if self._to_prefix(root) in pres or self._to_suffix(root) in sufs:
-                    continue
-                menu.append(m)
-            return menu
-
-        def _increment(self) -> str:
-            idx = -1
-            idx_width = 1
-            for d in self.dirnames:
-                if m := self.reg.match(d):
-                    n = m.group(0)
-                    idx = max(idx, int(n))
-                    idx_width = max(idx_width, len(n))
-            idx += 1
-            return str(idx).rjust(idx_width, "0")
-
-        def listup(self) -> List[str]:
-            menu = self._remove_existing()
-            if any([dn.startswith("#") for dn in menu]):
-                idx = self._increment()
-                return [idx + dn[1:] for dn in menu]
-            return menu
-
-    # https://gist.github.com/AWtnb/db70a72f379e5d7307145177cc114141
-    class BookProjectDir(RuledDir):
-        def __init__(self) -> None:
-            super().__init__()
-
-        def get_parents(self, step: int) -> Tuple[str]:
-            found = []
-            p = Path(self.pane.currentPath)
-            for _ in range(step):
-                found.insert(0, p.name)
-                p = p.parent
-            return tuple(found)
-
-        def candidates(self) -> List[str]:
-            if smart_check_path(os.path.join(self.pane.currentPath, ".root")):
-                return [
-                    "_legacy",
-                    "_wiki",
-                    "design_装幀",
-                    "donation_献本",
-                    "galley_ゲラ",
-                    "letter_手紙",
-                    "meeting_会合",
-                    "payment_印税",
-                    "permission_許諾",
-                    "projectpaper_企画書",
-                    "promote_販宣",
-                    "websupport",
-                    "written_お原稿",
-                ]
-
-            galley_dirnames = [
-                "#_layout_割付",
-                "#_初校/0_plain",
-                "#_再校/0_plain",
-                "#_三校/0_plain",
-                "#_念校/0_plain",
-            ]
-            appendix_dirnames = [
-                "author_著者紹介",
-                "toc_目次",
-                "intro_はしがき",
-                "intro_まえがき",
-                "intro_はじめに",
-                "postscript_あとがき",
-                "postscript_おわりに",
-                "reference_文献リスト",
-                "index_索引",
-                "endroll_奥付",
-            ]
-            appendix_dirnames = [n + "/0_layout_割付" for n in appendix_dirnames]
-
-            mapping = {
-                (
-                    "juhan",
-                    "?????_*",
-                    "*",
-                ): [
-                    "#_send_to_author",
-                    "#_reaction_from_author",
-                    "#_send_to_printshop",
-                ],
-                ("galley_*",): [
-                    "main_本文",
-                    "appendix_付き物",
-                ],
-                ("galley_*", "main_*"): galley_dirnames,
-                ("appendix_*",): appendix_dirnames,
-                ("appendix_*", "*"): galley_dirnames,
-                ("*_*校",): [
-                    "#_plain",
-                    "#_proofed",
-                    "#_send_to_author",
-                    "#_proofed_by_author",
-                    "#_send_to_printshop",
-                ],
-                ("*_layout_*",): [
-                    "document_入稿書類",
-                    "mockup_見本組",
-                    "send_to_printshop_入稿データ",
-                ],
-                ("*_layout_*", "send_to_printshop_*"): ["scan"],
-                ("*_layout_*", "document_*"): [
-                    "layout_レイアウト見本",
-                    "mockup_見本組",
-                ],
-                ("donation_*",): ["letter_献本同封手紙", "usage_発送依頼書"],
-                ("meeting_*", "*"): [
-                    "#_事前資料",
-                    "#_会合メモ",
-                    "#_議事録",
-                ],
-                ("projectpaper_*",): [
-                    "#_企画部会提出",
-                    "#_修正反映",
-                ],
-                ("written_*",): ["_order_依頼書類"],
-                ("written_*", "_order_*"): ["outline_執筆要領"],
-            }
-
-            for parents, names in mapping.items():
-                ps = self.get_parents(len(parents))
-                if all([fnmatch.fnmatch(p, parents[i]) for i, p in enumerate(ps)]):
-                    return names
-
-            return []
-
-    def ruled_mkdir() -> None:
-        menu = BookProjectDir().listup()
-        if len(menu) < 1:
-            smart_mkdir()
-            return
-
-        def _listup_dirnames(
-            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-        ) -> tuple:
-            found = [
-                name
-                for name in menu
-                if name.lower().startswith(update_info.text.lower())
-            ]
-            return found, 0
-
-        placeholder = menu[0]
-        name = stringify(
-            window.commandLine(
-                "DirName",
-                text=placeholder,
-                selection=[0, len(placeholder)],
-                candidate_handler=_listup_dirnames,
-                auto_complete=True,
-            )
-        )
-        if 0 < len(name):
-            CPane().mkdir(name)
-
-    Keybinder.bind(ruled_mkdir, "S-A-N")
 
     class zyw:
         exe_name = "zyw.exe"
@@ -2787,56 +2579,6 @@ def configure(window: MainWindow) -> None:
         CPane(False).unSelectAll()
 
     Keybinder.bind(unselect_panes, "C-U", "S-Esc")
-
-    def to_edge_dir() -> None:
-        pane = CPane()
-        if len(pane.dirs) < 1:
-            return
-
-        print(f"Searching for last-indexed dir under '{pane.currentPath}' ...")
-
-        def _traverse(job_item: ckit.JobItem) -> None:
-            job_item.result = None
-            if pane.isBlank:
-                return
-
-            paths = []
-            for item in pane.traverse(False, "_obsolete"):
-                if item.isdir():
-                    rel = item.getName()
-                    if any([(os.sep + c in rel) for c in ("_", "~")]):
-                        continue
-                    paths.append(item.getFullpath())
-
-            if 0 < len(paths):
-                paths.sort()
-                job_item.result = paths[-1]
-
-        def _open(job_item: ckit.JobItem) -> None:
-            if job_item.result:
-                pane.openPath(job_item.result)
-                show_path_tree(job_item.result)
-
-        job = ckit.JobItem(_traverse, _open)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    Keybinder.bind(to_edge_dir, "A-L")
-
-    def to_root_of_index() -> None:
-        pane = CPane()
-        reg = re.compile(r"^\d+_|^\d+$")
-        root = None
-        f = "_" if pane.isBlank else pane.focusedItem.getName()
-        for parent in Path(pane.currentPath, f).parents:
-            if reg.match(parent.name):
-                root = parent
-                break
-        if root:
-            root = str(root.parent)
-            if root != pane.currentPath:
-                pane.openPath(root)
-
-    Keybinder.bind(to_root_of_index, "A-H")
 
     class SmartJumper:
         def __init__(self, by_prefix: bool):
