@@ -1215,7 +1215,7 @@ def configure(window: MainWindow) -> None:
         else:
             shell_exec(lazygit)
 
-    Keybinder.bind(open_lazygit, "A-S-L")
+    Keybinder.bind(open_lazygit, "A-L")
 
     def adjust_pane_width() -> None:
         class AdjustBase(NamedTuple):
