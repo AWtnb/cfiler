@@ -935,10 +935,15 @@ def configure(window: MainWindow) -> None:
             if focus_name is None:
 
                 def _last_focused_name(hist_item: list) -> Union[str, None]:
-                    dir_path = hist_item[0]
+                    (
+                        dir_path,
+                        filename,
+                        _,
+                        _,
+                    ) = hist_item
                     if dir_path.startswith(path):
                         if dir_path == path:
-                            return hist_item[1]
+                            return filename
                         return dir_path[len(path) + 1 :].split(os.sep)[0]
                     return None
 
