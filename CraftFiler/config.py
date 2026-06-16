@@ -1215,10 +1215,12 @@ def configure(window: MainWindow) -> None:
             Kiritori(window).log(f"'{lazygit}' not found...")
             return
 
-        if smart_check_path(os.path.join(path, ".git")):
-            shell_exec(lazygit, "-p", path)
-        else:
-            shell_exec(lazygit)
+        git_path = os.path.join(path, ".git")
+        if not smart_check_path(git_path):
+            Kiritori(window).log(f"{git_path} not found.")
+            return
+
+        shell_exec("wt.exe", "lazygit", "-p", path)
 
     Keybinder.bind(open_lazygit, "A-L")
 
