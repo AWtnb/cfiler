@@ -1217,7 +1217,7 @@ def configure(window: MainWindow) -> None:
 
         git_path = os.path.join(path, ".git")
         if not smart_check_path(git_path):
-            Kiritori(window).log(f"{git_path} not found.")
+            Kiritori(window).log(f"'{git_path}' not found.")
             return
 
         shell_exec("wt.exe", "lazygit", "-p", path)
