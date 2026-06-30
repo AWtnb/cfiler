@@ -572,7 +572,7 @@ def configure(window: MainWindow) -> None:
         placeholder = str(Path(target).name)
         bookmarks = get_okini_bookmarks()
         if bookmarks is not None:
-            found = []
+            found: List[str] = []
             for bm in bookmarks:
                 if bm["path"] == target:
                     found.append(bm["name"])
@@ -1557,7 +1557,7 @@ def configure(window: MainWindow) -> None:
         exe = app_table[names[result]]
         for path in paths:
             if isinstance(exe, Callable):
-                exe(path)
+                exe(path)  # ty:ignore[call-top-callable]
             else:
                 shell_exec(exe, path)
 
