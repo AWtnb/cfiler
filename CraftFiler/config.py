@@ -3493,6 +3493,8 @@ def configure(window: MainWindow) -> None:
 
     def rename_ext() -> None:
         pane = CPane()
+        if pane.isBlank:
+            return
         item = pane.focusedItem
         if item.isdir():
             return
