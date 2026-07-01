@@ -4234,7 +4234,6 @@ def configure(window: MainWindow) -> None:
         result, mod = window.commandLine(
             "EndsWith",
             return_modkey=True,
-            text=NameSuffix.sep,
             candidate_handler=SuffixHandler().invoke(),
         )
         if result:
