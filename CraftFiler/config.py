@@ -3833,6 +3833,13 @@ def configure(window: MainWindow) -> None:
         right: int
         bottom: int
 
+        def get_half(self) -> Tuple:
+            width = self.right - self.left
+            height = self.bottom - self.top
+            if height < width:
+                return (self.left + self.right) // 2, self.top, self.right, self.bottom
+            return self.left, (self.top + self.bottom) // 2, self.right, self.bottom
+
     def to_home_position() -> None:
         hwnd = window.getHWND()
         wnd = pyauto.Window.fromHWND(hwnd)
@@ -3844,9 +3851,7 @@ def configure(window: MainWindow) -> None:
         monitor_infos.sort(key=lambda info: info[2] != 1)
 
         monitor_rects = [Rect(*mi[1]) for mi in monitor_infos]
-        half_rects = [
-            ((r.left + r.right) // 2, r.top, r.right, r.bottom) for r in monitor_rects
-        ]
+        half_rects = [r.get_half() for r in monitor_rects]
         current = wnd.getRect()
 
         idx = half_rects.index(current) if current in half_rects else -1
