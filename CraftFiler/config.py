@@ -3836,29 +3836,22 @@ def configure(window: MainWindow) -> None:
     def to_home_position() -> None:
         hwnd = window.getHWND()
         wnd = pyauto.Window.fromHWND(hwnd)
-        main_monitor_info = None
-        for info in pyauto.Window.getMonitorInfo():
-            if info[2] == 1:
-                main_monitor_info = info
-                break
-        if not main_monitor_info:
-            return
 
-        main_monitor_rect = Rect(*main_monitor_info[1])
-        main_monitor_half_rect = tuple(
-            [
-                (main_monitor_rect.right + main_monitor_rect.left) // 2,
-                0,
-                main_monitor_rect.right,
-                main_monitor_rect.bottom,
-            ]
-        )
-        if wnd.getRect() == main_monitor_half_rect:
-            wnd.maximize()
-        else:
-            if wnd.isMaximized():
-                wnd.restore()
-            wnd.setRect(main_monitor_half_rect)
+        if wnd.isMaximized():
+            wnd.restore()
+
+        monitor_infos = pyauto.Window.getMonitorInfo()
+        monitor_infos.sort(key=lambda info: info[2] != 1)
+
+        monitor_rects = [Rect(*mi[1]) for mi in monitor_infos]
+        half_rects = [
+            ((r.left + r.right) // 2, 0, r.right, r.bottom) for r in monitor_rects
+        ]
+        current = wnd.getRect()
+
+        idx = half_rects.index(current) if current in half_rects else -1
+        target = half_rects[(idx + 1) % len(half_rects)]
+        wnd.setRect(target)
         window.command_MoveSeparatorCenter(None)
 
     Keybinder.bind(to_home_position, "C-0")
