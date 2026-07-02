@@ -3845,7 +3845,7 @@ def configure(window: MainWindow) -> None:
 
         monitor_rects = [Rect(*mi[1]) for mi in monitor_infos]
         half_rects = [
-            ((r.left + r.right) // 2, 0, r.right, r.bottom) for r in monitor_rects
+            ((r.left + r.right) // 2, r.top, r.right, r.bottom) for r in monitor_rects
         ]
         current = wnd.getRect()
 
