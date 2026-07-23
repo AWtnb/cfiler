@@ -1206,6 +1206,15 @@ def configure(window: MainWindow) -> None:
 
     Keybinder.bind(focus_by_timestamp, "A-Back", "A-B")
 
+    def git_init() -> None:
+        pane = CPane()
+        path = pane.currentPath
+        git_path = os.path.join(path, ".git")
+        if smart_check_path(git_path):
+            Kiritori(window).log(f"'{git_path}' already exists.")
+            return
+        shell_exec("git", "init", str(path))
+
     def open_lazygit() -> None:
         pane = CPane()
         path = pane.currentPath
@@ -4414,6 +4423,7 @@ def configure(window: MainWindow) -> None:
 
     update_command_list(
         {
+            "GitInit": git_init,
             "ChangeImageType": change_image_type,
             "MakeShortcut": make_shortcut,
             "CleanTempFiles": remove_tempfiles,
