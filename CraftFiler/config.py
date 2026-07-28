@@ -4592,9 +4592,9 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         ckit.setClipboardText(c)
         pane = window.main_window.activePane()
         name = pane.file_list.getItem(pane.cursor).getName()
-        Kiritori(window.main_window).log(f"Content copied: {name}")
         delay(120)
         window.command_Close(None)
+        Kiritori(window.main_window).log(f"Content copied: {name}")
 
     window.keymap["C-C"] = copy_content
     window.keymap["C-Insert"] = copy_content
@@ -4605,36 +4605,14 @@ def configure_TextViewer(window: ckit.TextWindow) -> None:
         c = get_content()
         if len(c) < 1:
             return
-        line = c.splitlines()[window.scroll_info.pos]
+        idx = window.scroll_info.pos
+        line = c.splitlines()[idx]
         ckit.setClipboardText(line)
-        cfiler_msgbox.popMessageBox(
-            window,
-            cfiler_msgbox.MessageBox.TYPE_OK,
-            "Copied:",
-            f"Line {window.scroll_info.pos + 1}",
-        )
+        delay(120)
+        window.command_Close(None)
+        Kiritori(window.main_window).log(f"Copied line {idx + 1}: {line}")
 
     window.keymap["C-T"] = copy_line_at_top
-
-    def copy_displayed_lines(_) -> None:
-        if window.binary:
-            return
-        c = get_content()
-        if len(c) < 1:
-            return
-        lines = c.splitlines()
-        top = window.scroll_info.pos
-        bottom = min(top + window.height() - 1, top + window._numLines() - 1)
-        s = "\n".join(lines[top:bottom])
-        ckit.setClipboardText(s)
-        cfiler_msgbox.popMessageBox(
-            window,
-            cfiler_msgbox.MessageBox.TYPE_OK,
-            "Copied:",
-            f"Lines {top + 1} - {min(len(lines), top + window.height() - 1)}",
-        )
-
-    window.keymap["C-A-C"] = copy_displayed_lines
 
     def reload_with_encoding(_) -> None:
         encodes = {
