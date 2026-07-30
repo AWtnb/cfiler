@@ -3491,7 +3491,9 @@ def configure(window: MainWindow) -> None:
         if len(new_stem) < 1:
             return
 
-        new_name = new_stem + focused_path.suffix
+        new_name = new_stem
+        if not focused_path.is_dir():
+            new_name += focused_path.suffix
 
         krtr = Kiritori(window)
         krtr.draw_header("Renaming:")
