@@ -3866,8 +3866,15 @@ def configure(window: MainWindow) -> None:
         current = wnd.getRect()
 
         idx = half_rects.index(current) if current in half_rects else -1
-        target = half_rects[(idx + 1) % len(half_rects)]
-        wnd.setRect(target)
+        dest = half_rects[(idx + 1) % len(half_rects)]
+
+        counter = 0
+        while wnd.getRect() != dest:
+            if 10 < counter:
+                return
+            wnd.setRect(dest)
+            counter += 1
+
         window.command_MoveSeparatorCenter(None)
 
     Keybinder.bind(to_home_position, "C-0")
