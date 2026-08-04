@@ -89,7 +89,6 @@ class PaintOption(Enum):
     Upper = cfiler_mainwindow.PAINT_UPPER
     All = cfiler_mainwindow.PAINT_ALL
 
-
 def delay(msec: int = 50) -> None:
     if 0 < msec:
         time.sleep(msec / 1000)
