@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import configparser
 import datetime
 import hashlib
@@ -19,14 +21,10 @@ from enum import Enum
 from pathlib import Path
 from typing import (
     Callable,
-    Dict,
     Iterator,
-    List,
     Literal,
     NamedTuple,
     Protocol,
-    Tuple,
-    Union,
 )
 from winreg import HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, OpenKey, QueryValueEx
 
@@ -95,7 +93,7 @@ def delay(msec: int = 50) -> None:
         time.sleep(msec / 1000)
 
 
-def stringify(x: Union[str, None], trim: bool = True) -> str:
+def stringify(x: str | None, trim: bool = True) -> str:
     if x:
         if trim:
             return x.strip()
@@ -103,7 +101,7 @@ def stringify(x: Union[str, None], trim: bool = True) -> str:
     return ""
 
 
-def is_file_locked(path: Union[Path, str]) -> bool:
+def is_file_locked(path: Path | str) -> bool:
     try:
         with open(path, "a"):
             return False
@@ -111,9 +109,7 @@ def is_file_locked(path: Union[Path, str]) -> bool:
         return True
 
 
-def smart_check_path(
-    path: Union[str, Path], timeout_sec: Union[float, None] = None
-) -> bool:
+def smart_check_path(path: str | Path, timeout_sec: float | None = None) -> bool:
     """CASE-INSENSITIVE path check with timeout"""
     p = path if isinstance(path, Path) else Path(path)
     try:
@@ -445,7 +441,7 @@ def configure(window: MainWindow) -> None:
             return ""
         return proc.stdout.strip()
 
-    def get_okini_bookmarks() -> Union[List[Dict[str, str]], None]:
+    def get_okini_bookmarks() -> list[dict[str, str]] | None:
         bookmark_json = os.path.expandvars(r"${APPDATA}\okini\bookmarks.json")
         if not smart_check_path(bookmark_json):
             Kiritori(window).log("okini's bookmarks.json not found.")
@@ -572,7 +568,7 @@ def configure(window: MainWindow) -> None:
         placeholder = str(Path(target).name)
         bookmarks = get_okini_bookmarks()
         if bookmarks is not None:
-            found: List[str] = []
+            found: list[str] = []
             for bm in bookmarks:
                 if bm["path"] == target:
                     found.append(bm["name"])
@@ -633,19 +629,19 @@ def configure(window: MainWindow) -> None:
             self.fileList.applyItems()
 
         def setSorter(
-            self, sorter: Callable[[List[ItemDefaultProtocol]], None]
+            self, sorter: Callable[[list[ItemDefaultProtocol]], None]
         ) -> None:
             window.subThreadCall(self.fileList.setSorter, (sorter,))
             self.refresh()
 
         @property
-        def items(self) -> List[ItemDefaultProtocol]:
+        def items(self) -> list[ItemDefaultProtocol]:
             if self.isBlank:
                 return []
             return self._items
 
         @property
-        def dirs(self) -> List[ItemDefaultProtocol]:
+        def dirs(self) -> list[ItemDefaultProtocol]:
             items = []
             if self.isBlank:
                 return items
@@ -656,7 +652,7 @@ def configure(window: MainWindow) -> None:
             return items
 
         @property
-        def files(self) -> List[ItemDefaultProtocol]:
+        def files(self) -> list[ItemDefaultProtocol]:
             items = []
             if self.isBlank:
                 return items
@@ -667,7 +663,7 @@ def configure(window: MainWindow) -> None:
             return items
 
         @property
-        def stems(self) -> List[str]:
+        def stems(self) -> list[str]:
             items = []
             if self.isBlank:
                 return items
@@ -763,7 +759,7 @@ def configure(window: MainWindow) -> None:
             return isinstance(self.byIndex(0), item_Empty)
 
         @property
-        def names(self) -> List[str]:
+        def names(self) -> list[str]:
             names = []
             if self.isBlank:
                 return names
@@ -773,11 +769,11 @@ def configure(window: MainWindow) -> None:
             return names
 
         @property
-        def paths(self) -> List[str]:
+        def paths(self) -> list[str]:
             return [os.path.join(self.currentPath, name) for name in self.names]
 
         @property
-        def extensions(self) -> List[str]:
+        def extensions(self) -> list[str]:
             exts = []
             if self.isBlank:
                 return exts
@@ -789,7 +785,7 @@ def configure(window: MainWindow) -> None:
             return exts
 
         @property
-        def selectedItems(self) -> List[ItemDefaultProtocol]:
+        def selectedItems(self) -> list[ItemDefaultProtocol]:
             items = []
             if self.isBlank:
                 return items
@@ -800,17 +796,17 @@ def configure(window: MainWindow) -> None:
             return items
 
         @property
-        def selectedOrAllItems(self) -> List[ItemDefaultProtocol]:
+        def selectedOrAllItems(self) -> list[ItemDefaultProtocol]:
             if self.hasSelection:
                 return self.selectedItems
             return self.items
 
         @property
-        def selectedItemPaths(self) -> List[str]:
+        def selectedItemPaths(self) -> list[str]:
             return [item.getFullpath() for item in self.selectedItems]
 
         @property
-        def selectedItemNames(self) -> List[str]:
+        def selectedItemNames(self) -> list[str]:
             return [item.getName() for item in self.selectedItems]
 
         @property
@@ -918,7 +914,7 @@ def configure(window: MainWindow) -> None:
         def openChild(self, name: str) -> None:
             self.openPath(os.path.join(self.currentPath, name))
 
-        def openPath(self, path: str, focus_name: Union[None, str] = None) -> None:
+        def openPath(self, path: str, focus_name: None | str = None) -> None:
             if self.currentPath == path and focus_name is not None:
                 self.focusByName(focus_name)
                 return
@@ -934,7 +930,7 @@ def configure(window: MainWindow) -> None:
 
             if focus_name is None:
 
-                def _last_focused_name(hist_item: list) -> Union[str, None]:
+                def _last_focused_name(hist_item: list) -> str | None:
                     (
                         dir_path,
                         filename,
@@ -1004,7 +1000,7 @@ def configure(window: MainWindow) -> None:
                     self.root = root
                     self.dirname = path[len(root) :].lstrip(os.sep)
 
-                def __call__(self, name) -> Union[ItemDefaultProtocol, None]:
+                def __call__(self, name) -> ItemDefaultProtocol | None:
                     try:
                         item: ItemDefaultProtocol = item_Default(
                             self.root, ckit.joinPath(self.dirname, name)
@@ -1079,7 +1075,7 @@ def configure(window: MainWindow) -> None:
         if pane.isBlank:
             return
 
-        candidates: List[ItemDefaultProtocol] = []
+        candidates: list[ItemDefaultProtocol] = []
         for item in pane.selectedOrAllItems:
             if len(candidates) == 0:
                 candidates.append(item)
@@ -1184,8 +1180,8 @@ def configure(window: MainWindow) -> None:
         focused = pane.focusedItem
         base = focused.time()
 
-        older: List[ItemDefaultProtocol] = []
-        sametime: List[ItemDefaultProtocol] = []
+        older: list[ItemDefaultProtocol] = []
+        sametime: list[ItemDefaultProtocol] = []
         for item in pane.selectedOrAllItems:
             ts = item.time()
             if ts == base:
@@ -1235,7 +1231,7 @@ def configure(window: MainWindow) -> None:
 
     def adjust_pane_width() -> None:
         class AdjustBase(NamedTuple):
-            name: Union[None, str]
+            name: None | str
             width: int
             ext: str
 
@@ -1333,7 +1329,7 @@ def configure(window: MainWindow) -> None:
         items: list,
         cursor_pos: int = 0,
         onkeypress: Literal["navigate", "search", "search_and_decide"] = "navigate",
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         pos = window.centerOfFocusedPaneInPixel()
         list_window = ListWindow(
             x=pos[0],
@@ -2145,7 +2141,7 @@ def configure(window: MainWindow) -> None:
 
     Keybinder.bind(go_to, "C-G")
 
-    def traverse_dir(root: Path, max_depth: int, current_depth: int = 0) -> List[Path]:
+    def traverse_dir(root: Path, max_depth: int, current_depth: int = 0) -> list[Path]:
         if max_depth <= current_depth:
             return []
 
@@ -2602,7 +2598,7 @@ def configure(window: MainWindow) -> None:
             self.dests = self.prefixEdges() if by_prefix else self.itemEdges()
 
         @staticmethod
-        def getBlockEdges(idxs: List[int]) -> List[int]:
+        def getBlockEdges(idxs: list[int]) -> list[int]:
             if len(idxs) < 1:
                 return []
 
@@ -2624,7 +2620,7 @@ def configure(window: MainWindow) -> None:
                 edges.append(end)
             return edges
 
-        def appendBaseEdges(self, edges: List[int]) -> List[int]:
+        def appendBaseEdges(self, edges: list[int]) -> list[int]:
             edges.append(0)
             edges.append(self.pane.count - 1)
             if 0 < (nd := len(self.pane.dirs)):
@@ -2633,7 +2629,7 @@ def configure(window: MainWindow) -> None:
                     edges.append(nd)
             return edges
 
-        def itemEdges(self) -> List[int]:
+        def itemEdges(self) -> list[int]:
             if self.pane.isBlank:
                 return []
             stack = []
@@ -2644,7 +2640,7 @@ def configure(window: MainWindow) -> None:
             stack = self.getBlockEdges(stack)
             return sorted(list(set(self.appendBaseEdges(stack))))
 
-        def prefixEdges(self) -> List[int]:
+        def prefixEdges(self) -> list[int]:
             if self.pane.isBlank:
                 return []
             names = self.pane.names
@@ -2856,7 +2852,7 @@ def configure(window: MainWindow) -> None:
 
         rename_config_substr.register(rename_command)
 
-        def _confirm() -> Tuple[List[RenameInfo], bool]:
+        def _confirm() -> tuple[list[RenameInfo], bool]:
             infos = []
             lines = []
             for item in targets:
@@ -2934,7 +2930,7 @@ def configure(window: MainWindow) -> None:
         ins = rename_command[: rename_command.rfind(sep)]
         pos = int(rename_command[rename_command.rfind(sep) + 1 :])
 
-        def _confirm() -> Tuple[List[RenameInfo], bool]:
+        def _confirm() -> tuple[list[RenameInfo], bool]:
             infos = []
             lines = []
             for item in targets:
@@ -3033,7 +3029,7 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        def _confirm() -> Tuple[List[RenameInfo], bool]:
+        def _confirm() -> tuple[list[RenameInfo], bool]:
             infos = []
             lines = []
             for item in targets:
@@ -3068,7 +3064,7 @@ def configure(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        def _confirm() -> Tuple[List[RenameInfo], bool]:
+        def _confirm() -> tuple[list[RenameInfo], bool]:
             infos = []
             lines = []
             for item in targets:
@@ -3186,7 +3182,7 @@ def configure(window: MainWindow) -> None:
         print(rename_command)
         rename_config_index.register(rename_command)
 
-        def _confirm() -> Tuple[List[RenameInfo], bool]:
+        def _confirm() -> tuple[list[RenameInfo], bool]:
             infos = []
             lines = []
             idx = ni.start
@@ -3277,7 +3273,7 @@ def configure(window: MainWindow) -> None:
         rename_config_regexp.register(rename_command)
         reg = rc.search_reg
 
-        def _confirm() -> Tuple[List[RenameInfo], bool]:
+        def _confirm() -> tuple[list[RenameInfo], bool]:
             infos = []
             lines = []
             for item in targets:
@@ -3320,12 +3316,12 @@ def configure(window: MainWindow) -> None:
             stem, _ = os.path.splitext(name)
             return stem
 
-        def selected_stems(self) -> List[str]:
+        def selected_stems(self) -> list[str]:
             sels = self.pane.selectedItemPaths + CPane(False).selectedItemPaths
             return sorted([self.to_stem(sel) for sel in sels])
 
         @staticmethod
-        def len_ordered_unify(lines: List[str]) -> List[str]:
+        def len_ordered_unify(lines: list[str]) -> list[str]:
             return [str(s) for s in sorted(set(lines), key=len)]
 
     class NamePrefix(NameAffix):
@@ -3333,14 +3329,14 @@ def configure(window: MainWindow) -> None:
             super().__init__()
 
         @classmethod
-        def from_name(cls, s: str) -> List[str]:
+        def from_name(cls, s: str) -> list[str]:
             pres = []
             for i, c in enumerate(s):
                 if 0 < i and c == cls.sep:
                     pres.append(s[: i + 1])
             return pres
 
-        def variants(self) -> List[str]:
+        def variants(self) -> list[str]:
             pres = []
             for path in self.pane.paths:
                 pres += self.from_name(self.to_stem(path))
@@ -3352,15 +3348,15 @@ def configure(window: MainWindow) -> None:
             self.candidates = self.variants()
             self.selected = self.selected_stems()
 
-        def filter_by(self, s: str) -> List[str]:
+        def filter_by(self, s: str) -> list[str]:
             return [pre for pre in self.candidates if pre.startswith(s)]
 
         def invoke(
             self,
-        ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], Tuple[List[str], int]]:
+        ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]]:
             def _handler(
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-            ) -> Tuple[List[str], int]:
+            ) -> tuple[list[str], int]:
                 found = self.filter_by(update_info.text)
                 return self.selected + self.len_ordered_unify(found), 0
 
@@ -3370,7 +3366,7 @@ def configure(window: MainWindow) -> None:
         def __init__(
             self,
             with_timestamp: bool = False,
-            additional: List[str] = [],
+            additional: list[str] = [],
         ) -> None:
             super().__init__()
             self.timestamp = ""
@@ -3380,14 +3376,14 @@ def configure(window: MainWindow) -> None:
             self._additional = [self.sep + a for a in additional]
 
         @classmethod
-        def from_name(cls, s: str) -> List[str]:
+        def from_name(cls, s: str) -> list[str]:
             sufs = []
             for i, c in enumerate(s):
                 if 0 < i and c == cls.sep:
                     sufs.append(s[i:])
             return sufs
 
-        def variants(self) -> List[str]:
+        def variants(self) -> list[str]:
             sufs = []
             for path in self.pane.paths:
                 sufs += self.from_name(self.to_stem(path))
@@ -3398,7 +3394,7 @@ def configure(window: MainWindow) -> None:
                     sufs = [s] + sufs
             return sufs
 
-        def from_parents(self) -> List[str]:
+        def from_parents(self) -> list[str]:
             found = []
             parents = Path(self.pane.currentPath, "_").parents
             reg = re.compile(r"[0-9]{6,}")
@@ -3409,12 +3405,12 @@ def configure(window: MainWindow) -> None:
             return found
 
     class SuffixHandler(NameSuffix):
-        def __init__(self, with_timestamp: bool = False, additional: List[str] = []):
+        def __init__(self, with_timestamp: bool = False, additional: list[str] = []):
             super().__init__(with_timestamp, additional)
             self.selected = self.selected_stems()
             self.candidates = self.variants() + self.from_parents()
 
-        def filter_by(self, s: str) -> List[str]:
+        def filter_by(self, s: str) -> list[str]:
             suffixes = self.candidates
             if self.sep not in s:
                 return [s + suf for suf in suffixes]
@@ -3430,10 +3426,10 @@ def configure(window: MainWindow) -> None:
 
         def invoke(
             self,
-        ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], Tuple[List[str], int]]:
+        ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]]:
             def _filter(
                 update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-            ) -> Tuple[List[str], int]:
+            ) -> tuple[list[str], int]:
                 found = self.filter_by(update_info.text)
                 return self.selected + self.len_ordered_unify(found), 0
 
@@ -3441,14 +3437,14 @@ def configure(window: MainWindow) -> None:
 
     def name_candidate_handler(
         with_timestamp: bool,
-    ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], Tuple[List[str], int]]:
+    ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]]:
         prefix_handler = PrefixHandler()
         suffix_handler = SuffixHandler(with_timestamp)
         selected = NameAffix().selected_stems()
 
         def _handler(
             update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-        ) -> Tuple[List[str], int]:
+        ) -> tuple[list[str], int]:
             s = update_info.text
             found = (
                 prefix_handler.filter_by(s)
@@ -3844,7 +3840,7 @@ def configure(window: MainWindow) -> None:
         right: int
         bottom: int
 
-        def get_half(self) -> Tuple:
+        def get_half(self) -> tuple:
             width = self.right - self.left
             height = self.bottom - self.top
             if height < width:
@@ -4059,16 +4055,16 @@ def configure(window: MainWindow) -> None:
                     table[digest] = table.get(digest, []) + [name]
                     exts.add(ext)
 
-                def __files_to_compare() -> Union[
-                    Iterator[ItemDefaultProtocol], List[ItemDefaultProtocol]
-                ]:
+                def __files_to_compare() -> (
+                    Iterator[ItemDefaultProtocol] | list[ItemDefaultProtocol]
+                ):
                     if with_selection:
                         sels = other_pane.selectedItems
                         other_pane.unSelectAll()
                         return sels
                     return other_pane.traverse(True)
 
-                clones: Dict[str, List[str]] = {}
+                clones: dict[str, list[str]] = {}
 
                 for item in __files_to_compare():
                     if job_item.isCanceled():
@@ -4362,7 +4358,7 @@ def configure(window: MainWindow) -> None:
     Keybinder.bind(save_clipboard_image_as_file, "C-S-I")
 
     class PathMatchFilter:
-        def __init__(self, root: str, names: List[str]) -> None:
+        def __init__(self, root: str, names: list[str]) -> None:
             self.root = root
             self.names = names
 
