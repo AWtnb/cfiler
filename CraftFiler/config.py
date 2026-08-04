@@ -40,7 +40,7 @@ import cfiler_msgbox  # type: ignore
 import cfiler_resource  # type: ignore
 import ckit  # type: ignore
 import pyauto  # type: ignore
-from cfiler import *  # type: ignore  # noqa: F403
+from cfiler import *  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import (  # type: ignore
@@ -89,6 +89,7 @@ class PaintOption(Enum):
     Upper = cfiler_mainwindow.PAINT_UPPER
     All = cfiler_mainwindow.PAINT_ALL
 
+
 def delay(msec: int = 50) -> None:
     if 0 < msec:
         time.sleep(msec / 1000)
@@ -111,7 +112,7 @@ def is_file_locked(path: Union[Path, str]) -> bool:
 
 
 def smart_check_path(
-    path: Union[str, Path], timeout_sec: Union[int, float, None] = None
+    path: Union[str, Path], timeout_sec: Union[float, None] = None
 ) -> bool:
     """CASE-INSENSITIVE path check with timeout"""
     p = path if isinstance(path, Path) else Path(path)
@@ -2672,7 +2673,7 @@ def configure(window: MainWindow) -> None:
                 return
             if selecting:
                 for i in range(self.pane.count):
-                    if cur <= i and i <= idx:
+                    if cur <= i <= idx:
                         self.pane.select(i)
             self.pane.focus(idx)
 
@@ -2688,7 +2689,7 @@ def configure(window: MainWindow) -> None:
                 return
             if selecting:
                 for i in range(self.pane.count):
-                    if idx <= i and i <= cur:
+                    if idx <= i <= cur:
                         self.pane.select(i)
             self.pane.focus(idx)
 
