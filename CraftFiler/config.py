@@ -132,7 +132,7 @@ def open_vscode(*args: str) -> bool:
     try:
         if code_path := shutil.which("code"):
             cmd = [code_path] + list(args)
-            subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW, check=False)
             return True
         return False
     except Exception as e:
@@ -163,7 +163,7 @@ def shell_exec(path: str, *args) -> None:
     path = os.path.expandvars(path)
     try:
         cmd = ["start", "", path] + list(args)
-        subprocess.run(cmd, shell=True)
+        subprocess.run(cmd, shell=True, check=False)
     except Exception as e:
         print(e)
 
@@ -173,7 +173,9 @@ def run_ps1(name: str, *args: str):
     cmd = f'PowerShell -NoProfile -ExecutionPolicy Bypass -File "{ps1}"'
     for a in args:
         cmd += f' "{a}"'
-    return subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True)
+    return subprocess.run(
+        cmd, creationflags=subprocess.CREATE_NO_WINDOW, shell=True, check=False
+    )
 
 
 CallbackFunc = Callable[[], None]
@@ -435,6 +437,7 @@ def configure(window: MainWindow) -> None:
             capture_output=True,
             encoding="utf-8",
             creationflags=subprocess.CREATE_NO_WINDOW,
+            check=False,
         )
         if proc.returncode != 0:
             Kiritori(window).log(proc.stderr)
@@ -518,7 +521,7 @@ def configure(window: MainWindow) -> None:
                 "--layout=reverse",
             ]
             proc = subprocess.run(
-                cmd, input=names, capture_output=True, encoding="utf-8"
+                cmd, input=names, capture_output=True, encoding="utf-8", check=False
             )
             if proc.returncode != 0:
                 if e := proc.stderr:
@@ -1650,6 +1653,7 @@ def configure(window: MainWindow) -> None:
                 capture_output=True,
                 encoding="utf-8",
                 creationflags=subprocess.CREATE_NO_WINDOW,
+                check=False,
             )
             if proc.returncode != 0:
                 if o := proc.stdout:
@@ -1814,7 +1818,9 @@ def configure(window: MainWindow) -> None:
                         f"-root={root}",
                     ]
                     delay()
-                    proc = subprocess.run(cmd, capture_output=True, encoding="utf-8")
+                    proc = subprocess.run(
+                        cmd, capture_output=True, encoding="utf-8", check=False
+                    )
                     result = proc.stdout.strip()
                     if result:
                         if proc.returncode != 0:
@@ -1856,6 +1862,7 @@ def configure(window: MainWindow) -> None:
                 input="\n".join(names),
                 capture_output=True,
                 encoding="utf-8",
+                check=False,
             )
 
             if proc.returncode != 0:
@@ -1942,6 +1949,7 @@ def configure(window: MainWindow) -> None:
                     capture_output=True,
                     encoding="utf-8",
                     creationflags=subprocess.CREATE_NO_WINDOW,
+                    check=False,
                 )
                 if proc.returncode != 0:
                     print(proc.stderr)
@@ -1994,6 +2002,7 @@ def configure(window: MainWindow) -> None:
                     capture_output=True,
                     encoding="utf-8",
                     creationflags=subprocess.CREATE_NO_WINDOW,
+                    check=False,
                 )
                 if proc.returncode != 0:
                     Kiritori(window).log(f"ERROR: {proc.stdout}")
@@ -2181,6 +2190,7 @@ def configure(window: MainWindow) -> None:
                 input="\n".join(rels),
                 capture_output=True,
                 encoding="utf-8",
+                check=False,
             )
             if fzf_result.returncode != 0:
                 if e := fzf_result.stderr:
@@ -2249,6 +2259,7 @@ def configure(window: MainWindow) -> None:
                     capture_output=True,
                     text=True,
                     creationflags=subprocess.CREATE_NO_WINDOW,
+                    check=False,
                 )
                 if proc.returncode != 0:
                     if o := proc.stdout:
@@ -2325,6 +2336,7 @@ def configure(window: MainWindow) -> None:
                         capture_output=True,
                         text=True,
                         creationflags=subprocess.CREATE_NO_WINDOW,
+                        check=False,
                     )
                     if proc.returncode != 0:
                         if o := proc.stdout:
