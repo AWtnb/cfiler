@@ -43,7 +43,6 @@ from .tools.bookmark import (
     set_bookmark_alias,
     toggle_bookmark,
 )
-from .tools.browser_info import get_default_browser
 from .tools.clon import invoke_tempfile_cleaner, remove_tempfiles
 from .tools.common import (
     DESKTOP_PATH,
@@ -58,7 +57,7 @@ from .tools.common import (
     stringify,
 )
 from .tools.cpane import CPane, LeftPane, RightPane, adjust_pane_width, swap_pane
-from .tools.enter import hook_enter
+from .tools.enter import hook_enter, open_with
 from .tools.listwindow import ask_open_by_vscode, invoke_listwindow
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
@@ -76,6 +75,8 @@ def setup(window) -> None:
     bookmark.setup(window)
     keybinder.setup(window)
     enter.setup(window)
+
+    window.enter_hook = hook_enter
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -336,73 +337,12 @@ def setup(window) -> None:
 
     keybinder.bind(lambda: CPane().focusOther(), "C-L")
 
-    window.enter_hook = hook_enter
-
     keybinder.bind(window.command_Enter, "L", "Right")
 
     def toggle_hidden() -> None:
         window.showHiddenFile(not window.isHiddenFileVisible())
 
     keybinder.bind(toggle_hidden, "C-S-H")
-
-    def open_with() -> None:
-        pane = CPane()
-        if pane.isBlank:
-            return
-
-        if any([item.isdir() for item in pane.selectedItems]):
-            return
-
-        paths = pane.selectedItemPaths
-        if len(paths) < 1 and not pane.focusedItem.isdir():
-            paths.append(pane.focusedItemPath)
-
-        app_table = {}
-        if len(set([Path(p).suffix for p in paths])) != 1:
-            app_table["(associated app)"] = shell_exec
-
-        if any([path.endswith(".pdf") for path in paths]):
-            sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
-            if smart_check_path(sumatra_path):
-                app_table["sumatra"] = sumatra_path
-
-            acrobat_path = r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
-            if smart_check_path(acrobat_path):
-                app_table["adobe"] = acrobat_path
-            else:
-                acrobat_reader_path = r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"
-                if smart_check_path(acrobat_reader_path):
-                    app_table["adobe-reader"] = acrobat_reader_path
-
-            if (xedit_path := shutil.which("pdfxedit")) is not None:
-                app_table["xEdit"] = xedit_path
-
-            if (browser_path := get_default_browser()) != "":
-                app_table["browser"] = browser_path
-
-        app_table["notepad"] = r"C:\Windows\System32\notepad.exe"
-        app_table["mery"] = os.path.expandvars(
-            r"${LOCALAPPDATA}\Programs\Mery\Mery.exe"
-        )
-        app_table["vscode"] = lambda x: open_vscode(x, "--new-window")
-
-        if all([(Path(path).suffix in [".txt", ".csv"]) for path in paths]):
-            smooth_csv_path = r"C:\Program Files\SmoothCSV\smoothcsv-app.exe"
-            if smart_check_path(smooth_csv_path):
-                app_table["smooth csv"] = smooth_csv_path
-
-        names = list(app_table.keys())
-
-        result, _ = invoke_listwindow("open with:", names)
-        if result < 0:
-            return
-
-        exe = app_table[names[result]]
-        for path in paths:
-            if isinstance(exe, Callable):
-                exe(path)  # ty:ignore[call-top-callable]
-            else:
-                shell_exec(exe, path)
 
     keybinder.bind(open_with, "C-O")
 

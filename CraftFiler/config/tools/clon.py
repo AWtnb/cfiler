@@ -17,7 +17,7 @@ def setup(_window) -> None:
     kiritori.setup(window)
 
 
-def invoke_tempfile_cleaner():
+def invoke_tempfile_cleaner() -> ckit.ckit_threadutil.CronItem:
     temp_dir = tempfile.gettempdir()
 
     def _crean(_) -> None:
@@ -40,8 +40,6 @@ def invoke_tempfile_cleaner():
             window.setStatusMessage(msg, 8000)
 
     ci = ckit.CronItem(_crean, 30.0)
-
-    print(ci)  # TODO
 
     return ci
 
