@@ -4,15 +4,13 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import ckit  # type: ignore
-import pyauto  # type: ignore
 from cfiler import *  # type: ignore
 
 from . import cpane, kiritori
-from .common import DESKTOP_PATH, check_fzf, open_vscode, smart_check_path, stringify
+from .common import check_fzf, open_vscode, smart_check_path, stringify
 from .cpane import CPane
 from .listwindow import ask_open_by_vscode
 
@@ -24,12 +22,12 @@ def setup(_window) -> None:
     cpane.setup(window)
 
 
-def okini(*params: str) -> str:
+def okini(*params: str) -> None:
     cli = "okini"
     exe = shutil.which(cli)
     if exe is None:
         kiritori.log(f"{cli} not found.")
-        return ""
+        return
     cmd = ["okini"] + list(params)
     proc = subprocess.run(
         cmd,
@@ -40,8 +38,8 @@ def okini(*params: str) -> str:
     )
     if proc.returncode != 0:
         kiritori.log(proc.stderr)
-        return ""
-    return proc.stdout.strip()
+        return
+    return
 
 
 def get_okini_bookmarks() -> list[dict[str, str]] | None:
@@ -54,16 +52,26 @@ def get_okini_bookmarks() -> list[dict[str, str]] | None:
         return json.load(f)
 
 
+def add_bookmark(path: str) -> None:
+    window.bookmark.append(path)
+    okini("--add", path)
+    kiritori.log(f"Bookmarked: '{path}'")
+
+
+def remove_bookmark(path: str) -> None:
+    window.bookmark.remove(path)
+    okini("--remove", path)
+    kiritori.log(f"Unbookmarked: '{path}'")
+
+
 def toggle_bookmark() -> None:
     pane = CPane(True)
     path = pane.focusedItemPath
     dirname, filename = os.path.split(path)
     if filename.lower() in window.bookmark.listDir(dirname):
-        window.bookmark.remove(path)
-        _ = okini("--remove", pane.focusedItemPath)
+        remove_bookmark(path)
     else:
-        _ = okini("--add", pane.focusedItemPath)
-        window.bookmark.append(path)
+        add_bookmark(path)
 
     pane.refresh()
     pane.repaint()
@@ -76,13 +84,9 @@ def bookmark_here() -> None:
     path = CPane().currentPath
     bookmarks = [p for p in window.bookmark.getItems()]
     if path in bookmarks:
-        window.bookmark.remove(path)
-        _ = okini("--remove", path)
-        kiritori.log(f"Unbookmarked: '{path}'")
+        remove_bookmark(path)
     else:
-        window.bookmark.append(path)
-        _ = okini("--add", path)
-        kiritori.log(f"Bookmarked: '{path}'")
+        add_bookmark(path)
 
 
 def fuzzy_bookmark(local_only: bool) -> None:
@@ -185,16 +189,3 @@ def set_bookmark_alias() -> None:
         if target != pane.currentPath:
             pane.refresh()
     kiritori.log(f"Registered '{alias}' as alias for '{target}'")
-
-
-def new_cfiler_window() -> None:
-    exe_path = sys.executable
-    if smart_check_path(exe_path):
-        slashed = DESKTOP_PATH.replace("\\", "/")
-        pyauto.shellExecute(
-            None,
-            exe_path,
-            f' -L"{slashed}" -R"{slashed}"',
-        )
-    else:
-        kiritori.log(f"{exe_path} not found.")
