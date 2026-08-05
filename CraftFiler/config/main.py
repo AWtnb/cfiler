@@ -81,6 +81,7 @@ from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
 from .tools.rename import ini as rename_ini
 from .tools.rename import renamer
+from .tools.rename import substr as rename_substr
 from .tools.rename.renamer import RenameInfo
 
 
@@ -102,6 +103,7 @@ def setup(window) -> None:
     renamer.setup(window)
     style.setup(window)
     selector.setup(window)
+    rename_substr.setup(window)
 
     window.enter_hook = hook_enter
 
@@ -696,81 +698,7 @@ def setup(window) -> None:
 
     keybinder.bind(on_vscode, "V")
 
-    def rename_substr() -> None:
-
-        pane = CPane()
-        targets = renamer.get_renamable_items(pane)
-        if len(targets) < 1:
-            return
-
-        placeholder = ";-1"
-        sel_end = 0
-
-        ini_option = "substr"
-        if 0 < len(last := rename_ini.get_value(ini_option)):
-            placeholder = last
-            sel_end = last.find(";")
-
-        print("Rename substring (extract part of filename):")
-        rename_command = stringify(
-            window.commandLine(
-                "Offset[;Length]", text=placeholder, selection=[0, sel_end]
-            )
-        )
-
-        if len(rename_command) < 1:
-            print("Canceled.\n")
-            return
-
-        sep = ";"
-        if sep not in rename_command:
-            rename_command += ";-1"
-        else:
-            if rename_command.startswith(sep):
-                rename_command = "0" + rename_command
-
-        offset = int(rename_command[: rename_command.find(sep)])
-        length = int(rename_command[rename_command.rfind(sep) + 1 :])
-
-        if offset == 0 and length == -1:
-            print("Canceled.\n")
-            return
-
-        rename_ini.register(ini_option, rename_command)
-
-        def _confirm() -> tuple[list[RenameInfo], bool]:
-            infos = []
-            lines = []
-            for item in targets:
-                org_path = Path(item.getFullpath())
-
-                def _get_new_stem() -> str:
-                    stem = org_path.stem
-                    if length < 0:
-                        if length == -1:
-                            return stem[offset:]
-                        return stem[offset : length + 1]
-                    return stem[offset : offset + length]
-
-                new_name = _get_new_stem() + org_path.suffix
-                infos.append(RenameInfo(org_path, new_name))
-                lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
-
-            lines.append(f"\noffset: {offset}\nlength: {length}\nOK? (Enter / Esc)")
-
-            return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-        infos, ok = _confirm()
-        if len(infos) < 1 or not ok:
-            print("Canceled.\n")
-            return
-
-        krtr = kiritori
-        krtr.draw_header("Renaming:")
-        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-        krtr.draw_footer()
-
-    keybinder.bind(rename_substr, "S-S")
+    keybinder.bind(rename_substr.execute, "S-S")
 
     def rename_insert() -> None:
 
