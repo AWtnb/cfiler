@@ -626,6 +626,8 @@ def setup(window) -> None:
         }.items():
             keybinder.bind(v, k)
 
+    bind_selector()
+
     def unselect_panes() -> None:
         CPane().unSelectAll()
         CPane(False).unSelectAll()
