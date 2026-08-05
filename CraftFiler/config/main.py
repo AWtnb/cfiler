@@ -80,6 +80,7 @@ from .tools.listwindow import invoke_listwindow
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
 from .tools.rename import ini as rename_ini
+from .tools.rename import insert as rename_insert
 from .tools.rename import renamer
 from .tools.rename import substr as rename_substr
 from .tools.rename.renamer import RenameInfo
@@ -100,10 +101,11 @@ def setup(window) -> None:
     listwindow.setup(window)
     office.setup(window)
     rename_ini.setup(window)
-    renamer.setup(window)
-    style.setup(window)
-    selector.setup(window)
+    rename_insert.setup(window)
     rename_substr.setup(window)
+    renamer.setup(window)
+    selector.setup(window)
+    style.setup(window)
 
     window.enter_hook = hook_enter
 
@@ -700,84 +702,7 @@ def setup(window) -> None:
 
     keybinder.bind(rename_substr.execute, "S-S")
 
-    def rename_insert() -> None:
-
-        pane = CPane()
-        targets = renamer.get_renamable_items(pane)
-        if len(targets) < 1:
-            return
-
-        placeholder = "@-1"
-        sel_end = 0
-
-        ini_option = "insert"
-        last_insert = rename_ini.get_value(ini_option)
-        if 0 < len(last_insert):
-            placeholder = last_insert
-            sel_end = last_insert.find("@")
-
-        print("Rename insert:")
-        rename_command = stringify(
-            window.commandLine(
-                "Text[@position]", text=placeholder, selection=[0, sel_end]
-            ),
-            False,
-        ).rstrip()
-
-        if len(rename_command) < 1:
-            print("Canceled.\n")
-            return
-
-        sep = "@"
-        if rename_command.startswith(sep):
-            print("Canceled.\n")
-            return
-
-        if sep not in rename_command:
-            rename_command += "@-1"
-        else:
-            if rename_command.endswith(sep):
-                rename_command += "-1"
-
-        rename_ini.register(ini_option, rename_command)
-
-        ins = rename_command[: rename_command.rfind(sep)]
-        pos = int(rename_command[rename_command.rfind(sep) + 1 :])
-
-        def _confirm() -> tuple[list[RenameInfo], bool]:
-            infos = []
-            lines = []
-            for item in targets:
-                org_path = Path(item.getFullpath())
-
-                def _get_new_stem() -> str:
-                    stem = org_path.stem
-                    if pos < 0:
-                        if pos == -1:
-                            return stem + ins
-                        p = pos + 1
-                        return stem[:p] + ins + stem[p:]
-                    return stem[:pos] + ins + stem[pos:]
-
-                new_name = _get_new_stem() + org_path.suffix
-                infos.append(RenameInfo(org_path, new_name))
-                lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
-
-            lines.append(f"\ninsert: {ins}\nat: {pos}\nOK? (Enter / Esc)")
-
-            return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-        infos, ok = _confirm()
-        if len(infos) < 1 or not ok:
-            print("Canceled.\n")
-            return
-
-        krtr = kiritori
-        krtr.draw_header("Renaming:")
-        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-        krtr.draw_footer()
-
-    keybinder.bind(rename_insert, "S-I")
+    keybinder.bind(rename_insert.execute, "S-I")
 
     class PhotoFile:
         def __init__(self, path: str):
@@ -2261,7 +2186,7 @@ def setup(window) -> None:
             ),
             "RenamePseudoVoicing": rename_pseudo_voicing,
             "RenameIndex": rename_index,
-            "RenameInsert": rename_insert,
+            "RenameInsert": rename_insert.execute,
             "RenameExtension": rename_ext,
             "RenameRegExp": rename_regexp,
             "RenameStem": rename_stem,

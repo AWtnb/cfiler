@@ -22,44 +22,46 @@ def setup(_window) -> None:
     rename_ini.setup(window)
 
 
-def get_new_stem(stem: str, offset: int, length: int) -> str:
-    if length < 0:
-        if length == -1:
-            return stem[offset:]
-        return stem[offset : length + 1]
-    return stem[offset : offset + length]
+def get_new_stem(stem: str, ins: str, pos: int) -> str:
+    if pos < 0:
+        if pos == -1:
+            return stem + ins
+        p = pos + 1
+        return stem[:p] + ins + stem[p:]
+    return stem[:pos] + ins + stem[pos:]
 
 
-INI_OPTION = "substr"
+INI_OPTION = "insert"
 
 
-def get_param() -> tuple[int, int] | None:
-    placeholder = ";-1"
+def get_param() -> tuple[str, int] | None:
+    sep = "@"
+    placeholder = "@-1"
     sel_end = 0
 
     if 0 < len(last := rename_ini.get_value(INI_OPTION)):
         placeholder = last
-        sel_end = last.find(";")
+        sel_end = last.find(sep)
 
-    print("Rename substring (extract part of filename):")
+    print("Rename insert:")
     rename_command = stringify(
-        window.commandLine("Offset[;Length]", text=placeholder, selection=[0, sel_end])
-    )
+        window.commandLine("Text[@position]", text=placeholder, selection=[0, sel_end]),
+        False,
+    ).rstrip()
 
     if len(rename_command) < 1:
         return None
 
-    sep = ";"
+    if rename_command.startswith(sep) or rename_command.endswith(sep):
+        return None
+
     if sep not in rename_command:
-        rename_command += ";-1"
-    else:
-        if rename_command.startswith(sep):
-            rename_command = "0" + rename_command
+        rename_command += "@-1"
 
     elems = rename_command.split(sep)
-    offset = int(elems[0])
-    length = int(elems.pop())
-    return offset, length
+    insert_str = elems[0]
+    pos = int(elems.pop())
+    return insert_str, pos
 
 
 def execute() -> None:
@@ -73,12 +75,8 @@ def execute() -> None:
         print("Canceled.\n")
         return
 
-    offset, length = param
-    if offset == 0 and length == -1:
-        print("Canceled.\n")
-        return
-
-    history = f"{offset};{length}"
+    ins, pos = param
+    history = f"{ins};{pos}"
     rename_ini.register(INI_OPTION, history)
 
     def _confirm() -> tuple[list[RenameInfo], bool]:
@@ -86,11 +84,12 @@ def execute() -> None:
         lines = []
         for item in targets:
             org_path = Path(item.getFullpath())
-            new_name = get_new_stem(org_path.stem, offset, length) + org_path.suffix
+
+            new_name = get_new_stem(org_path.stem, ins, pos) + org_path.suffix
             infos.append(RenameInfo(org_path, new_name))
             lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
 
-        lines.append(f"\noffset: {offset}\nlength: {length}\nOK? (Enter / Esc)")
+        lines.append(f"\ninsert: {ins}\nat: {pos}\nOK? (Enter / Esc)")
 
         return infos, popResultWindow(window, "Preview", "\n".join(lines))
 
