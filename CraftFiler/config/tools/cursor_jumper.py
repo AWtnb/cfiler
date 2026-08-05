@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from . import cpane
-from .cpane import CPane
 
 
 def setup(window) -> None:
@@ -31,7 +30,7 @@ def get_block_edges(idxs: list[int]) -> list[int]:
     return edges
 
 
-def get_base_edges(pane: CPane) -> list[int]:
+def get_base_edges(pane: cpane.CPane) -> list[int]:
     edges = [0]
     edges.append(pane.count - 1)
     if 0 < (nd := len(pane.dirs)):
@@ -41,7 +40,7 @@ def get_base_edges(pane: CPane) -> list[int]:
     return edges
 
 
-def get_item_edges(pane: CPane) -> list[int]:
+def get_item_edges(pane: cpane.CPane) -> list[int]:
     if pane.isBlank:
         return []
     stack = get_base_edges(pane)
@@ -53,7 +52,7 @@ def get_item_edges(pane: CPane) -> list[int]:
     return sorted(set(stack))
 
 
-def get_prefix_edges(pane: CPane) -> list[int]:
+def get_prefix_edges(pane: cpane.CPane) -> list[int]:
     if pane.isBlank:
         return []
     names = pane.names
@@ -72,7 +71,7 @@ def get_prefix_edges(pane: CPane) -> list[int]:
 
 class CursorJumper:
     def __init__(self, by_prefix: bool):
-        self.pane = CPane()
+        self.pane = cpane.CPane()
         if by_prefix:
             self.dests = get_prefix_edges(self.pane)
         else:

@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Callable
 
 from . import cpane
-from .cpane import CPane
 
 
 def setup(window) -> None:
@@ -11,11 +10,11 @@ def setup(window) -> None:
 
 
 def all_items() -> None:
-    CPane().selectAll()
+    cpane.CPane().selectAll()
 
 
 def to_top() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.cursor < pane.selectionTop:
         for i in range(pane.count):
             if i <= pane.cursor:
@@ -29,7 +28,7 @@ def to_top() -> None:
 
 
 def clear_to_top() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     for i in range(pane.count):
         if i <= pane.cursor:
             pane.unSelect(i, False)
@@ -37,7 +36,7 @@ def clear_to_top() -> None:
 
 
 def to_bottom() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.selectionBottom < pane.cursor:
         for i in range(pane.count):
             if pane.cursor <= i:
@@ -51,7 +50,7 @@ def to_bottom() -> None:
 
 
 def clear_to_bottom() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     for i in range(pane.count):
         if pane.cursor < i:
             pane.unSelect(i, False)
@@ -59,7 +58,7 @@ def clear_to_bottom() -> None:
 
 
 def files() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     for item in pane.selectedOrAllItems:
         name = item.getName()
         if not item.isdir():
@@ -67,7 +66,7 @@ def files() -> None:
 
 
 def dirs() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     for item in pane.selectedOrAllItems:
         name = item.getName()
         if item.isdir():
@@ -75,11 +74,11 @@ def dirs() -> None:
 
 
 def clear_all() -> None:
-    CPane().unSelectAll()
+    cpane.CPane().unSelectAll()
 
 
 def by_selector_func(func: Callable[[str], bool], negative: bool = False) -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     for item in pane.selectedOrAllItems:
         path = item.getFullpath()
         if (negative and not func(path)) or (not negative and func(path)):

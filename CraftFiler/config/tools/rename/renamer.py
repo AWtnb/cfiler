@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import NamedTuple
 
 from .. import cpane
-from ..cpane import CPane
 
 
 def setup(_window) -> None:
@@ -21,7 +20,7 @@ def is_renamable(item) -> bool:
     return hasattr(item, "rename") and hasattr(item, "utime") and hasattr(item, "uattr")
 
 
-def get_renamable_items(pane: CPane) -> list:
+def get_renamable_items(pane: cpane.CPane) -> list:
     if pane.hasSelection:
         return [item for item in pane.selectedItems if is_renamable(item)]
     item = pane.focusedItem

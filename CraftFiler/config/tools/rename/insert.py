@@ -5,8 +5,6 @@ from pathlib import Path
 from cfiler_resultwindow import popResultWindow  # type: ignore
 
 from .. import cpane, kiritori
-from ..common import stringify
-from ..cpane import CPane
 from . import ini as rename_ini
 from . import renamer
 from .renamer import RenameInfo
@@ -44,12 +42,11 @@ def get_param() -> tuple[str, int] | None:
         sel_end = last.find(sep)
 
     print("Rename insert:")
-    rename_command = stringify(
-        window.commandLine("Text[@position]", text=placeholder, selection=[0, sel_end]),
-        False,
-    ).rstrip()
+    rename_command = window.commandLine(
+        "Text[@position]", text=placeholder, selection=[0, sel_end]
+    )
 
-    if len(rename_command) < 1:
+    if rename_command is None or len(rename_command.rstrip()) < 1:
         return None
 
     if rename_command.startswith(sep) or rename_command.endswith(sep):
@@ -65,7 +62,7 @@ def get_param() -> tuple[str, int] | None:
 
 
 def execute() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     targets = renamer.get_renamable_items(pane)
     if len(targets) < 1:
         return

@@ -2,8 +2,7 @@ import subprocess
 
 import ckit  # type: ignore
 
-from . import kiritori
-from .cpane import CPane
+from . import cpane, kiritori
 from .protocols import ItemDefaultProtocol
 
 
@@ -12,10 +11,11 @@ def setup(_window) -> None:
     window = _window
 
     kiritori.setup(window)
+    cpane.setup(window)
 
 
 def smart_cursorUp() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.isBlank or pane.count == 1:
         return
     if pane.cursor == 0:
@@ -26,7 +26,7 @@ def smart_cursorUp() -> None:
 
 
 def smart_cursorDown() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.isBlank or pane.count == 1:
         return
     if pane.cursor == pane.count - 1:
@@ -37,7 +37,7 @@ def smart_cursorDown() -> None:
 
 
 def focus_latest_item() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.isBlank:
         return
 
@@ -66,7 +66,7 @@ def focus_latest_item() -> None:
 
 
 def focus_by_timestamp() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.isBlank:
         return
 
@@ -95,7 +95,7 @@ def focus_by_timestamp() -> None:
 
 
 def fuzzy_focus() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     names = pane.names
     if len(names) < 1:
         return

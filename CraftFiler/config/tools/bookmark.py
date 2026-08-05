@@ -11,7 +11,6 @@ from cfiler import *  # type: ignore
 
 from . import cpane, kiritori
 from .common import check_fzf, open_vscode, smart_check_path, stringify
-from .cpane import CPane
 from .listwindow import ask_open_by_vscode
 
 
@@ -65,7 +64,7 @@ def remove_bookmark(path: str) -> None:
 
 
 def toggle_bookmark() -> None:
-    pane = CPane(True)
+    pane = cpane.CPane(True)
     path = pane.focusedItemPath
     dirname, filename = os.path.split(path)
     if filename.lower() in window.bookmark.listDir(dirname):
@@ -75,13 +74,13 @@ def toggle_bookmark() -> None:
 
     pane.refresh()
     pane.repaint()
-    other_pane = CPane(False)
+    other_pane = cpane.CPane(False)
     other_pane.refresh()
     other_pane.repaint()
 
 
 def bookmark_here() -> None:
-    path = CPane().currentPath
+    path = cpane.CPane().currentPath
     bookmarks = [p for p in window.bookmark.getItems()]
     if path in bookmarks:
         remove_bookmark(path)
@@ -98,7 +97,7 @@ def fuzzy_bookmark(local_only: bool) -> None:
         kiritori.log("okini not found.")
         return
 
-    pane = CPane()
+    pane = cpane.CPane()
 
     bookmarks = get_okini_bookmarks()
     if bookmarks is None:
@@ -142,8 +141,6 @@ def fuzzy_bookmark(local_only: bool) -> None:
         if path is None:
             return
 
-        pane = CPane()
-
         if smart_check_path(os.path.join(path, ".git")) and ask_open_by_vscode():
             open_vscode(path)
             return
@@ -155,7 +152,7 @@ def fuzzy_bookmark(local_only: bool) -> None:
 
 
 def set_bookmark_alias() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     target = pane.currentPath
     if pane.hasSelection:
         if 1 < len(pane.selectedItems):

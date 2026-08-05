@@ -10,10 +10,9 @@ import ckit  # type: ignore
 from cfiler import *  # type: ignore
 from cfiler_filelist import item_Default  # type: ignore
 
-from . import kiritori
+from . import cpane, kiritori
 from .clon import TEMP_FILE_PREFIX
 from .common import smart_check_path
-from .cpane import CPane
 
 
 def setup(_window) -> None:
@@ -21,6 +20,7 @@ def setup(_window) -> None:
     window = _window
 
     kiritori.setup(window)
+    cpane.setup(window)
 
 
 def read_openxml(path: str) -> str:
@@ -95,7 +95,7 @@ def preview_openxml_content(path: str) -> None:
 
 def docx_to_txt() -> None:
 
-    pane = CPane()
+    pane = cpane.CPane()
     paths = pane.selectedItemPaths
     if len(paths) < 1:
         paths = [pane.focusedItemPath]

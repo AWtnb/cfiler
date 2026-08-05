@@ -7,7 +7,7 @@ from pathlib import Path
 
 import ckit  # type: ignore
 
-from . import kiritori
+from . import cpane, kiritori
 from .common import (
     DESKTOP_PATH,
     CallbackFunc,
@@ -16,7 +16,6 @@ from .common import (
     smart_check_path,
     stringify,
 )
-from .cpane import CPane
 from .listwindow import ask_open_by_vscode, invoke_listwindow
 
 
@@ -25,10 +24,11 @@ def setup(_window) -> None:
     window = _window
 
     kiritori.setup(window)
+    cpane.setup(window)
 
 
 def open_latest_under_tree() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.isBlank:
         return
 
@@ -70,7 +70,7 @@ class zyw:
     @classmethod
     def invoke(cls, skip_file: bool) -> CallbackFunc:
         def _wrapper() -> None:
-            pane = CPane()
+            pane = cpane.CPane()
             if pane.isBlank:
                 return
 
@@ -102,7 +102,7 @@ class zyw:
             def __open(job_item: ckit.JobItem) -> None:
                 result = job_item.result
                 if result:
-                    pane = CPane()
+                    pane = cpane.CPane()
                     pane.openPath(result)
 
             job = ckit.JobItem(__find, __open)
@@ -124,7 +124,7 @@ def change_drive() -> None:
         def parse(cls, s: str) -> str:
             return s[: s.find(cls.sep)]
 
-    current_drive = Path(CPane().currentPath).drive
+    current_drive = Path(cpane.CPane().currentPath).drive
     menu = []
     for d in ckit.getDrives():
         d += ":"
@@ -138,11 +138,11 @@ def change_drive() -> None:
 
     drive = MenuItem.parse(menu[result])
     open_path = DESKTOP_PATH if drive == "C:" else f"{drive}\\"
-    CPane(mod != ckit.MODKEY_SHIFT).openPath(open_path)
+    cpane.CPane(mod != ckit.MODKEY_SHIFT).openPath(open_path)
 
 
 def go_to() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
 
     def _format_sep(s: str) -> str:
         return s.replace("/", os.sep)
@@ -232,7 +232,7 @@ def to_ghq_repo() -> None:
             open_vscode(str(path))
             return
 
-        CPane().openPath(str(path))
+        cpane.CPane().openPath(str(path))
 
     job = ckit.JobItem(_listup, _open)
     window.taskEnqueue(job, create_new_queue=False)

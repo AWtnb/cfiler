@@ -7,11 +7,10 @@ from typing import Callable
 
 from cfiler import *  # type: ignore
 
-from . import archiver
+from . import archiver, cpane
 from .archiver import extract_archives, is_extractable, peek_archive
 from .browser_info import get_default_browser
 from .common import open_vscode, shell_exec, smart_check_path
-from .cpane import CPane
 from .listwindow import invoke_listwindow
 from .office import preview_openxml_content
 
@@ -21,10 +20,11 @@ def setup(_window) -> None:
     window = _window
 
     archiver.setup(window)
+    cpane.setup(window)
 
 
 def hook_enter() -> bool:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.isBlank:
         pane.focusOther()
         return True
@@ -98,7 +98,7 @@ def hook_enter() -> bool:
 
 
 def open_with() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     if pane.isBlank:
         return
 

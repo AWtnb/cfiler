@@ -8,9 +8,8 @@ from pathlib import Path
 import ckit  # type: ignore
 from cfiler_resultwindow import popResultWindow  # type: ignore
 
-from . import kiritori
+from . import cpane, kiritori
 from .common import get_now, stringify
-from .cpane import CPane
 
 
 def setup(_window) -> None:
@@ -18,6 +17,7 @@ def setup(_window) -> None:
     window = _window
 
     kiritori.setup(window)
+    cpane.setup(window)
 
 
 def is_extractable(ext: str) -> bool:
@@ -96,7 +96,7 @@ def extract_with_7zip(dest: str, *paths: str) -> None:
     def _finished(_) -> None:
         print("Finished")
         krtr.draw_footer()
-        pane = CPane()
+        pane = cpane.CPane()
         pane.refresh()
         pane.focusByName(Path(dest).name)
 
@@ -105,7 +105,7 @@ def extract_with_7zip(dest: str, *paths: str) -> None:
 
 
 def extract_archives() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
 
     for item in pane.selectedItems:
         ext = Path(item.getFullpath()).suffix
@@ -140,7 +140,7 @@ def extract_archives() -> None:
         extract_with_7zip(extract_path, *pane.selectedItemPaths)
     else:
         pane.adjustWidth()
-        CPane(False).openPath(extract_path)
+        cpane.CPane(False).openPath(extract_path)
         window.command_ExtractArchive(None)
 
 
@@ -177,7 +177,7 @@ def compress_with_7zip(zip_path: str, *targets: str) -> None:
 
 
 def compress_files() -> None:
-    pane = CPane()
+    pane = cpane.CPane()
     targets = pane.selectedItemPaths
 
     if len(targets) < 1:
