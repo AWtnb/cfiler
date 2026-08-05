@@ -12,7 +12,7 @@ def setup(_window) -> None:
     window = _window
 
 
-def invoke_listwindow(
+def invoke(
     prompt: str,
     items: list,
     cursor_pos: int = 0,
@@ -53,7 +53,7 @@ def ask_open_by_vscode() -> bool:
 
     apps = [App.CFILER, App.VSCODE]
 
-    result, _ = invoke_listwindow("Open with:", [app.value for app in apps])
+    result, _ = invoke("Open with:", [app.value for app in apps])
     if result < 0:
         return False
 

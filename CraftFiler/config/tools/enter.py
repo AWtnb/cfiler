@@ -7,12 +7,9 @@ from typing import Callable
 
 from cfiler import *  # type: ignore
 
-from . import archiver, cpane
-from .archiver import extract_archives, is_extractable, peek_archive
+from . import archiver, cpane, listwindow, office
 from .browser_info import get_default_browser
 from .common import open_vscode, shell_exec, smart_check_path
-from .listwindow import invoke_listwindow
-from .office import preview_openxml_content
 
 
 def setup(_window) -> None:
@@ -21,6 +18,8 @@ def setup(_window) -> None:
 
     archiver.setup(window)
     cpane.setup(window)
+    listwindow.setup(window)
+    office.setup(window)
 
 
 def hook_enter() -> bool:
@@ -40,7 +39,7 @@ def hook_enter() -> bool:
         and pane.focusedItem.selected()
         and len(pane.selectedItems) == 1
     ):
-        extract_archives()
+        archiver.extract()
         return True
 
     if pane.focusedItem.size() == 0:
@@ -57,8 +56,8 @@ def hook_enter() -> bool:
         window.command_Execute(None)
         return True
 
-    if is_extractable(ext):
-        peek_archive(focus_path)
+    if archiver.is_target(ext):
+        archiver.peek(focus_path)
         return True
 
     if ext.lower() in [
@@ -71,10 +70,10 @@ def hook_enter() -> bool:
         else:
             menu.append("Peek sheet1")
         menu.append("Open")
-        result, _ = invoke_listwindow("OpenXML file:", menu)
+        result, _ = listwindow.invoke("OpenXML file:", menu)
         if result != -1:
             if result == 0:
-                preview_openxml_content(focus_path)
+                office.preview_content(focus_path)
             else:
                 window.command_Execute(None)
         return True
@@ -145,7 +144,7 @@ def open_with() -> None:
 
     names = list(app_table.keys())
 
-    result, _ = invoke_listwindow("open with:", names)
+    result, _ = listwindow.invoke("open with:", names)
     if result < 0:
         return
 

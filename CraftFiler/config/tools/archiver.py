@@ -20,7 +20,7 @@ def setup(_window) -> None:
     cpane.setup(window)
 
 
-def is_extractable(ext: str) -> bool:
+def is_target(ext: str) -> bool:
     for archiver in window.archiver_list:
         for pattern in archiver[0].split():
             if ext == pattern[1:]:
@@ -28,7 +28,7 @@ def is_extractable(ext: str) -> bool:
     return False
 
 
-def peek_archive(path: str) -> None:
+def peek(path: str) -> None:
     p = Path(path)
     archiver = window.getArchiver(p.name)
     if not archiver:
@@ -59,7 +59,7 @@ def extract_with_7zip(dest: str, *paths: str) -> None:
         kiritori.log("7z not found.")
         return
 
-    targets = [t for t in paths if Path(t).is_file() and is_extractable(Path(t).suffix)]
+    targets = [t for t in paths if Path(t).is_file() and is_target(Path(t).suffix)]
     if len(targets) < 1:
         return
 
@@ -104,12 +104,12 @@ def extract_with_7zip(dest: str, *paths: str) -> None:
     window.taskEnqueue(job, create_new_queue=False)
 
 
-def extract_archives() -> None:
+def extract() -> None:
     pane = cpane.CPane()
 
     for item in pane.selectedItems:
         ext = Path(item.getFullpath()).suffix
-        if not is_extractable(ext):
+        if not is_target(ext):
             pane.unSelectByName(item.getName())
 
     if not pane.hasSelection:
@@ -176,7 +176,7 @@ def compress_with_7zip(zip_path: str, *targets: str) -> None:
     window.taskEnqueue(job, create_new_queue=False)
 
 
-def compress_files() -> None:
+def compress() -> None:
     pane = cpane.CPane()
     targets = pane.selectedItemPaths
 

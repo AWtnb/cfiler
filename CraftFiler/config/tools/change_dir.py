@@ -7,7 +7,7 @@ from pathlib import Path
 
 import ckit  # type: ignore
 
-from . import cpane, kiritori
+from . import cpane, kiritori, listwindow
 from .common import (
     DESKTOP_PATH,
     CallbackFunc,
@@ -16,7 +16,6 @@ from .common import (
     smart_check_path,
     stringify,
 )
-from .listwindow import ask_open_by_vscode, invoke_listwindow
 
 
 def setup(_window) -> None:
@@ -24,6 +23,7 @@ def setup(_window) -> None:
     window = _window
 
     kiritori.setup(window)
+    listwindow.setup(window)
     cpane.setup(window)
 
 
@@ -132,7 +132,7 @@ def change_drive() -> None:
             continue
         menu.append(MenuItem(d).line)
 
-    result, mod = invoke_listwindow("Drive", menu, onkeypress="search_and_decide")
+    result, mod = listwindow.invoke("Drive", menu, onkeypress="search_and_decide")
     if result < 0:
         return
 
@@ -228,7 +228,7 @@ def to_ghq_repo() -> None:
             return
 
         path = Path(ghq_root) / job_item.rel_path
-        if smart_check_path(path / ".git") and ask_open_by_vscode():
+        if smart_check_path(path / ".git") and listwindow.ask_open_by_vscode():
             open_vscode(str(path))
             return
 

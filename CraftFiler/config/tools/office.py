@@ -59,7 +59,7 @@ def read_openxml(path: str) -> str:
         return ""
 
 
-def preview_openxml_content(path: str) -> None:
+def preview_content(path: str) -> None:
     _, ext = os.path.splitext(path)
     if ext not in [".docx", ".xlsx"]:
         return

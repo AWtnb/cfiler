@@ -40,7 +40,7 @@ from .tools import (
     office,
     selector,
 )
-from .tools.archiver import compress_files, extract_archives
+from .tools.archiver import compress, extract
 from .tools.bookmark import (
     bookmark_here,
     fuzzy_bookmark,
@@ -76,7 +76,7 @@ from .tools.cursor_mover import (
     smart_cursorUp,
 )
 from .tools.enter import hook_enter, open_with
-from .tools.listwindow import invoke_listwindow
+from .tools.listwindow import invoke
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
 from .tools.rename import ini as rename_ini
@@ -587,7 +587,7 @@ def setup(window) -> None:
         if all([Path(path).suffix in [".docx", ".xlsx"] for path in targets]):
             menu.append("Text content")
 
-        result, _ = invoke_listwindow("Copy", menu)
+        result, _ = invoke("Copy", menu)
         if result < 0:
             return
 
@@ -2006,7 +2006,7 @@ def setup(window) -> None:
         if len(exts) < 1:
             return
 
-        result, mod = invoke_listwindow("Select Extension", exts)
+        result, mod = invoke("Select Extension", exts)
 
         if result < 0:
             return
@@ -2166,7 +2166,7 @@ def setup(window) -> None:
             "CleanTempFiles": remove_tempfiles,
             "RenamePhotoFileByExifDate": rename_photo_file_by_exifdate,
             "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
-            "ZipSelections": compress_files,
+            "ZipSelections": compress,
             "SetBookmarkAlias": set_bookmark_alias,
             "BookmarkHere": bookmark_here,
             "DocxToTxt": docx_to_txt,
@@ -2174,7 +2174,7 @@ def setup(window) -> None:
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
-            "UnzipSelections": extract_archives,
+            "UnzipSelections": extract,
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
             "CopyDirTree": copy_dir_tree,
