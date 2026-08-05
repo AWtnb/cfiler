@@ -2,7 +2,7 @@ import os
 import time
 from pathlib import Path
 
-import ckit  # ty: ignore[unresolved-import]
+import ckit  # type: ignore
 import pyauto  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py

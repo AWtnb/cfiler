@@ -1,9 +1,9 @@
 import os
 import subprocess
 
-import cfiler_resource  # ty: ignore[unresolved-import]
-import ckit  # ty: ignore[unresolved-import]
-import pyauto  # ty: ignore[unresolved-import]
+import cfiler_resource  # type: ignore
+import ckit  # type: ignore
+import pyauto  # type: ignore
 
 
 def setup(window) -> None:

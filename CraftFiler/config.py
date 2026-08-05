@@ -2,8 +2,8 @@ import importlib
 import sys
 from types import ModuleType
 
-import ckit  # ty: ignore[unresolved-import]
-from cfiler_mainwindow import MainWindow  # ty: ignore[unresolved-import]
+import ckit  # type: ignore
+from cfiler_mainwindow import MainWindow  # type: ignore
 
 
 def import_config(config_module_name: str) -> ModuleType:

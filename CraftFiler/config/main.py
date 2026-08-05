@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import unicodedata
 import urllib.parse
 import urllib.request
@@ -26,16 +25,10 @@ from typing import (
 from winreg import HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, OpenKey, QueryValueEx
 
 import cfiler_debug  # type: ignore
-
-# https://github.com/crftwr/cfiler/blob/master/cfiler_mainwindow.py
 import cfiler_msgbox  # type: ignore
-
-# https://github.com/crftwr/cfiler/blob/master/cfiler_resource.py
 import ckit  # type: ignore
 import pyauto  # type: ignore
 from cfiler import *  # type: ignore
-
-# https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
 from cfiler_filelist import (  # type: ignore
     FileList,
     filter_Default,
@@ -43,22 +36,16 @@ from cfiler_filelist import (  # type: ignore
     item_Empty,
     lister_Default,
 )
-
-# https://github.com/crftwr/cfiler/blob/master/cfiler_listwindow.py
 from cfiler_listwindow import ListWindow  # type: ignore
 from cfiler_mainwindow import MainWindow  # type: ignore
-
-# https://github.com/crftwr/cfiler/blob/master/cfiler_misc.py
-from cfiler_misc import getFileSizeString  # type: ignore
-
-# https://github.com/crftwr/cfiler/blob/master/cfiler_textviewer.py
-# https://github.com/crftwr/cfiler/blob/master/cfiler_renamewindow.py
 from cfiler_resultwindow import popResultWindow  # type: ignore
-from PIL import Image as PILImage  # ty:ignore[unresolved-import]
-from PIL import ImageGrab  # ty:ignore[unresolved-import]
-from PIL.ExifTags import TAGS  # ty:ignore[unresolved-import]
+from PIL import Image as PILImage  # type: ignore
+from PIL import ImageGrab  # type: ignore
+from PIL.ExifTags import TAGS  # type: ignore
 
+from . import style
 from .protocols import ItemDefaultProtocol, PaneEntityProtocol
+from .style import ColWidth
 from .tools import kiritori
 from .tools.common import (
     DESKTOP_PATH,
@@ -79,116 +66,7 @@ from .tools.common import (
 def setup(window) -> None:
 
     kiritori.setup(window)
-
-    class ItemTimestamp:
-        def __init__(self, item) -> None:
-            self._time = item.time()
-            self._now = time.localtime()
-
-        @property
-        def date(self) -> str:
-            t = self._time
-            if t[0] == self._now[0]:
-                if t[1] == self._now[1] and t[2] == self._now[2]:
-                    return ""
-                return f"{t[1]:02}-{t[2]:02}"
-            return f"{t[0]}-{t[1]:02}-{t[2]:02}"
-
-        @property
-        def time(self) -> str:
-            t = self._time
-            return f"{t[3]:02}:{t[4]:02}:{t[5]:02}"
-
-    class ElemWidth:
-        ext = 6
-        size = 6
-        date = 11
-        time = 9
-        area_min = 40
-
-    def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
-        window: MainWindow, item: ItemDefaultProtocol, pane_width: int, _
-    ) -> str:
-        timestamp = ItemTimestamp(item)
-        date_elem = timestamp.date.rjust(ElemWidth.date)
-        time_elem = timestamp.time.rjust(ElemWidth.time)
-        size_elem = (
-            "\ud83d\udcc1"
-            if item.isdir()
-            else getFileSizeString(item.size()).rjust(ElemWidth.size)
-        )
-
-        meta_elem = size_elem + date_elem + time_elem
-        area_width = max(ElemWidth.area_min, pane_width)
-        filename_width = area_width - len(meta_elem)
-
-        stem, ext = (
-            [item.getName(), None]
-            if item.isdir()
-            else ckit.splitExt(item.getName(), ElemWidth.ext)
-        )
-
-        if ext:
-            stem_width = filename_width - ElemWidth.ext
-            return (
-                ckit.adjustStringWidth(
-                    window, stem, stem_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
-                )
-                + ckit.adjustStringWidth(
-                    window, ext, ElemWidth.ext, ckit.ALIGN_LEFT, ckit.ELLIPSIS_NONE
-                )
-                + meta_elem
-            )
-        return (
-            ckit.adjustStringWidth(
-                window, stem, filename_width, ckit.ALIGN_LEFT, ckit.ELLIPSIS_RIGHT
-            )
-            + meta_elem
-        )
-
-    window.itemformat = itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS
-
-    def set_custom_theme() -> None:
-        custom_theme = {
-            "bg": "#122530",
-            "fg": "#ffffff",
-            "cursor0": "#ffffff",
-            "cursor1": "#ff4040",
-            "bar_fg": "#000000",
-            "bar_error_fg": "#c80000",
-            "file_fg": "#e6e6e6",
-            "dir_fg": "#f4d71a",
-            "hidden_file_fg": "#555555",
-            "hidden_dir_fg": "#555532",
-            "error_file_fg": "#ff0000",
-            "select_file_bg1": "#1451ba",
-            "select_file_bg2": "#1451ba",
-            "bookmark_file_bg1": "#013a70",
-            "bookmark_file_bg2": "#c1077d",
-            "file_cursor": "#7fffcb",
-            "select_bg": "#1451ba",
-            "select_fg": "#ffffff",
-            "choice_bg": "#323232",
-            "choice_fg": "#ffffff",
-            "diff_bg1": "#643232",
-            "diff_bg2": "#326432",
-            "diff_bg3": "#323264",
-        }
-
-        name = "black"
-        ckit.ckit_theme.theme_name = name
-        window.ini.set("THEME", "name", name)
-
-        for k, v in custom_theme.items():
-            rgb = tuple(int(v[i : i + 2], 16) for i in (1, 3, 5))
-            ckit.ckit_theme.ini.set("COLOR", k, str(rgb))
-
-        window.destroyThemePlane()
-        window.createThemePlane()
-        window.updateColor()
-        window.updateWallpaper()
-
-    set_custom_theme()
+    style.setup(window)
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -1105,10 +983,10 @@ def setup(window) -> None:
         if longest.name is None or longest.width < 1:
             return
 
-        min_width = longest.width + ElemWidth.size + ElemWidth.date + ElemWidth.time
+        min_width = longest.width + ColWidth.size + ColWidth.date + ColWidth.time
         if longest.ext != "":
-            min_width = min_width - len(longest.ext) + ElemWidth.ext
-        min_width = max(ElemWidth.area_min, min_width)
+            min_width = min_width - len(longest.ext) + ColWidth.ext
+        min_width = max(ColWidth.area_min, min_width)
 
         if window.focus == MainWindow.FOCUS_LEFT:
 
