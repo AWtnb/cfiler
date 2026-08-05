@@ -27,14 +27,12 @@ from cfiler_filelist import (  # type: ignore
     filter_Default,
     item_Default,
 )
-from cfiler_mainwindow import MainWindow  # type: ignore
 from cfiler_resultwindow import popResultWindow  # type: ignore
 from PIL import Image as PILImage  # type: ignore
 from PIL import ImageGrab  # type: ignore
 from PIL.ExifTags import TAGS  # type: ignore
 
 from . import style
-from .style import ColWidth
 from .tools import bookmark, cpane, keybinder, kiritori, listwindow
 from .tools.bookmark import (
     bookmark_here,
@@ -56,7 +54,7 @@ from .tools.common import (
     smart_check_path,
     stringify,
 )
-from .tools.cpane import CPane, LeftPane, RightPane
+from .tools.cpane import CPane, LeftPane, RightPane, adjust_pane_width, swap_pane
 from .tools.listwindow import ask_open_by_vscode, invoke_listwindow
 from .tools.protocols import ItemDefaultProtocol
 
@@ -220,10 +218,8 @@ def setup(window) -> None:
                     return
                 rel = item.getFullpath()[len(root) :].lstrip(os.sep)
                 if len(selected_names) < 1 or any(
-                    [
-                        (rel == name or rel.startswith(name + os.sep))
-                        for name in selected_names
-                    ]
+                    (rel == name or rel.startswith(name + os.sep))
+                    for name in selected_names
                 ):
                     job_item.paths.append(rel)
 
@@ -326,66 +322,6 @@ def setup(window) -> None:
         shell_exec("wt.exe", "lazygit", "-p", path)
 
     keybinder.bind(open_lazygit, "A-L")
-
-    def adjust_pane_width() -> None:
-        class AdjustBase(NamedTuple):
-            name: None | str
-            width: int
-            ext: str
-
-        border_width = 1
-        window_width = window.width() - border_width
-        half_width = window_width // 2
-
-        pane = CPane()
-        if pane.isBlank:
-            window.left_window_width = half_width
-            window.updateThemePosSize()
-            pane.repaint(PaintOption.Upper)
-            return
-
-        longest = AdjustBase(None, 0, "")
-
-        for path in pane.paths:
-            p = Path(path)
-            name = p.name
-            w = window.getStringWidth(name)
-            if longest.name is None or longest.width <= w:
-                longest = AdjustBase(name, w, p.suffix)
-
-        if longest.name is None or longest.width < 1:
-            return
-
-        min_width = longest.width + ColWidth.size + ColWidth.date + ColWidth.time
-        if longest.ext != "":
-            min_width = min_width - len(longest.ext) + ColWidth.ext
-        min_width = max(ColWidth.area_min, min_width)
-
-        if window.focus == MainWindow.FOCUS_LEFT:
-
-            def _left_width() -> int:
-                if window.left_window_width < min_width:
-                    return min_width
-                if window.left_window_width == window_width:
-                    return half_width
-                return window_width
-
-            window.left_window_width = _left_width()
-
-        else:
-
-            def _right_width() -> int:
-                right_width = window_width - window.left_window_width
-                if right_width < min_width:
-                    return min_width
-                if right_width == window_width:
-                    return half_width
-                return window_width
-
-            window.left_window_width = window_width - _right_width()
-
-        window.updateThemePosSize()
-        pane.repaint(PaintOption.Upper)
 
     keybinder.bind(adjust_pane_width, "C-S")
 
@@ -598,30 +534,6 @@ def setup(window) -> None:
         window.command_Copy(None)
 
     keybinder.bind(quick_copy, "C")
-
-    def swap_pane() -> None:
-        active = CPane(True)
-        active_selects = active.selectedItemNames
-        active_path = active.currentPath
-        active_focus_name = None if active.isBlank else active.focusedItem.getName()
-        active_sorter = active.fileList.getSorter()
-
-        other = CPane(False)
-        ogther_selects = other.selectedItemNames
-        other_path = other.currentPath
-        other_sorter = other.fileList.getSorter()
-
-        other_focus_name = None if other.isBlank else other.focusedItem.getName()
-
-        active.openPath(other_path, other_focus_name)
-        active.selectByNames(ogther_selects)
-        active.setSorter(other_sorter)
-
-        other.openPath(active_path, active_focus_name)
-        other.selectByNames(active_selects)
-        other.setSorter(active_sorter)
-
-        LeftPane().activate()
 
     keybinder.bind(swap_pane, "S")
 

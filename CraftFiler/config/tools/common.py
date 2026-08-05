@@ -7,7 +7,7 @@ import subprocess
 import time
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
-from enum import Enum
+from enum import Enum, IntEnum
 from pathlib import Path
 from typing import Callable
 
@@ -43,6 +43,14 @@ class PaintOption(Enum):
     Focused = cfiler_mainwindow.PAINT_FOCUSED
     Upper = cfiler_mainwindow.PAINT_UPPER
     All = cfiler_mainwindow.PAINT_ALL
+
+
+class ColWidth(IntEnum):
+    ext = 6
+    size = 6
+    date = 11
+    time = 9
+    area_min = 40
 
 
 def delay(msec: int = 50) -> None:

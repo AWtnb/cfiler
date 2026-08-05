@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Callable, Iterator
+from typing import Callable, Iterator, NamedTuple
 
 import cfiler_debug  # type: ignore
 import ckit  # type: ignore
@@ -16,6 +16,7 @@ from cfiler_mainwindow import MainWindow  # type: ignore
 
 from . import kiritori
 from .common import (
+    ColWidth,
     PaintOption,
     smart_check_path,
 )
@@ -464,3 +465,91 @@ class RightPane(CPane):
         if window.focus == MainWindow.FOCUS_LEFT:
             window.focus = MainWindow.FOCUS_RIGHT
         self.repaint(PaintOption.LeftOrRight)
+
+
+def swap_pane() -> None:
+    active = CPane(True)
+    active_selects = active.selectedItemNames
+    active_path = active.currentPath
+    active_focus_name = None if active.isBlank else active.focusedItem.getName()
+    active_sorter = active.fileList.getSorter()
+
+    other = CPane(False)
+    ogther_selects = other.selectedItemNames
+    other_path = other.currentPath
+    other_sorter = other.fileList.getSorter()
+
+    other_focus_name = None if other.isBlank else other.focusedItem.getName()
+
+    active.openPath(other_path, other_focus_name)
+    active.selectByNames(ogther_selects)
+    active.setSorter(other_sorter)
+
+    other.openPath(active_path, active_focus_name)
+    other.selectByNames(active_selects)
+    other.setSorter(active_sorter)
+
+    LeftPane().activate()
+
+
+class AdjustBase(NamedTuple):
+    name: None | str
+    width: int
+    ext: str
+
+
+def adjust_pane_width() -> None:
+
+    border_width = 1
+    window_width = window.width() - border_width
+    half_width = window_width // 2
+
+    pane = CPane()
+    if pane.isBlank:
+        window.left_window_width = half_width
+        window.updateThemePosSize()
+        pane.repaint(PaintOption.Upper)
+        return
+
+    longest = AdjustBase(None, 0, "")
+
+    for path in pane.paths:
+        p = Path(path)
+        name = p.name
+        w = window.getStringWidth(name)
+        if longest.name is None or longest.width <= w:
+            longest = AdjustBase(name, w, p.suffix)
+
+    if longest.name is None or longest.width < 1:
+        return
+
+    min_width = longest.width + ColWidth.size + ColWidth.date + ColWidth.time
+    if longest.ext != "":
+        min_width = min_width - len(longest.ext) + ColWidth.ext
+    min_width = max(ColWidth.area_min, min_width)
+
+    if window.focus == MainWindow.FOCUS_LEFT:
+
+        def _left_width() -> int:
+            if window.left_window_width < min_width:
+                return min_width
+            if window.left_window_width == window_width:
+                return half_width
+            return window_width
+
+        window.left_window_width = _left_width()
+
+    else:
+
+        def _right_width() -> int:
+            right_width = window_width - window.left_window_width
+            if right_width < min_width:
+                return min_width
+            if right_width == window_width:
+                return half_width
+            return window_width
+
+        window.left_window_width = window_width - _right_width()
+
+    window.updateThemePosSize()
+    pane.repaint(PaintOption.Upper)

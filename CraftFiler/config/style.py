@@ -1,10 +1,10 @@
 import time
-from enum import IntEnum
 
 import ckit  # type: ignore
 from cfiler_mainwindow import MainWindow  # type: ignore
 from cfiler_misc import getFileSizeString  # type: ignore
 
+from .tools.common import ColWidth
 from .tools.protocols import ItemDefaultProtocol
 
 
@@ -26,14 +26,6 @@ class ItemTimestamp:
     def time(self) -> str:
         t = self._time
         return f"{t[3]:02}:{t[4]:02}:{t[5]:02}"
-
-
-class ColWidth(IntEnum):
-    ext = 6
-    size = 6
-    date = 11
-    time = 9
-    area_min = 40
 
 
 def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
