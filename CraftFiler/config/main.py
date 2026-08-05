@@ -8,32 +8,35 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import unicodedata
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import (
-    Callable,
-    Iterator,
-    NamedTuple,
-)
+from typing import Callable, Iterator, NamedTuple
 
 import cfiler_msgbox  # type: ignore
 import ckit  # type: ignore
 import pyauto  # type: ignore
 from cfiler import *  # type: ignore
-from cfiler_filelist import (  # type: ignore
-    filter_Default,
-    item_Default,
-)
+from cfiler_filelist import filter_Default  # type: ignore
 from cfiler_resultwindow import popResultWindow  # type: ignore
 from PIL import Image as PILImage  # type: ignore
 from PIL import ImageGrab  # type: ignore
 from PIL.ExifTags import TAGS  # type: ignore
 
 from . import style
-from .tools import bookmark, cpane, keybinder, kiritori, listwindow
+from .tools import (
+    archiver,
+    bookmark,
+    clon,
+    cpane,
+    enter,
+    keybinder,
+    kiritori,
+    listwindow,
+    office,
+)
+from .tools.archiver import extract_archives
 from .tools.bookmark import (
     bookmark_here,
     fuzzy_bookmark,
@@ -41,12 +44,12 @@ from .tools.bookmark import (
     toggle_bookmark,
 )
 from .tools.browser_info import get_default_browser
+from .tools.clon import invoke_tempfile_cleaner, remove_tempfiles
 from .tools.common import (
     DESKTOP_PATH,
     CallbackFunc,
     PaintOption,
     delay,
-    is_file_locked,
     open_vscode,
     resolve_scoop_shim,
     run_ps1,
@@ -55,18 +58,24 @@ from .tools.common import (
     stringify,
 )
 from .tools.cpane import CPane, LeftPane, RightPane, adjust_pane_width, swap_pane
+from .tools.enter import hook_enter
 from .tools.listwindow import ask_open_by_vscode, invoke_listwindow
+from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
 
 
 def setup(window) -> None:
 
     kiritori.setup(window)
+    archiver.setup(window)
+    office.setup(window)
+    clon.setup(window)
     style.setup(window)
     cpane.setup(window)
     listwindow.setup(window)
     bookmark.setup(window)
     keybinder.setup(window)
+    enter.setup(window)
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -327,110 +336,6 @@ def setup(window) -> None:
 
     keybinder.bind(lambda: CPane().focusOther(), "C-L")
 
-    def is_extractable(ext: str) -> bool:
-        for archiver in window.archiver_list:
-            for pattern in archiver[0].split():
-                if ext == pattern[1:]:
-                    return True
-        return False
-
-    def peek_archive(path: str) -> None:
-        p = Path(path)
-        archiver = window.getArchiver(p.name)
-        if not archiver:
-            return
-
-        def _peek(job_item: ckit.JobItem) -> None:
-            job_item.name = p.name
-            job_item.tree = []
-
-            arc = archiver.openArchive(window.getHWND(), path, 0)
-            try:
-                for info in arc.iterItems("*"):
-                    job_item.tree.append(info[0])
-            finally:
-                arc.close()
-
-        def _finished(job_item: ckit.JobItem) -> None:
-            lines = [t for t in job_item.tree]
-            popResultWindow(window, f"[Peek] {job_item.name}", "\n".join(lines))
-
-        job = ckit.JobItem(_peek, _finished)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    def hook_enter() -> bool:
-        pane = CPane()
-        if pane.isBlank:
-            pane.focusOther()
-            return True
-
-        focus_path = pane.focusedItemPath
-        p = Path(focus_path)
-        if p.is_dir():
-            pane.openPath(focus_path)
-            return True
-
-        if (
-            pane.focusedItemPath.endswith(".zip")
-            and pane.focusedItem.selected()
-            and len(pane.selectedItems) == 1
-        ):
-            extract_archives()
-            return True
-
-        if pane.focusedItem.size() == 0:
-            window.command_Execute(None)
-            return True
-
-        ext = p.suffix
-
-        if ext in window.image_file_ext_list:
-            pane.appendHistory(focus_path, True)
-            return False
-
-        if ext in window.music_file_ext_list:
-            window.command_Execute(None)
-            return True
-
-        if is_extractable(ext):
-            peek_archive(focus_path)
-            return True
-
-        if ext.lower() in [
-            ".docx",
-            ".xlsx",
-        ]:
-            menu = []
-            if ext == ".docx":
-                menu.append("Peek")
-            else:
-                menu.append("Peek sheet1")
-            menu.append("Open")
-            result, _ = invoke_listwindow("OpenXML file:", menu)
-            if result != -1:
-                if result == 0:
-                    preview_openxml_content(focus_path)
-                else:
-                    window.command_Execute(None)
-            return True
-
-        if ext[1:].lower() in [
-            "tbx",
-            "cmx",
-            "webp",
-            "m4a",
-            "mp4",
-            "pdf",
-            "xls",
-            "doc",
-            "pptx",
-            "ppt",
-        ]:
-            window.command_Execute(None)
-            return True
-
-        return False
-
     window.enter_hook = hook_enter
 
     keybinder.bind(window.command_Enter, "L", "Right")
@@ -537,160 +442,7 @@ def setup(window) -> None:
 
     keybinder.bind(swap_pane, "S")
 
-    def read_openxml(path: str) -> str:
-        go_tool = {
-            ".docx": "docxr.exe",
-            ".xlsx": "xlsxr.exe",
-        }.get(Path(path).suffix, None)
-        if go_tool is None:
-            return ""
-
-        exe_path = shutil.which(go_tool)
-        if not exe_path:
-            kiritori.log(f"'{go_tool}' not found...")
-            return ""
-        try:
-            cmd = [
-                exe_path,
-                f"-src={path}",
-            ]
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                encoding="utf-8",
-                creationflags=subprocess.CREATE_NO_WINDOW,
-                check=False,
-            )
-            if proc.returncode != 0:
-                if o := proc.stdout:
-                    kiritori.log(o)
-                if e := proc.stderr:
-                    kiritori.log(e)
-                return ""
-            return proc.stdout
-        except Exception as e:
-            kiritori.log(e)
-            return ""
-
-    TEMP_FILE_PREFIX = "cfiler_preview_openxml_"
-
-    def preview_openxml_content(path: str) -> None:
-        _, ext = os.path.splitext(path)
-        if ext not in [".docx", ".xlsx"]:
-            return
-
-        def _write_to_tempfile(job_item: ckit.JobItem) -> None:
-            job_item.temp_path = ""
-            content = read_openxml(path)
-            if not content:
-                return
-            try:
-                tf = tempfile.NamedTemporaryFile(
-                    mode="w",
-                    encoding="utf-8",
-                    delete=False,
-                    suffix=".txt",
-                    prefix=TEMP_FILE_PREFIX,
-                )
-                tf.write(content)
-                tf.close()
-                job_item.temp_path = tf.name
-            except Exception as e:
-                kiritori.log(e)
-
-        def _view_tempfile(job_item: ckit.JobItem) -> None:
-            if job_item.temp_path:
-                d, n = os.path.split(job_item.temp_path)
-                item = item_Default(d, n)
-                window._viewCommon(d, item)
-
-        job = ckit.JobItem(_write_to_tempfile, _view_tempfile)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    def remove_tempfiles() -> None:
-        temp_dir = tempfile.gettempdir()
-        paths = []
-        for file in os.listdir(temp_dir):
-            if file.startswith(TEMP_FILE_PREFIX) and file.endswith(".txt"):
-                try:
-                    os.remove(os.path.join(temp_dir, file))
-                    paths.append(file)
-                except Exception as e:
-                    kiritori.log(f"Failed to remove temp file : {e}")
-
-        if len(paths) < 1:
-            return
-
-        krtr = kiritori
-        count = len(paths)
-        msg = f"Removed {count} temp file"
-        if 1 < count:
-            msg += "s"
-        krtr.draw_header(msg)
-
-        for p in paths:
-            print("-", p)
-        krtr.draw_footer()
-
-    def register_tempfile_cleaner_cron() -> None:
-        temp_dir = tempfile.gettempdir()
-
-        def _crean(_) -> None:
-            count = 0
-            for file in os.listdir(temp_dir):
-                if file.startswith(TEMP_FILE_PREFIX) and file.endswith(".txt"):
-                    try:
-                        p = Path(temp_dir, file)
-                        if not is_file_locked(p):
-                            p.unlink()
-                            count += 1
-                    except Exception as e:
-                        kiritori.log(f"Failed to remove temp file :{file}\n{e}")
-
-            if 0 < count:
-                msg = f"Removed {count} tempfile"
-                if 1 < count:
-                    msg += "s"
-                msg += " for preview."
-                window.setStatusMessage(msg, 8000)
-
-        ci = ckit.CronItem(_crean, 30.0)
-        ckit.CronTable.defaultCronTable().add(ci)
-
-    register_tempfile_cleaner_cron()
-
-    def docx_to_txt() -> None:
-
-        pane = CPane()
-        paths = pane.selectedItemPaths
-        if len(paths) < 1:
-            paths = [pane.focusedItemPath]
-
-        krtr = kiritori
-
-        def _read(_: ckit.JobItem) -> None:
-            krtr.draw_header("Converting docx")
-
-            for i, path in enumerate(paths, start=1):
-                if not path.endswith(".docx"):
-                    continue
-                docx_name = Path(path).name
-                print(f"[{i:02}/{len(paths):02}]{docx_name}")
-
-                new_path = Path(path).with_suffix(".txt")
-                content = read_openxml(path)
-                if smart_check_path(new_path):
-                    print(f"==> Skipped ({new_path.name} already exists)")
-                else:
-                    new_path.write_text(content, encoding="utf-8")
-                    print("==> Converted")
-                    pane.unSelectByName(docx_name)
-
-        def _write(_: ckit.JobItem) -> None:
-            krtr.draw_footer()
-
-        job = ckit.JobItem(_read, _write)
-        window.taskEnqueue(job, create_new_queue=False)
+    ckit.CronTable.defaultCronTable().add(invoke_tempfile_cleaner())
 
     class zyw:
         exe_name = "zyw.exe"
@@ -1213,97 +965,6 @@ def setup(window) -> None:
         else:
             pane.adjustWidth()
             window.command_CreateArchive(None)
-
-    def extract_with_7zip(dest: str, *paths: str) -> None:
-        seven_zip = shutil.which("7z")
-        if seven_zip is None:
-            kiritori.log("7z not found.")
-            return
-
-        targets = [
-            t for t in paths if Path(t).is_file() and is_extractable(Path(t).suffix)
-        ]
-        if len(targets) < 1:
-            return
-
-        krtr = kiritori
-
-        def _extract(_) -> None:
-            krtr.draw_header(f"Extracting as '{dest}'...")
-
-            for target in targets:
-                try:
-                    cmd = [
-                        seven_zip,
-                        "x",
-                        target,
-                        f"-o{dest}",
-                        "-y",
-                    ]
-                    proc = subprocess.run(
-                        cmd,
-                        capture_output=True,
-                        text=True,
-                        creationflags=subprocess.CREATE_NO_WINDOW,
-                        check=False,
-                    )
-                    if proc.returncode != 0:
-                        if o := proc.stdout:
-                            kiritori.log(o)
-                        if e := proc.stderr:
-                            kiritori.log(e)
-                except Exception as e:
-                    kiritori.log(e)
-                    return
-
-        def _finished(_) -> None:
-            print("Finished")
-            krtr.draw_footer()
-            pane = CPane()
-            pane.refresh()
-            pane.focusByName(Path(dest).name)
-
-        job = ckit.JobItem(_extract, _finished)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    def extract_archives() -> None:
-        pane = CPane()
-
-        for item in pane.selectedItems:
-            ext = Path(item.getFullpath()).suffix
-            if not is_extractable(ext):
-                pane.unSelectByName(item.getName())
-
-        if not pane.hasSelection:
-            return
-
-        placeholder = (
-            Path(pane.selectedItemPaths[0]).stem
-            if len(pane.selectedItems) == 1
-            else f"extract_{datetime.datetime.today().strftime('%Y%m%d-%H%M%S')}"
-        )
-
-        result = stringify(
-            window.commandLine(
-                "Extract as",
-                text=placeholder,
-            )
-        )
-        if len(result) < 1:
-            return
-
-        if pane.byName(result) != -1:
-            kiritori.log(f"'{result}' already exists.")
-            return
-
-        extract_path = os.path.join(pane.currentPath, result)
-
-        if shutil.which("7z") is not None:
-            extract_with_7zip(extract_path, *pane.selectedItemPaths)
-        else:
-            pane.adjustWidth()
-            CPane(False).openPath(extract_path)
-            window.command_ExtractArchive(None)
 
     def recylcebin() -> None:
         shell_exec("shell:RecycleBinFolder")
