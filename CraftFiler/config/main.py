@@ -38,6 +38,7 @@ from .tools import (
     kiritori,
     listwindow,
     office,
+    selector,
 )
 from .tools.archiver import compress_files, extract_archives
 from .tools.bookmark import (
@@ -87,13 +88,14 @@ def setup(window) -> None:
     change_dir.setup(window)
     clon.setup(window)
     cpane.setup(window)
-    cursor_mover.setup(window)
     cursor_jumper.setup(window)
+    cursor_mover.setup(window)
     enter.setup(window)
     keybinder.setup(window)
     kiritori.setup(window)
     listwindow.setup(window)
     office.setup(window)
+    selector.setup(window)
     style.setup(window)
 
     window.enter_hook = hook_enter
@@ -610,137 +612,19 @@ def setup(window) -> None:
 
     keybinder.bind(on_copy, "C-C")
 
-    class Selector:
-        @staticmethod
-        def allItems() -> None:
-            CPane().selectAll()
-
-        @staticmethod
-        def toTop() -> None:
-            pane = CPane()
-            if pane.cursor < pane.selectionTop:
-                for i in range(pane.count):
-                    if i <= pane.cursor:
-                        pane.select(i, False)
-            else:
-                for item in pane.selectedOrAllItems:
-                    i = pane.byName(item.getName())
-                    if i <= pane.cursor:
-                        pane.toggleSelection(i, False)
-            pane.applySelectionHighlight()
-
-        @staticmethod
-        def clearToTop() -> None:
-            pane = CPane()
-            for i in range(pane.count):
-                if i <= pane.cursor:
-                    pane.unSelect(i, False)
-            pane.applySelectionHighlight()
-
-        @staticmethod
-        def toBottom() -> None:
-            pane = CPane()
-            if pane.selectionBottom < pane.cursor:
-                for i in range(pane.count):
-                    if pane.cursor <= i:
-                        pane.select(i, False)
-            else:
-                for item in pane.selectedOrAllItems:
-                    i = pane.byName(item.getName())
-                    if pane.cursor <= i:
-                        pane.toggleSelection(i, False)
-            pane.applySelectionHighlight()
-
-        @staticmethod
-        def clearToBottom() -> None:
-            pane = CPane()
-            for i in range(pane.count):
-                if pane.cursor < i:
-                    pane.unSelect(i, False)
-            pane.applySelectionHighlight()
-
-        @staticmethod
-        def files() -> None:
-            pane = CPane()
-            for item in pane.selectedOrAllItems:
-                name = item.getName()
-                if not item.isdir():
-                    pane.toggleSelection(pane.byName(name))
-
-        @staticmethod
-        def dirs() -> None:
-            pane = CPane()
-            for item in pane.selectedOrAllItems:
-                name = item.getName()
-                if item.isdir():
-                    pane.toggleSelection(pane.byName(name))
-
-        @staticmethod
-        def clearAll() -> None:
-            CPane().unSelectAll()
-
-        @staticmethod
-        def byFunction(func: Callable[[str], bool], negative: bool = False) -> None:
-            pane = CPane()
-            for item in pane.selectedOrAllItems:
-                path = item.getFullpath()
-                if (negative and not func(path)) or (not negative and func(path)):
-                    name = item.getName()
-                    pane.toggleSelection(pane.byName(name))
-
-        @classmethod
-        def byExtension(cls, s: str, negative: bool = False) -> None:
-            def _checkPath(path: str) -> bool:
-                return Path(path).suffix == s
-
-            cls.byFunction(_checkPath, negative)
-
-        @classmethod
-        def stemContains(cls, s: str, negative: bool = False) -> None:
-            def _checkPath(path: str) -> bool:
-                return s in Path(path).stem
-
-            cls.byFunction(_checkPath, negative)
-
-        @classmethod
-        def stemStartsWith(cls, s: str, negative: bool = False) -> None:
-            def _checkPath(path: str) -> bool:
-                return Path(path).stem.startswith(s)
-
-            cls.byFunction(_checkPath, negative)
-
-        @classmethod
-        def stemEndsWith(cls, s: str, negative: bool = False) -> None:
-            def _checkPath(path: str) -> bool:
-                return Path(path).stem.endswith(s)
-
-            cls.byFunction(_checkPath, negative)
-
-        @classmethod
-        def stemMatches(cls, s: str, case: bool, negative: bool = False) -> None:
-            reg = re.compile(s) if case else re.compile(s, re.IGNORECASE)
-
-            def _checkPath(path: str) -> bool:
-                return reg.search(Path(path).stem) is not None
-
-            cls.byFunction(_checkPath, negative)
-
-        @classmethod
-        def apply(cls) -> None:
-            for k, v in {
-                "C-A": cls.allItems,
-                "U": cls.clearAll,
-                "Esc": cls.clearAll,
-                "A-F": cls.files,
-                "A-D": cls.dirs,
-                "S-Home": cls.toTop,
-                "S-A": cls.toTop,
-                "S-End": cls.toBottom,
-                "S-E": cls.toBottom,
-            }.items():
-                keybinder.bind(v, k)
-
-    Selector.apply()
+    def bind_selector() -> None:
+        for k, v in {
+            "C-A": selector.all_items,
+            "U": selector.clear_all,
+            "Esc": selector.clear_all,
+            "A-F": selector.files,
+            "A-D": selector.dirs,
+            "S-Home": selector.to_top,
+            "S-A": selector.to_top,
+            "S-End": selector.to_bottom,
+            "S-E": selector.to_bottom,
+        }.items():
+            keybinder.bind(v, k)
 
     def unselect_panes() -> None:
         CPane().unSelectAll()
@@ -2244,7 +2128,7 @@ def setup(window) -> None:
             result, mod = window.commandLine("Regexp", return_modkey=True)
 
             if result:
-                Selector.stemMatches(result, case, mod == ckit.MODKEY_SHIFT)
+                selector.stem_matches(result, case, mod == ckit.MODKEY_SHIFT)
 
         return _selector
 
@@ -2299,7 +2183,7 @@ def setup(window) -> None:
             candidate_handler=PrefixHandler().invoke(),
         )
         if result:
-            Selector.stemStartsWith(result, mod == ckit.MODKEY_SHIFT)
+            selector.stem_starts_with(result, mod == ckit.MODKEY_SHIFT)
 
     keybinder.bind(select_stem_startswith, "Caret")
 
@@ -2310,14 +2194,14 @@ def setup(window) -> None:
             candidate_handler=SuffixHandler().invoke(),
         )
         if result:
-            Selector.stemEndsWith(result, mod == ckit.MODKEY_SHIFT)
+            selector.stem_ends_with(result, mod == ckit.MODKEY_SHIFT)
 
     keybinder.bind(select_stem_endswith, "S-4")
 
     def select_stem_contains() -> None:
         result, mod = window.commandLine("Contains", return_modkey=True)
         if result:
-            Selector.stemContains(result, mod == ckit.MODKEY_SHIFT)
+            selector.stem_contains(result, mod == ckit.MODKEY_SHIFT)
 
     keybinder.bind(select_stem_contains, "Colon")
 
@@ -2337,7 +2221,7 @@ def setup(window) -> None:
         if result < 0:
             return
 
-        Selector.byExtension("." + exts[result], mod == ckit.MODKEY_SHIFT)
+        selector.by_extension("." + exts[result], mod == ckit.MODKEY_SHIFT)
 
     keybinder.bind(select_byext, "S-X")
 
