@@ -2265,7 +2265,7 @@ def setup(window) -> None:
             "RenameExtension": rename_ext,
             "RenameRegExp": rename_regexp,
             "RenameStem": rename_stem,
-            "RenameSubstr": rename_substr,
+            "RenameSubstr": rename_substr.execute,
             "FindSameFile": FileHashDiff(2).compare,
             "FromOtherNames": from_other_names,
             "FromActiveNames": from_active_names,
