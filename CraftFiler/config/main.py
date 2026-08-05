@@ -4,7 +4,6 @@ import configparser
 import datetime
 import hashlib
 import inspect
-import json
 import os
 import re
 import shutil
@@ -14,29 +13,22 @@ import tempfile
 import unicodedata
 import urllib.parse
 import urllib.request
-from enum import Enum
 from pathlib import Path
 from typing import (
     Callable,
     Iterator,
-    Literal,
     NamedTuple,
 )
 from winreg import HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, OpenKey, QueryValueEx
 
-import cfiler_debug  # type: ignore
 import cfiler_msgbox  # type: ignore
 import ckit  # type: ignore
 import pyauto  # type: ignore
 from cfiler import *  # type: ignore
 from cfiler_filelist import (  # type: ignore
-    FileList,
     filter_Default,
     item_Default,
-    item_Empty,
-    lister_Default,
 )
-from cfiler_listwindow import ListWindow  # type: ignore
 from cfiler_mainwindow import MainWindow  # type: ignore
 from cfiler_resultwindow import popResultWindow  # type: ignore
 from PIL import Image as PILImage  # type: ignore
@@ -44,14 +36,18 @@ from PIL import ImageGrab  # type: ignore
 from PIL.ExifTags import TAGS  # type: ignore
 
 from . import style
-from .protocols import ItemDefaultProtocol, PaneEntityProtocol
 from .style import ColWidth
-from .tools import kiritori
+from .tools import bookmark, cpane, kiritori, listwindow
+from .tools.bookmark import (
+    bookmark_here,
+    fuzzy_bookmark,
+    set_bookmark_alias,
+    toggle_bookmark,
+)
 from .tools.common import (
     DESKTOP_PATH,
     CallbackFunc,
     PaintOption,
-    check_fzf,
     delay,
     is_file_locked,
     open_vscode,
@@ -61,12 +57,18 @@ from .tools.common import (
     smart_check_path,
     stringify,
 )
+from .tools.cpane import CPane, LeftPane, RightPane
+from .tools.listwindow import ask_open_by_vscode, invoke_listwindow
+from .tools.protocols import ItemDefaultProtocol
 
 
 def setup(window) -> None:
 
     kiritori.setup(window)
     style.setup(window)
+    cpane.setup(window)
+    listwindow.setup(window)
+    bookmark.setup(window)
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -147,173 +149,10 @@ def setup(window) -> None:
             for key in keys:
                 window.keymap[key] = cls.wrap(func)
 
-    def okini(*params: str) -> str:
-        cli = "okini"
-        exe = shutil.which(cli)
-        if exe is None:
-            kiritori.log(f"{cli} not found.")
-            return ""
-        cmd = ["okini"] + list(params)
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            encoding="utf-8",
-            creationflags=subprocess.CREATE_NO_WINDOW,
-            check=False,
-        )
-        if proc.returncode != 0:
-            kiritori.log(proc.stderr)
-            return ""
-        return proc.stdout.strip()
-
-    def get_okini_bookmarks() -> list[dict[str, str]] | None:
-        bookmark_json = os.path.expandvars(r"${APPDATA}\okini\bookmarks.json")
-        if not smart_check_path(bookmark_json):
-            kiritori.log("okini's bookmarks.json not found.")
-            return None
-
-        bookmarks = []
-        with open(bookmark_json, "r", encoding="utf-8") as f:
-            for data in json.load(f):
-                bookmarks.append(data)
-
-        return bookmarks
-
-    def toggle_bookmark() -> None:
-        pane = CPane(True)
-        path = pane.focusedItemPath
-        dirname, filename = os.path.split(path)
-        if filename.lower() in window.bookmark.listDir(dirname):
-            window.bookmark.remove(path)
-            _ = okini("--remove", pane.focusedItemPath)
-        else:
-            _ = okini("--add", pane.focusedItemPath)
-            window.bookmark.append(path)
-
-        pane.refresh()
-        pane.repaint()
-        other_pane = CPane(False)
-        other_pane.refresh()
-        other_pane.repaint()
-
     Keybinder.bind(toggle_bookmark, "C-B")
-
-    def bookmark_here() -> None:
-        path = CPane().currentPath
-        bookmarks = [p for p in window.bookmark.getItems()]
-        if path in bookmarks:
-            window.bookmark.remove(path)
-            _ = okini("--remove", path)
-            kiritori.log(f"Unbookmarked: '{path}'")
-        else:
-            window.bookmark.append(path)
-            _ = okini("--add", path)
-            kiritori.log(f"Bookmarked: '{path}'")
-
-    def fuzzy_bookmark(local_only: bool) -> None:
-        if not check_fzf():
-            kiritori.log("fzf not found.")
-            return
-
-        if shutil.which("okini") is None:
-            kiritori.log("okini not found.")
-            return
-
-        pane = CPane()
-
-        bookmarks = get_okini_bookmarks()
-        if bookmarks is None:
-            return
-
-        if local_only:
-            pref = pane.currentPath + os.sep
-            bookmarks = [bm for bm in bookmarks if bm["path"].startswith(pref)]
-
-        def _select(job_item: ckit.JobItem) -> None:
-            job_item.bookmark_name = ""
-
-            names = "\n".join([bm["name"] for bm in bookmarks])
-            if names == "":
-                return
-            cmd = [
-                "fzf.exe",
-                "--margin=1",
-                "--no-color",
-                "--input-border=sharp",
-                "--layout=reverse",
-            ]
-            proc = subprocess.run(
-                cmd, input=names, capture_output=True, encoding="utf-8", check=False
-            )
-            if proc.returncode != 0:
-                if e := proc.stderr:
-                    kiritori.log(e)
-                    return
-            job_item.bookmark_name = proc.stdout.strip()
-
-        def _open(job_item: ckit.JobItem) -> None:
-            name = job_item.bookmark_name
-            if name == "":
-                return
-
-            path = None
-            for bm in bookmarks:
-                if bm["name"] == name:
-                    path = bm["path"]
-                    break
-            if path is None:
-                return
-
-            pane = CPane()
-
-            path_with_git = os.path.join(path, ".git")
-            if not smart_check_path(path_with_git):
-                pane.openPath(path)
-                return
-
-            open_git_managed_dir(path)
-
-        job = ckit.JobItem(_select, _open)
-        window.taskEnqueue(job, create_new_queue=False)
 
     Keybinder.bind(lambda: fuzzy_bookmark(False), "B")
     Keybinder.bind(lambda: fuzzy_bookmark(True), "A-S-B")
-
-    def set_bookmark_alias() -> None:
-        pane = CPane()
-        target = pane.currentPath
-        if pane.hasSelection:
-            if 1 < len(pane.selectedItems):
-                kiritori.log(
-                    "Canceled. Select just 1 item (or nothing to bookmark current location)."
-                )
-                return
-            target = pane.selectedItemPaths[0]
-
-        placeholder = str(Path(target).name)
-        bookmarks = get_okini_bookmarks()
-        if bookmarks is not None:
-            found: list[str] = []
-            for bm in bookmarks:
-                if bm["path"] == target:
-                    found.append(bm["name"])
-            if 0 < len(found):
-                found.sort(key=len)
-                placeholder = "_".join(found)
-
-        alias = stringify(
-            window.commandLine("Bookmark alias", text=placeholder, selection=[0, 0])
-        )
-        if alias == "":
-            return
-
-        okini("--add", target, alias)
-
-        if target not in window.bookmark.getItems():
-            window.bookmark.append(target)
-            if target != pane.currentPath:
-                pane.refresh()
-        kiritori.log(f"Registered '{alias}' as alias for '{target}'")
 
     def new_cfiler_window() -> None:
         exe_path = sys.executable
@@ -328,448 +167,6 @@ def setup(window) -> None:
             kiritori.log(f"{exe_path} not found.")
 
     Keybinder.bind(new_cfiler_window, "C-N")
-
-    class CPane:
-        min_width = 20
-
-        def __init__(self, active: bool = True) -> None:
-            if active:
-                self._pane = window.activePane()
-                self._items = window.activeItems()
-                self._other = window.inactivePane()
-            else:
-                self._pane = window.inactivePane()
-                self._items = window.inactiveItems()
-                self._other = window.activePane()
-
-        @property
-        def entity(self) -> PaneEntityProtocol:
-            return self._pane
-
-        def repaint(self, option: PaintOption = PaintOption.All) -> None:
-            window.paint(option.value)
-
-        def refresh(self) -> None:
-            window.subThreadCall(self.fileList.refresh, (False, True))
-            self.fileList.applyItems()
-
-        def setSorter(
-            self, sorter: Callable[[list[ItemDefaultProtocol]], None]
-        ) -> None:
-            window.subThreadCall(self.fileList.setSorter, (sorter,))
-            self.refresh()
-
-        @property
-        def items(self) -> list[ItemDefaultProtocol]:
-            if self.isBlank:
-                return []
-            return self._items
-
-        @property
-        def dirs(self) -> list[ItemDefaultProtocol]:
-            items = []
-            if self.isBlank:
-                return items
-            for i in range(self.count):
-                item = self.byIndex(i)
-                if item.isdir():
-                    items.append(item)
-            return items
-
-        @property
-        def files(self) -> list[ItemDefaultProtocol]:
-            items = []
-            if self.isBlank:
-                return items
-            for i in range(self.count):
-                item = self.byIndex(i)
-                if not item.isdir():
-                    items.append(item)
-            return items
-
-        @property
-        def stems(self) -> list[str]:
-            items = []
-            if self.isBlank:
-                return items
-            for i in range(self.count):
-                path = self.pathByIndex(i)
-                items.append(Path(path).stem)
-            return items
-
-        def appendHistory(self, path: str, mark: bool = False) -> None:
-            p = Path(path)
-            lister = self.lister
-            visible = isinstance(lister, lister_Default)
-            self.entity.history.append(str(p.parent), p.name, visible, mark)
-
-        @property
-        def cursor(self) -> int:
-            return self.entity.cursor
-
-        def focus(self, i: int) -> None:
-            if self.isValidIndex(i):
-                self._pane.cursor = i
-                self.scrollToCursor()
-
-        def byName(self, name: str) -> int:
-            return self.fileList.indexOf(name)
-
-        def hasName(self, name: str) -> bool:
-            return self.byName(name) != -1
-
-        def focusByName(self, name: str) -> None:
-            sep = "/"
-            if os.sep in name or sep in name:
-                name = name.replace(os.sep, sep).split(sep)[0]
-            i = self.byName(name)
-            if self.isValidIndex(i):
-                self.focus(i)
-
-        @property
-        def width(self) -> int:
-            left_width = window.left_window_width
-            left_focused = window.focus == MainWindow.FOCUS_LEFT
-            if left_focused and self.entity == window.activePane():
-                return left_width
-            if not left_focused and self.entity == window.inactivePane():
-                return left_width
-            return window.width() - left_width
-
-        def adjustWidth(self) -> None:
-            if window.width() - self.width < self.min_width:
-                window.command_MoveSeparatorCenter(None)
-
-        def focusOther(self, adjust: bool = True) -> None:
-            if adjust:
-                self.adjustWidth()
-            window.command_FocusOther(None)
-
-        @property
-        def fileList(self) -> FileList:
-            return self.entity.file_list
-
-        @property
-        def lister(self) -> lister_Default:
-            return self.fileList.getLister()
-
-        @property
-        def hasSelection(self) -> bool:
-            return self.fileList.selected()
-
-        @property
-        def hasBookmark(self) -> bool:
-            for item in self.items:
-                if item.bookmark():
-                    return True
-            return False
-
-        @property
-        def scrollInfo(self) -> ckit.ScrollInfo:
-            return self.entity.scroll_info
-
-        @property
-        def currentPath(self) -> str:
-            return self.fileList.getLocation()
-
-        @property
-        def count(self) -> int:
-            return self.fileList.numItems()
-
-        def byIndex(self, i: int) -> ItemDefaultProtocol:
-            return self.fileList.getItem(i)
-
-        @property
-        def isBlank(self) -> bool:
-            return isinstance(self.byIndex(0), item_Empty)
-
-        @property
-        def names(self) -> list[str]:
-            names = []
-            if self.isBlank:
-                return names
-            for i in range(self.count):
-                item = self.byIndex(i)
-                names.append(item.getName())
-            return names
-
-        @property
-        def paths(self) -> list[str]:
-            return [os.path.join(self.currentPath, name) for name in self.names]
-
-        @property
-        def extensions(self) -> list[str]:
-            exts = []
-            if self.isBlank:
-                return exts
-            for i in range(self.count):
-                path = Path(self.pathByIndex(i))
-                ext = path.suffix.replace(".", "")
-                if path.is_file() and ext not in exts:
-                    exts.append(ext)
-            return exts
-
-        @property
-        def selectedItems(self) -> list[ItemDefaultProtocol]:
-            items = []
-            if self.isBlank:
-                return items
-            for i in range(self.count):
-                item = self.byIndex(i)
-                if item.selected():
-                    items.append(item)
-            return items
-
-        @property
-        def selectedOrAllItems(self) -> list[ItemDefaultProtocol]:
-            if self.hasSelection:
-                return self.selectedItems
-            return self.items
-
-        @property
-        def selectedItemPaths(self) -> list[str]:
-            return [item.getFullpath() for item in self.selectedItems]
-
-        @property
-        def selectedItemNames(self) -> list[str]:
-            return [item.getName() for item in self.selectedItems]
-
-        @property
-        def focusedItem(self) -> ItemDefaultProtocol:
-            if self.isBlank:
-                raise ValueError("No item to focus.")
-            return self.byIndex(self.cursor)
-
-        def pathByIndex(self, i: int) -> str:
-            item = self.byIndex(i)
-            return item.getFullpath()
-
-        @property
-        def focusedItemPath(self) -> str:
-            if self.isBlank:
-                return ""
-            return self.pathByIndex(self.cursor)
-
-        def applySelectionHighlight(self) -> None:
-            self.repaint(PaintOption.Upper)
-
-        def isValidIndex(self, i: int) -> bool:
-            if self.isBlank:
-                return False
-            if i < 0:
-                return False
-            if self.count - 1 < i:
-                return False
-            return True
-
-        def toggleSelection(self, i: int, flush: bool = True) -> None:
-            if self.isValidIndex(i):
-                self.fileList.selectItem(i, None)
-                if flush:
-                    self.applySelectionHighlight()
-
-        def setSelectionState(self, i: int, state: bool, flush: bool) -> None:
-            if self.isValidIndex(i):
-                self.fileList.selectItem(i, state)
-                if flush:
-                    self.applySelectionHighlight()
-
-        def select(self, i: int, flush: bool = True) -> None:
-            self.setSelectionState(i, True, flush)
-
-        def selectAll(self) -> None:
-            for i in range(self.count):
-                self.select(i, False)
-            self.applySelectionHighlight()
-
-        def unSelect(self, i: int, flush: bool = True) -> None:
-            self.setSelectionState(i, False, flush)
-
-        def unSelectAll(self) -> None:
-            for i in range(self.count):
-                self.unSelect(i, False)
-            self.applySelectionHighlight()
-
-        def selectByName(self, name: str) -> None:
-            i = self.byName(name)
-            if i < 0:
-                return
-            self.select(i)
-            self.applySelectionHighlight()
-
-        def unSelectByName(self, name: str) -> None:
-            i = self.byName(name)
-            if i < 0:
-                return
-            self.unSelect(i)
-            self.applySelectionHighlight()
-
-        def selectByNames(self, names: list) -> None:
-            for name in names:
-                self.selectByName(name)
-
-        @property
-        def selectionTop(self) -> int:
-            if not self.hasSelection:
-                return -1
-            for i in range(self.count):
-                if self.byIndex(i).selected():
-                    return i
-            return -1
-
-        @property
-        def selectionBottom(self) -> int:
-            if not self.hasSelection:
-                return -1
-            idxs = []
-            for i in range(self.count):
-                if self.byIndex(i).selected():
-                    idxs.append(i)
-            if len(idxs) < 1:
-                return -1
-            return idxs[-1]
-
-        def scrollTo(self, i: int) -> None:
-            self.scrollInfo.makeVisible(i, window.fileListItemPaneHeight(), 1)
-            self.repaint(PaintOption.FocusedItems)
-
-        def scrollToCursor(self) -> None:
-            self.scrollTo(self.cursor)
-
-        def openChild(self, name: str) -> None:
-            self.openPath(os.path.join(self.currentPath, name))
-
-        def openPath(self, path: str, focus_name: None | str = None) -> None:
-            if self.currentPath == path and focus_name is not None:
-                self.focusByName(focus_name)
-                return
-
-            target = Path(path)
-            if not smart_check_path(target):
-                kiritori.log(f"invalid path: '{path}'")
-                return
-
-            if target.is_file():
-                self.openPath(str(target.parent), target.name)
-                return
-
-            if focus_name is None:
-
-                def _last_focused_name(hist_item: list) -> str | None:
-                    (
-                        dir_path,
-                        filename,
-                        _,
-                        _,
-                    ) = hist_item
-                    if dir_path.startswith(path):
-                        if dir_path == path:
-                            return filename
-                        return dir_path[len(path) + 1 :].split(os.sep)[0]
-                    return None
-
-                for hist_item in self.entity.history.items + self._other.history.items:
-                    focus_name = _last_focused_name(hist_item)
-                    if focus_name is not None:
-                        break
-
-            lister = lister_Default(window, path)
-            window.jumpLister(self.entity, lister, focus_name)
-
-        def touch(self, name: str) -> None:
-            if not hasattr(self.lister, "touch"):
-                kiritori.log("cannot make file here.")
-                return
-            dp = Path(self.currentPath, name)
-            if smart_check_path(dp) and dp.is_file():
-                kiritori.log(f"file '{name}' already exists.")
-                return
-            window.subThreadCall(self.lister.touch, (name,))
-            self.refresh()
-            self.focus(window.cursorFromName(self.fileList, name))
-
-        def mkdir(self, name: str, focus: bool = True) -> None:
-            if not hasattr(self.lister, "mkdir"):
-                kiritori.log("cannot make directory here.")
-                return
-            dp = Path(self.currentPath, name)
-            if smart_check_path(dp) and dp.is_dir():
-                kiritori.log(f"directory '{name}' already exists.")
-                self.focusByName(name)
-                return
-            window.subThreadCall(self.lister.mkdir, (name, None))
-            self.refresh()
-            if focus:
-                self.focusByName(name)
-
-        def copyToChild(
-            self, dest_name: str, items: list, remove_origin: bool = False
-        ) -> None:
-            mode = "m" if remove_origin else "c"
-            child_lister = self.lister.getChild(dest_name)
-            window._copyMoveCommon(
-                self.entity,
-                self.lister,
-                child_lister,
-                items,
-                mode,
-                self.fileList.getFilter(),
-            )
-            child_lister.destroy()
-
-        def traverse(
-            self, only_file: bool, *ignore_dirnames: str
-        ) -> Iterator[ItemDefaultProtocol]:
-            class FileListEntry:
-                def __init__(self, root: str, path: str) -> None:
-                    self.root = root
-                    self.dirname = path[len(root) :].lstrip(os.sep)
-
-                def __call__(self, name) -> ItemDefaultProtocol | None:
-                    try:
-                        item: ItemDefaultProtocol = item_Default(
-                            self.root, ckit.joinPath(self.dirname, name)
-                        )
-                        return item
-                    except Exception:
-                        cfiler_debug.printErrorInfo()
-                        return None
-
-            ignore_list = list(ignore_dirnames) + ["node_modules"]
-            for dirpath, subdirs, subfiles in os.walk(self.currentPath):
-                for dn in subdirs:
-                    if dn.startswith(".") or dn in ignore_list:
-                        subdirs.remove(dn)
-                for fn in subfiles:
-                    if fn.startswith("~$_"):
-                        subfiles.remove(fn)
-                ent = FileListEntry(self.currentPath, dirpath)
-                if not only_file:
-                    for d in filter(
-                        None,
-                        map(ent, subdirs),
-                    ):
-                        yield d
-                for f in filter(None, map(ent, subfiles)):
-                    yield f
-
-    class LeftPane(CPane):
-        def __init__(self) -> None:
-            super().__init__(window.focus == MainWindow.FOCUS_LEFT)
-
-        def activate(self) -> None:
-            if window.focus == MainWindow.FOCUS_RIGHT:
-                window.focus = MainWindow.FOCUS_LEFT
-            self.repaint(PaintOption.LeftOrRight)
-
-    class RightPane(CPane):
-        def __init__(self) -> None:
-            super().__init__(window.focus == MainWindow.FOCUS_RIGHT)
-
-        def activate(self) -> None:
-            if window.focus == MainWindow.FOCUS_LEFT:
-                window.focus = MainWindow.FOCUS_RIGHT
-            self.repaint(PaintOption.LeftOrRight)
 
     def smart_cursorUp() -> None:
         pane = CPane()
@@ -1048,66 +445,6 @@ def setup(window) -> None:
 
         job = ckit.JobItem(_peek, _finished)
         window.taskEnqueue(job, create_new_queue=False)
-
-    def invoke_listwindow(
-        prompt: str,
-        items: list,
-        cursor_pos: int = 0,
-        onkeypress: Literal["navigate", "search", "search_and_decide"] = "navigate",
-    ) -> tuple[int, int]:
-        pos = window.centerOfFocusedPaneInPixel()
-        list_window = ListWindow(
-            x=pos[0],
-            y=pos[1],
-            min_width=40,
-            min_height=1,
-            max_width=window.width() - 5,
-            max_height=window.height() - 3,
-            parent_window=window,
-            ini=window.ini,
-            title=prompt,
-            items=items,
-            initial_select=cursor_pos,
-            onekey_search=onkeypress.startswith("search"),
-            onekey_decide=onkeypress.endswith("decide"),
-            return_modkey=True,
-            keydown_hook=None,
-            statusbar_handler=None,
-        )
-        window.enable(False)
-        list_window.messageLoop()
-        result, mod = list_window.getResult()
-        window.enable(True)
-        window.activate()
-        list_window.destroy()
-        return result, mod
-
-    def open_git_managed_dir(dir_path: str) -> None:
-        class App(Enum):
-            CFILER = "CFiler"
-            VSCODE = "VSCode"
-            LAZYGIT = "lazygit"
-
-        apps = [App.CFILER, App.VSCODE]
-
-        if shutil.which(App.LAZYGIT.value) is not None:
-            apps.append(App.LAZYGIT)
-
-        result, _ = invoke_listwindow("Open with:", [app.value for app in apps])
-        if result < 0:
-            return
-
-        selected = apps[result]
-
-        if selected == App.VSCODE:
-            open_vscode(dir_path)
-            return
-
-        if selected == App.LAZYGIT:
-            shell_exec(App.LAZYGIT.value, "-p", dir_path)
-            return
-
-        CPane().openPath(dir_path)
 
     def hook_enter() -> bool:
         pane = CPane()
@@ -1914,10 +1251,9 @@ def setup(window) -> None:
                 encoding="utf-8",
                 check=False,
             )
-            if fzf_result.returncode != 0:
-                if e := fzf_result.stderr:
-                    kiritori.log(e)
-                    return
+            if fzf_result.returncode != 0 and (e := fzf_result.stderr):
+                kiritori.log(e)
+                return
 
             job_item.rel_path = fzf_result.stdout.strip()
 
@@ -1925,8 +1261,12 @@ def setup(window) -> None:
             if not job_item.rel_path:
                 return
 
-            path = str(Path(ghq_root) / job_item.rel_path)
-            open_git_managed_dir(path)
+            path = Path(ghq_root) / job_item.rel_path
+            if smart_check_path(path / ".git") and ask_open_by_vscode():
+                open_vscode(str(path))
+                return
+
+            CPane().openPath(str(path))
 
         job = ckit.JobItem(_listup, _open)
         window.taskEnqueue(job, create_new_queue=False)

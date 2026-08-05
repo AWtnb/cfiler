@@ -5,7 +5,7 @@ import ckit  # type: ignore
 from cfiler_mainwindow import MainWindow  # type: ignore
 from cfiler_misc import getFileSizeString  # type: ignore
 
-from .protocols import ItemDefaultProtocol
+from .tools.protocols import ItemDefaultProtocol
 
 
 class ItemTimestamp:
