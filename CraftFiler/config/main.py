@@ -31,6 +31,7 @@ from .tools import (
     change_dir,
     clon,
     cpane,
+    cursor_jumper,
     cursor_mover,
     enter,
     keybinder,
@@ -65,6 +66,7 @@ from .tools.common import (
     stringify,
 )
 from .tools.cpane import CPane, LeftPane, RightPane, adjust_pane_width, swap_pane
+from .tools.cursor_jumper import CursorJumper
 from .tools.cursor_mover import (
     focus_by_timestamp,
     focus_latest_item,
@@ -86,6 +88,7 @@ def setup(window) -> None:
     clon.setup(window)
     cpane.setup(window)
     cursor_mover.setup(window)
+    cursor_jumper.setup(window)
     enter.setup(window)
     keybinder.setup(window)
     kiritori.setup(window)
@@ -745,106 +748,9 @@ def setup(window) -> None:
 
     keybinder.bind(unselect_panes, "C-U", "S-Esc")
 
-    class SmartJumper:
-        def __init__(self, by_prefix: bool):
-            self.pane = CPane()
-            self.dests = self.prefixEdges() if by_prefix else self.itemEdges()
-
-        @staticmethod
-        def getBlockEdges(idxs: list[int]) -> list[int]:
-            if len(idxs) < 1:
-                return []
-
-            edges = []
-            start = idxs[0]
-            end = start
-
-            for idx in idxs[1:]:
-                if idx == end + 1:
-                    end = idx
-                else:
-                    edges.append(start)
-                    edges.append(end)
-                    start = idx
-                    end = idx
-
-            edges.append(start)
-            if 0 < len(edges) and edges[-1] != end:
-                edges.append(end)
-            return edges
-
-        def appendBaseEdges(self, edges: list[int]) -> list[int]:
-            edges.append(0)
-            edges.append(self.pane.count - 1)
-            if 0 < (nd := len(self.pane.dirs)):
-                edges.append(nd - 1)
-                if 0 < len(self.pane.files):
-                    edges.append(nd)
-            return edges
-
-        def itemEdges(self) -> list[int]:
-            if self.pane.isBlank:
-                return []
-            stack = []
-            for i in range(self.pane.count):
-                item = self.pane.byIndex(i)
-                if item.bookmark() or item.selected():
-                    stack.append(i)
-            stack = self.getBlockEdges(stack)
-            return sorted(list(set(self.appendBaseEdges(stack))))
-
-        def prefixEdges(self) -> list[int]:
-            if self.pane.isBlank:
-                return []
-            names = self.pane.names
-            if len(names) < 2:
-                return []
-            prefs = [name.split("_", 1)[0] for name in names]
-            edges = []
-            start = 0
-            for i in range(1, len(prefs) + 1):
-                if i == len(prefs) or prefs[i] != prefs[start]:
-                    if 1 < i - start:
-                        edges += [start, i - 1]
-                    start = i
-            return sorted(list(set(self.appendBaseEdges(edges))))
-
-        def down(self, selecting: bool) -> None:
-            if len(self.dests) < 1:
-                return
-            cur = self.pane.cursor
-            idx = -1
-            for t in self.dests:
-                if cur < t:
-                    idx = t
-                    break
-            if idx < 0:
-                return
-            if selecting:
-                for i in range(self.pane.count):
-                    if cur <= i <= idx:
-                        self.pane.select(i)
-            self.pane.focus(idx)
-
-        def up(self, selecting: bool) -> None:
-            if len(self.dests) < 1:
-                return
-            cur = self.pane.cursor
-            idx = -1
-            for t in self.dests:
-                if t < cur:
-                    idx = t
-            if idx < 0:
-                return
-            if selecting:
-                for i in range(self.pane.count):
-                    if idx <= i <= cur:
-                        self.pane.select(i)
-            self.pane.focus(idx)
-
     def smart_jumpDown(by_prefix: bool, selecting: bool) -> CallbackFunc:
         def _jumper() -> None:
-            SmartJumper(by_prefix).down(selecting)
+            CursorJumper(by_prefix).down(selecting)
 
         return _jumper
 
@@ -855,7 +761,7 @@ def setup(window) -> None:
 
     def smart_jumpUp(by_prefix: bool, selecting: bool) -> CallbackFunc:
         def _jumper() -> None:
-            SmartJumper(by_prefix).up(selecting)
+            CursorJumper(by_prefix).up(selecting)
 
         return _jumper
 
