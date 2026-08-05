@@ -79,6 +79,7 @@ from .tools.enter import hook_enter, open_with
 from .tools.listwindow import invoke_listwindow
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
+from .tools.rename import renamer
 
 
 def setup(window) -> None:
@@ -95,6 +96,7 @@ def setup(window) -> None:
     kiritori.setup(window)
     listwindow.setup(window)
     office.setup(window)
+    renamer.setup(window)
     selector.setup(window)
     style.setup(window)
 
@@ -691,46 +693,6 @@ def setup(window) -> None:
 
     keybinder.bind(on_vscode, "V")
 
-    class Renamer:
-        def __init__(self) -> None:
-            self._pane = CPane()
-
-        @staticmethod
-        def renamable(item) -> bool:
-            return (
-                hasattr(item, "rename")
-                and hasattr(item, "utime")
-                and hasattr(item, "uattr")
-            )
-
-        @property
-        def candidate(self) -> list:
-            if self._pane.hasSelection:
-                items = []
-                for item in self._pane.selectedItems:
-                    if self.renamable(item):
-                        items.append(item)
-                return items
-            item = self._pane.focusedItem
-            if self.renamable(item):
-                return [item]
-            return []
-
-        def execute(self, org_path: Path, new_name: str, focus: bool = False) -> None:
-            new_path = org_path.with_name(new_name)
-            if smart_check_path(new_path):
-                if new_path.name in [c.name for c in new_path.parent.iterdir()]:
-                    print(f"'{new_name}' already exists!")
-                    return
-            try:
-                window.subThreadCall(org_path.rename, (str(new_path),))
-                print(f"Renamed: {org_path.name}\n     ==> {new_name}\n")
-                self._pane.refresh()
-                if focus:
-                    self._pane.focusByName(new_name)
-            except Exception as e:
-                print(e)
-
     class RenameConfig:
         ini_section = "RENAME_CONFIG"
 
@@ -756,9 +718,9 @@ def setup(window) -> None:
         newName: str
 
     def rename_substr() -> None:
-        renamer = Renamer()
 
-        targets = renamer.candidate
+        pane = CPane()
+        targets = renamer.get_renamable_items(pane)
         if len(targets) < 1:
             return
 
@@ -826,15 +788,15 @@ def setup(window) -> None:
 
         krtr = kiritori
         krtr.draw_header("Renaming:")
-        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
     keybinder.bind(rename_substr, "S-S")
 
     def rename_insert() -> None:
-        renamer = Renamer()
 
-        targets = renamer.candidate
+        pane = CPane()
+        targets = renamer.get_renamable_items(pane)
         if len(targets) < 1:
             return
 
@@ -905,7 +867,7 @@ def setup(window) -> None:
 
         krtr = kiritori
         krtr.draw_header("Renaming:")
-        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
     keybinder.bind(rename_insert, "S-I")
@@ -964,10 +926,9 @@ def setup(window) -> None:
             return ts + "_" + self.name
 
     def rename_photo_file_by_exifdate() -> None:
-        renamer = Renamer()
-
+        pane = CPane()
         targets = []
-        for item in renamer.candidate:
+        for item in renamer.get_renamable_items(pane):
             if not item.isdir():
                 targets.append(item)
 
@@ -995,14 +956,13 @@ def setup(window) -> None:
 
         krtr = kiritori
         krtr.draw_header("Renaming:")
-        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
     def rename_lightroom_photo_from_dropbox() -> None:
-        renamer = Renamer()
-
+        pane = CPane()
         targets = []
-        for item in renamer.candidate:
+        for item in renamer.get_renamable_items(pane):
             if not item.isdir():
                 targets.append(item)
 
@@ -1037,13 +997,12 @@ def setup(window) -> None:
 
         krtr = kiritori
         krtr.draw_header("Renaming:")
-        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
     def rename_index() -> None:
-        renamer = Renamer()
-
-        targets = renamer.candidate
+        pane = CPane()
+        targets = renamer.get_renamable_items(pane)
         if len(targets) < 1:
             return
 
@@ -1155,15 +1114,14 @@ def setup(window) -> None:
 
         krtr = kiritori
         krtr.draw_header("Renaming:")
-        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
     keybinder.bind(rename_index, "A-S-I")
 
     def rename_regexp() -> None:
-        renamer = Renamer()
-
-        targets = renamer.candidate
+        pane = CPane()
+        targets = renamer.get_renamable_items(pane)
         if len(targets) < 1:
             return
 
@@ -1244,7 +1202,7 @@ def setup(window) -> None:
 
         krtr = kiritori
         krtr.draw_header("Renaming:")
-        [renamer.execute(info.orgPath, info.newName) for info in infos]
+        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
 
     keybinder.bind(rename_regexp, "S-R")
@@ -1407,8 +1365,7 @@ def setup(window) -> None:
             return
         item = pane.focusedItem
 
-        renamer = Renamer()
-        if not renamer.renamable(item):
+        if not renamer.is_renamable(item):
             return
 
         ts = item.time()
@@ -1438,7 +1395,7 @@ def setup(window) -> None:
 
         krtr = kiritori
         krtr.draw_header("Renaming:")
-        renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
+        renamer.execute(pane, focused_path, new_name, mod == ckit.MODKEY_SHIFT)
         krtr.draw_footer()
 
     keybinder.bind(rename_stem, "N")
@@ -1451,8 +1408,7 @@ def setup(window) -> None:
         if item.isdir():
             return
 
-        renamer = Renamer()
-        if not renamer.renamable(item) or pane.isBlank:
+        if not renamer.is_renamable(item) or pane.isBlank:
             return
 
         focused_path = Path(item.getFullpath())
@@ -1489,7 +1445,7 @@ def setup(window) -> None:
 
         krtr = kiritori
         krtr.draw_header("Renaming:")
-        renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
+        renamer.execute(pane, focused_path, new_name, mod == ckit.MODKEY_SHIFT)
         krtr.draw_footer()
 
     keybinder.bind(rename_ext, "S-N")
@@ -2264,10 +2220,9 @@ def setup(window) -> None:
 
     def rename_pseudo_voicing() -> None:
         pane = CPane()
-        renamer = Renamer()
         items = pane.selectedItems
         for item in items:
-            if not renamer.renamable(item):
+            if not renamer.is_renamable(item):
                 continue
             name = item.getName()
             pv = PseudoVoicing(name)
@@ -2275,7 +2230,7 @@ def setup(window) -> None:
             pv.fix_half_voicing()
             new_name = pv.formatted
             org_path = Path(item.getFullpath())
-            renamer.execute(org_path, new_name)
+            renamer.execute(pane, org_path, new_name)
 
     def save_clipboard_image_as_file() -> None:
         pane = CPane()
