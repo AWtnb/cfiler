@@ -36,7 +36,7 @@ from .tools import (
     listwindow,
     office,
 )
-from .tools.archiver import extract_archives
+from .tools.archiver import compress_files, extract_archives
 from .tools.bookmark import (
     bookmark_here,
     fuzzy_bookmark,
@@ -845,66 +845,6 @@ def setup(window) -> None:
 
         job = ckit.JobItem(_eject, _finished)
         window.taskEnqueue(job, create_new_queue=False)
-
-    def compress_with_7zip(zip_path: str, *targets: str) -> None:
-        seven_zip = shutil.which("7z")
-        if seven_zip is None:
-            kiritori.log("7z not found.")
-            return
-
-        def _compress(_) -> None:
-            try:
-                cmd = [seven_zip, "a", "-tzip", "-y", zip_path] + list(targets)
-                proc = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    check=False,
-                )
-                if proc.returncode != 0:
-                    if o := proc.stdout:
-                        kiritori.log(o)
-                    if e := proc.stderr:
-                        kiritori.log(e)
-            except Exception as e:
-                kiritori.log(e)
-                return
-
-        def _finished(_) -> None:
-            pass
-
-        job = ckit.JobItem(_compress, _finished)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    def compress_files() -> None:
-        pane = CPane()
-        targets = pane.selectedItemPaths
-
-        if len(targets) < 1:
-            return
-
-        placeholder = datetime.datetime.today().strftime("%Y%m%d-%H%M%S")
-        if len(targets) == 1:
-            placeholder = Path(targets[0]).name
-
-        result = stringify(window.commandLine("Zip name", text=placeholder))
-        if len(result) < 1:
-            return
-        if not result.endswith(".zip"):
-            result += ".zip"
-
-        if pane.byName(result) != -1:
-            kiritori.log(f"'{result}' already exists.")
-            return
-
-        zip_path = os.path.join(pane.currentPath, result)
-
-        if shutil.which("7z") is not None:
-            compress_with_7zip(zip_path, *targets)
-        else:
-            pane.adjustWidth()
-            window.command_CreateArchive(None)
 
     def recylcebin() -> None:
         shell_exec("shell:RecycleBinFolder")
