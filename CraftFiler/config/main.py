@@ -22,7 +22,6 @@ from typing import (
     Iterator,
     Literal,
     NamedTuple,
-    Protocol,
 )
 from winreg import HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, OpenKey, QueryValueEx
 
@@ -59,6 +58,8 @@ from PIL import Image as PILImage  # ty:ignore[unresolved-import]
 from PIL import ImageGrab  # ty:ignore[unresolved-import]
 from PIL.ExifTags import TAGS  # ty:ignore[unresolved-import]
 
+from .protocols import ItemDefaultProtocol, PaneEntityProtocol
+from .tools import kiritori
 from .tools.common import (
     DESKTOP_PATH,
     CallbackFunc,
@@ -75,60 +76,9 @@ from .tools.common import (
 )
 
 
-class PaneHistoryProtocol(Protocol):
-    def append(self, parent: str, name: str, visible: bool, mark: bool) -> None: ...
+def setup(window) -> None:
 
-    items: list
-
-
-class PaneEntityProtocol(Protocol):
-    cursor: int
-    history: PaneHistoryProtocol
-    file_list: FileList
-    scroll_info: ckit.ScrollInfo
-
-
-class ItemDefaultProtocol(Protocol):
-    def isdir(self) -> bool: ...
-    def getName(self) -> str: ...
-    def getFullpath(self) -> str: ...
-    def bookmark(self) -> list: ...
-    def time(self) -> tuple: ...
-    def selected(self) -> bool: ...
-    def size(self) -> int: ...
-
-
-class Kiritori:
-    sep = "-"
-
-    def __init__(self, window: MainWindow) -> None:
-        self.window = window
-
-    def get_width(self) -> int:
-        return self.window.width()
-
-    def get_timestamp(self) -> str:
-        return datetime.datetime.today().strftime(
-            f" %Y-%m-%d %H:%M:%S.%f {self.sep * 2}"
-        )
-
-    def draw_header(self, title: str) -> None:
-        print(f"{self.get_timestamp().ljust(self.get_width(), self.sep)}\n\n{title}\n")
-
-    def draw_footer(self) -> None:
-        print(f"{self.get_timestamp().rjust(self.get_width(), self.sep)}\n")
-
-    def log(self, s) -> None:
-        self.draw_header(s)
-        self.draw_footer()
-
-
-def setup(window: MainWindow) -> None:
-    if ckit.CronTable.defaultCronTable():
-        ckit.CronTable.defaultCronTable().cancel()
-        ckit.CronTable.defaultCronTable().clear()
-    else:
-        ckit.CronTable.createDefaultCronTable()
+    kiritori.setup(window)
 
     class ItemTimestamp:
         def __init__(self, item) -> None:
@@ -323,7 +273,7 @@ def setup(window: MainWindow) -> None:
         cli = "okini"
         exe = shutil.which(cli)
         if exe is None:
-            Kiritori(window).log(f"{cli} not found.")
+            kiritori.log(f"{cli} not found.")
             return ""
         cmd = ["okini"] + list(params)
         proc = subprocess.run(
@@ -334,14 +284,14 @@ def setup(window: MainWindow) -> None:
             check=False,
         )
         if proc.returncode != 0:
-            Kiritori(window).log(proc.stderr)
+            kiritori.log(proc.stderr)
             return ""
         return proc.stdout.strip()
 
     def get_okini_bookmarks() -> list[dict[str, str]] | None:
         bookmark_json = os.path.expandvars(r"${APPDATA}\okini\bookmarks.json")
         if not smart_check_path(bookmark_json):
-            Kiritori(window).log("okini's bookmarks.json not found.")
+            kiritori.log("okini's bookmarks.json not found.")
             return None
 
         bookmarks = []
@@ -376,19 +326,19 @@ def setup(window: MainWindow) -> None:
         if path in bookmarks:
             window.bookmark.remove(path)
             _ = okini("--remove", path)
-            Kiritori(window).log(f"Unbookmarked: '{path}'")
+            kiritori.log(f"Unbookmarked: '{path}'")
         else:
             window.bookmark.append(path)
             _ = okini("--add", path)
-            Kiritori(window).log(f"Bookmarked: '{path}'")
+            kiritori.log(f"Bookmarked: '{path}'")
 
     def fuzzy_bookmark(local_only: bool) -> None:
         if not check_fzf():
-            Kiritori(window).log("fzf not found.")
+            kiritori.log("fzf not found.")
             return
 
         if shutil.which("okini") is None:
-            Kiritori(window).log("okini not found.")
+            kiritori.log("okini not found.")
             return
 
         pane = CPane()
@@ -419,7 +369,7 @@ def setup(window: MainWindow) -> None:
             )
             if proc.returncode != 0:
                 if e := proc.stderr:
-                    Kiritori(window).log(e)
+                    kiritori.log(e)
                     return
             job_item.bookmark_name = proc.stdout.strip()
 
@@ -456,7 +406,7 @@ def setup(window: MainWindow) -> None:
         target = pane.currentPath
         if pane.hasSelection:
             if 1 < len(pane.selectedItems):
-                Kiritori(window).log(
+                kiritori.log(
                     "Canceled. Select just 1 item (or nothing to bookmark current location)."
                 )
                 return
@@ -485,7 +435,7 @@ def setup(window: MainWindow) -> None:
             window.bookmark.append(target)
             if target != pane.currentPath:
                 pane.refresh()
-        Kiritori(window).log(f"Registered '{alias}' as alias for '{target}'")
+        kiritori.log(f"Registered '{alias}' as alias for '{target}'")
 
     def new_cfiler_window() -> None:
         exe_path = sys.executable
@@ -497,7 +447,7 @@ def setup(window: MainWindow) -> None:
                 f' -L"{slashed}" -R"{slashed}"',
             )
         else:
-            Kiritori(window).log(f"{exe_path} not found.")
+            kiritori.log(f"{exe_path} not found.")
 
     Keybinder.bind(new_cfiler_window, "C-N")
 
@@ -818,7 +768,7 @@ def setup(window: MainWindow) -> None:
 
             target = Path(path)
             if not smart_check_path(target):
-                Kiritori(window).log(f"invalid path: '{path}'")
+                kiritori.log(f"invalid path: '{path}'")
                 return
 
             if target.is_file():
@@ -850,11 +800,11 @@ def setup(window: MainWindow) -> None:
 
         def touch(self, name: str) -> None:
             if not hasattr(self.lister, "touch"):
-                Kiritori(window).log("cannot make file here.")
+                kiritori.log("cannot make file here.")
                 return
             dp = Path(self.currentPath, name)
             if smart_check_path(dp) and dp.is_file():
-                Kiritori(window).log(f"file '{name}' already exists.")
+                kiritori.log(f"file '{name}' already exists.")
                 return
             window.subThreadCall(self.lister.touch, (name,))
             self.refresh()
@@ -862,11 +812,11 @@ def setup(window: MainWindow) -> None:
 
         def mkdir(self, name: str, focus: bool = True) -> None:
             if not hasattr(self.lister, "mkdir"):
-                Kiritori(window).log("cannot make directory here.")
+                kiritori.log("cannot make directory here.")
                 return
             dp = Path(self.currentPath, name)
             if smart_check_path(dp) and dp.is_dir():
-                Kiritori(window).log(f"directory '{name}' already exists.")
+                kiritori.log(f"directory '{name}' already exists.")
                 self.focusByName(name)
                 return
             window.subThreadCall(self.lister.mkdir, (name, None))
@@ -1029,11 +979,11 @@ def setup(window: MainWindow) -> None:
         def _finished(job_item: ckit.JobItem) -> None:
             window.clearProgress()
             if job_item.isCanceled():
-                Kiritori(window).log("Canceled.")
+                kiritori.log("Canceled.")
             else:
                 lines = "\n".join(sorted(job_item.paths))
                 ckit.setClipboardText(lines)
-                Kiritori(window).log(f"Copied tree: {root}")
+                kiritori.log(f"Copied tree: {root}")
 
         job = ckit.JobItem(_traverse, _finished)
         window.taskEnqueue(job, create_new_queue=False)
@@ -1043,7 +993,7 @@ def setup(window: MainWindow) -> None:
         if pane.isBlank:
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         root = pane.currentPath
 
         def _scan(job_item: ckit.JobItem) -> None:
@@ -1104,7 +1054,7 @@ def setup(window: MainWindow) -> None:
         path = pane.currentPath
         git_path = os.path.join(path, ".git")
         if smart_check_path(git_path):
-            Kiritori(window).log(f"'{git_path}' already exists.")
+            kiritori.log(f"'{git_path}' already exists.")
             return
         shell_exec("git", "init", str(path))
 
@@ -1114,12 +1064,12 @@ def setup(window: MainWindow) -> None:
 
         lazygit = "lazygit"
         if shutil.which(lazygit) is None:
-            Kiritori(window).log(f"'{lazygit}' not found...")
+            kiritori.log(f"'{lazygit}' not found...")
             return
 
         git_path = os.path.join(path, ".git")
         if not smart_check_path(git_path):
-            Kiritori(window).log(f"'{git_path}' not found.")
+            kiritori.log(f"'{git_path}' not found.")
             return
 
         shell_exec("wt.exe", "lazygit", "-p", path)
@@ -1381,7 +1331,7 @@ def setup(window: MainWindow) -> None:
 
         _set_prog_id()
         if not prog_id:
-            Kiritori(window).log("Failed to define default browser by registry ProgId.")
+            kiritori.log("Failed to define default browser by registry ProgId.")
             return ""
 
         commandline = None
@@ -1393,7 +1343,7 @@ def setup(window: MainWindow) -> None:
                     nonlocal commandline
                     commandline = str(QueryValueEx(key, "")[0])
             except Exception as e:
-                Kiritori(window).log(
+                kiritori.log(
                     f"Failed to get commandline by registry `{register_path}`\n{e}"
                 )
 
@@ -1535,7 +1485,7 @@ def setup(window: MainWindow) -> None:
 
         exe_path = shutil.which(go_tool)
         if not exe_path:
-            Kiritori(window).log(f"'{go_tool}' not found...")
+            kiritori.log(f"'{go_tool}' not found...")
             return ""
         try:
             cmd = [
@@ -1551,13 +1501,13 @@ def setup(window: MainWindow) -> None:
             )
             if proc.returncode != 0:
                 if o := proc.stdout:
-                    Kiritori(window).log(o)
+                    kiritori.log(o)
                 if e := proc.stderr:
-                    Kiritori(window).log(e)
+                    kiritori.log(e)
                 return ""
             return proc.stdout
         except Exception as e:
-            Kiritori(window).log(e)
+            kiritori.log(e)
             return ""
 
     TEMP_FILE_PREFIX = "cfiler_preview_openxml_"
@@ -1584,7 +1534,7 @@ def setup(window: MainWindow) -> None:
                 tf.close()
                 job_item.temp_path = tf.name
             except Exception as e:
-                Kiritori(window).log(e)
+                kiritori.log(e)
 
         def _view_tempfile(job_item: ckit.JobItem) -> None:
             if job_item.temp_path:
@@ -1604,12 +1554,12 @@ def setup(window: MainWindow) -> None:
                     os.remove(os.path.join(temp_dir, file))
                     paths.append(file)
                 except Exception as e:
-                    Kiritori(window).log(f"Failed to remove temp file : {e}")
+                    kiritori.log(f"Failed to remove temp file : {e}")
 
         if len(paths) < 1:
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         count = len(paths)
         msg = f"Removed {count} temp file"
         if 1 < count:
@@ -1633,7 +1583,7 @@ def setup(window: MainWindow) -> None:
                             p.unlink()
                             count += 1
                     except Exception as e:
-                        Kiritori(window).log(f"Failed to remove temp file :{file}\n{e}")
+                        kiritori.log(f"Failed to remove temp file :{file}\n{e}")
 
             if 0 < count:
                 msg = f"Removed {count} tempfile"
@@ -1654,7 +1604,7 @@ def setup(window: MainWindow) -> None:
         if len(paths) < 1:
             paths = [pane.focusedItemPath]
 
-        krtr = Kiritori(window)
+        krtr = kiritori
 
         def _read(_: ckit.JobItem) -> None:
             krtr.draw_header("Converting docx")
@@ -1702,7 +1652,7 @@ def setup(window: MainWindow) -> None:
                     job_item.result = None
                     exe_path = shutil.which(cls.exe_name)
                     if exe_path is None:
-                        Kiritori(window).log(f"Exe not found: '{cls.exe_name}'")
+                        kiritori.log(f"Exe not found: '{cls.exe_name}'")
                         return
                     root = cls.get_root(pane.currentPath)
                     cmd = [
@@ -1719,7 +1669,7 @@ def setup(window: MainWindow) -> None:
                     if result:
                         if proc.returncode != 0:
                             if result:
-                                Kiritori(window).log(result)
+                                kiritori.log(result)
                             return
                         job_item.result = result
 
@@ -1761,7 +1711,7 @@ def setup(window: MainWindow) -> None:
 
             if proc.returncode != 0:
                 if e := proc.stderr:
-                    Kiritori(window).log(e)
+                    kiritori.log(e)
                     return
             job_item.selected = proc.stdout.strip()
 
@@ -1799,7 +1749,7 @@ def setup(window: MainWindow) -> None:
         exe_name = "magick.exe"
         imagemagick = shutil.which(exe_name)
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         if imagemagick is None:
             krtr.log(f"{exe_name} not found!")
             return
@@ -1865,7 +1815,7 @@ def setup(window: MainWindow) -> None:
         exe_name = "go-pdfconc.exe"
         exe_path = shutil.which(exe_name)
         if not exe_path:
-            Kiritori(window).log(f"'{exe_name}' not found!")
+            kiritori.log(f"'{exe_name}' not found!")
             return
 
         pane = CPane()
@@ -1874,10 +1824,10 @@ def setup(window: MainWindow) -> None:
         for path in pane.selectedItemPaths:
             p = Path(path)
             if p.is_dir():
-                Kiritori(window).log("dir item is selected!")
+                kiritori.log("dir item is selected!")
                 return
             if p.suffix != ".pdf":
-                Kiritori(window).log("non-pdf file found!")
+                kiritori.log("non-pdf file found!")
                 return
 
         basename = stringify(window.commandLine(title="Outname", text="conc"))
@@ -1899,26 +1849,26 @@ def setup(window: MainWindow) -> None:
                     check=False,
                 )
                 if proc.returncode != 0:
-                    Kiritori(window).log(f"ERROR: {proc.stdout}")
+                    kiritori.log(f"ERROR: {proc.stdout}")
             except Exception as e:
-                Kiritori(window).log(e)
+                kiritori.log(e)
 
         def _finish(job_item: ckit.JobItem) -> None:
             window.clearProgress()
             if job_item.isCanceled():
-                Kiritori(window).log("Canceled.")
+                kiritori.log("Canceled.")
             else:
                 pane.refresh()
                 name = basename + ".pdf"
                 pane.focusByName(name)
-                Kiritori(window).log(f"Concatenated as '{name}':\n\n{src}")
+                kiritori.log(f"Concatenated as '{name}':\n\n{src}")
 
         job = ckit.JobItem(_conc, _finish)
         window.taskEnqueue(job, create_new_queue=False)
 
     def make_internet_shortcut(url: str = "") -> None:
         if not url.startswith("http"):
-            Kiritori(window).log(f"invalid url: '{url}'")
+            kiritori.log(f"invalid url: '{url}'")
             return
 
         def _access(job_item: ckit.JobItem) -> None:
@@ -1933,7 +1883,7 @@ def setup(window: MainWindow) -> None:
                         text = body.decode("cp932", errors="ignore")
                     job_item.body = text
             except Exception as e:
-                Kiritori(window).log(e)
+                kiritori.log(e)
 
         def _make_shortcut(job_item: ckit.JobItem) -> None:
             title = ""
@@ -2060,13 +2010,13 @@ def setup(window: MainWindow) -> None:
     def to_ghq_repo() -> None:
         ghq_root = os.path.expandvars(r"${USERPROFILE}\ghq")
         if not smart_check_path(ghq_root):
-            Kiritori(window).log(f"'{ghq_root}' not found.")
+            kiritori.log(f"'{ghq_root}' not found.")
             return
 
         exe_name = "ghq.exe"
         exe_path = shutil.which(exe_name)
         if exe_path is None:
-            Kiritori(window).log(f"cannnot find {exe_name}...")
+            kiritori.log(f"cannnot find {exe_name}...")
             return
 
         def _listup(job_item: ckit.JobItem) -> None:
@@ -2088,7 +2038,7 @@ def setup(window: MainWindow) -> None:
             )
             if fzf_result.returncode != 0:
                 if e := fzf_result.stderr:
-                    Kiritori(window).log(e)
+                    kiritori.log(e)
                     return
 
             job_item.rel_path = fzf_result.stdout.strip()
@@ -2123,18 +2073,18 @@ def setup(window: MainWindow) -> None:
             proc = run_ps1("eject", current_drive)
             if proc.returncode != 0:
                 if o := proc.stdout:
-                    Kiritori(window).log(o)
+                    kiritori.log(o)
                 if e := proc.stderr:
-                    Kiritori(window).log(e)
+                    kiritori.log(e)
                 return
             job_item.result = f"Ejected drive '{current_drive}'"
 
         def _finished(job_item: ckit.JobItem) -> None:
             if job_item.result is None:
                 pane.openPath(current)
-                Kiritori(window).log(f"Failed to eject drive '{current_drive}'")
+                kiritori.log(f"Failed to eject drive '{current_drive}'")
             else:
-                Kiritori(window).log(job_item.result)
+                kiritori.log(job_item.result)
 
         job = ckit.JobItem(_eject, _finished)
         window.taskEnqueue(job, create_new_queue=False)
@@ -2142,7 +2092,7 @@ def setup(window: MainWindow) -> None:
     def compress_with_7zip(zip_path: str, *targets: str) -> None:
         seven_zip = shutil.which("7z")
         if seven_zip is None:
-            Kiritori(window).log("7z not found.")
+            kiritori.log("7z not found.")
             return
 
         def _compress(_) -> None:
@@ -2157,11 +2107,11 @@ def setup(window: MainWindow) -> None:
                 )
                 if proc.returncode != 0:
                     if o := proc.stdout:
-                        Kiritori(window).log(o)
+                        kiritori.log(o)
                     if e := proc.stderr:
-                        Kiritori(window).log(e)
+                        kiritori.log(e)
             except Exception as e:
-                Kiritori(window).log(e)
+                kiritori.log(e)
                 return
 
         def _finished(_) -> None:
@@ -2188,7 +2138,7 @@ def setup(window: MainWindow) -> None:
             result += ".zip"
 
         if pane.byName(result) != -1:
-            Kiritori(window).log(f"'{result}' already exists.")
+            kiritori.log(f"'{result}' already exists.")
             return
 
         zip_path = os.path.join(pane.currentPath, result)
@@ -2202,7 +2152,7 @@ def setup(window: MainWindow) -> None:
     def extract_with_7zip(dest: str, *paths: str) -> None:
         seven_zip = shutil.which("7z")
         if seven_zip is None:
-            Kiritori(window).log("7z not found.")
+            kiritori.log("7z not found.")
             return
 
         targets = [
@@ -2211,7 +2161,7 @@ def setup(window: MainWindow) -> None:
         if len(targets) < 1:
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
 
         def _extract(_) -> None:
             krtr.draw_header(f"Extracting as '{dest}'...")
@@ -2234,11 +2184,11 @@ def setup(window: MainWindow) -> None:
                     )
                     if proc.returncode != 0:
                         if o := proc.stdout:
-                            Kiritori(window).log(o)
+                            kiritori.log(o)
                         if e := proc.stderr:
-                            Kiritori(window).log(e)
+                            kiritori.log(e)
                 except Exception as e:
-                    Kiritori(window).log(e)
+                    kiritori.log(e)
                     return
 
         def _finished(_) -> None:
@@ -2278,7 +2228,7 @@ def setup(window: MainWindow) -> None:
             return
 
         if pane.byName(result) != -1:
-            Kiritori(window).log(f"'{result}' already exists.")
+            kiritori.log(f"'{result}' already exists.")
             return
 
         extract_path = os.path.join(pane.currentPath, result)
@@ -2785,7 +2735,7 @@ def setup(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
@@ -2864,7 +2814,7 @@ def setup(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
@@ -2954,7 +2904,7 @@ def setup(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
@@ -2996,7 +2946,7 @@ def setup(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
@@ -3114,7 +3064,7 @@ def setup(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
@@ -3203,7 +3153,7 @@ def setup(window: MainWindow) -> None:
             print("Canceled.\n")
             return
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Renaming:")
         [renamer.execute(info.orgPath, info.newName) for info in infos]
         krtr.draw_footer()
@@ -3397,7 +3347,7 @@ def setup(window: MainWindow) -> None:
         if not focused_path.is_dir():
             new_name += focused_path.suffix
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Renaming:")
         renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
         krtr.draw_footer()
@@ -3448,7 +3398,7 @@ def setup(window: MainWindow) -> None:
 
         new_name = focused_path.stem + new_ext
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Renaming:")
         renamer.execute(focused_path, new_name, mod == ckit.MODKEY_SHIFT)
         krtr.draw_footer()
@@ -3460,7 +3410,7 @@ def setup(window: MainWindow) -> None:
         if not pane.hasSelection:
             return
         if 1 < len(pane.selectedItems):
-            Kiritori(window).log("Caneled. (Select just 1 item)")
+            kiritori.log("Caneled. (Select just 1 item)")
             return
 
         src_path = Path(pane.selectedItemPaths[0])
@@ -3483,7 +3433,7 @@ def setup(window: MainWindow) -> None:
         if len(template.strip()) < 1 or len(count.strip()) < 1:
             return
         if not template[-1].isdecimal() or not count.strip().isdecimal():
-            Kiritori(window).log("Invalid format.")
+            kiritori.log("Invalid format.")
             return
 
         count = int(count.strip())
@@ -3505,7 +3455,7 @@ def setup(window: MainWindow) -> None:
                         shutil.copy(src, new_path)
                     print(f"Cloned: {new_path.name}")
 
-        krtr = Kiritori(window)
+        krtr = kiritori
         krtr.draw_header("Making clone:")
         window.subThreadCall(_clone, (src_path, connector, template, count))
         pane.refresh()
@@ -3519,7 +3469,7 @@ def setup(window: MainWindow) -> None:
         src_path = Path(pane.focusedItemPath)
         if pane.hasSelection:
             if 1 < len(pane.selectedItems):
-                Kiritori(window).log("Caneled. (Select nothing or just 1 item)")
+                kiritori.log("Caneled. (Select nothing or just 1 item)")
                 return
             src_path = Path(pane.selectedItemPaths[0])
 
@@ -3546,7 +3496,7 @@ def setup(window: MainWindow) -> None:
         new_path = src_path.with_name(result)
 
         if smart_check_path(new_path):
-            Kiritori(window).log("Canceled. (Same item exists)")
+            kiritori.log("Canceled. (Same item exists)")
             return
 
         def _copy_as(new_path: str) -> None:
@@ -3567,12 +3517,12 @@ def setup(window: MainWindow) -> None:
         src_path = Path(pane.focusedItemPath)
         if pane.hasSelection:
             if 1 < len(pane.selectedItems):
-                Kiritori(window).log("Caneled. (Select nothing or just 1 item)")
+                kiritori.log("Caneled. (Select nothing or just 1 item)")
                 return
             src_path = Path(pane.selectedItemPaths[0])
 
         if src_path.is_dir():
-            Kiritori(window).log("Caneled. (Dirctory has no extension)")
+            kiritori.log("Caneled. (Dirctory has no extension)")
             return
 
         sel_start = len(src_path.stem) + 1
@@ -3592,7 +3542,7 @@ def setup(window: MainWindow) -> None:
         new_path = src_path.with_name(result)
 
         if smart_check_path(new_path):
-            Kiritori(window).log("Canceled. (Same item exists)")
+            kiritori.log("Canceled. (Same item exists)")
             return
 
         def _copy_as(new_path: str) -> None:
@@ -3731,7 +3681,7 @@ def setup(window: MainWindow) -> None:
         new_name = stem + ext
         new_path = os.path.join(pane.currentPath, new_name)
         if smart_check_path(new_path):
-            Kiritori(window).log(f"'{stem}' already exists.")
+            kiritori.log(f"'{stem}' already exists.")
             return
 
         pane.touch(new_name)
@@ -3875,7 +3825,7 @@ def setup(window: MainWindow) -> None:
     def edit_config() -> None:
         config_dir = os.path.join(os.environ.get("APPDATA", ""), "CraftFiler")
         if not smart_check_path(config_dir):
-            Kiritori(window).log(f"cannot find config dir: {config_dir}")
+            kiritori.log(f"cannot find config dir: {config_dir}")
             return
         dir_path = config_dir
         if (real_path := os.path.realpath(config_dir)) != config_dir:
@@ -3898,7 +3848,7 @@ def setup(window: MainWindow) -> None:
             lnk_path = str(Path(other_pane_dir, name).with_suffix(".lnk"))
             src_path = str(Path(pane.currentPath, name))
             run_ps1("mklnk", src_path, lnk_path)
-            Kiritori(window).log(f"Created shortcut '{lnk_path}'")
+            kiritori.log(f"Created shortcut '{lnk_path}'")
 
     class FileHashDiff:
         def __init__(self, max_mb: int):
@@ -3931,7 +3881,7 @@ def setup(window: MainWindow) -> None:
             _, dirname = os.path.split(pane.currentPath)
             _, other_dirname = os.path.split(other_pane.currentPath)
 
-            krtr = Kiritori(window)
+            krtr = kiritori
 
             def _scan(job_item: ckit.JobItem) -> None:
                 targets = []
@@ -4034,7 +3984,7 @@ def setup(window: MainWindow) -> None:
                 right_path = right_pane.selectedItemPaths[0]
 
         if not left_path or not right_path:
-            Kiritori(window).log(
+            kiritori.log(
                 "Select 1 item for each pane or 2 items in one pane to compare."
             )
             return
@@ -4042,7 +3992,7 @@ def setup(window: MainWindow) -> None:
         if with_diffinity:
             exe_path = shutil.which("Diffinity")
             if exe_path is None:
-                Kiritori(window).log("cannnot find diffinity.exe...")
+                kiritori.log("cannnot find diffinity.exe...")
                 return
 
             exe_path = resolve_scoop_shim(exe_path)
@@ -4051,7 +4001,7 @@ def setup(window: MainWindow) -> None:
 
         exe_path = shutil.which("code")
         if exe_path is None:
-            Kiritori(window).log("cannnot find vscode...")
+            kiritori.log("cannnot find vscode...")
             return
 
         def _open_code(_) -> None:
@@ -4245,7 +4195,7 @@ def setup(window: MainWindow) -> None:
             job_item.file_name = ""
             img = ImageGrab.grabclipboard()
             if not img or isinstance(img, list):
-                Kiritori(window).log("Canceled: No image in clipboard.")
+                kiritori.log("Canceled: No image in clipboard.")
                 return
             job_item.file_name = (
                 datetime.datetime.today().strftime("%Y%m%d-%H%M%S") + ".png"
@@ -4313,15 +4263,15 @@ def setup(window: MainWindow) -> None:
         for src_path in active_pane.selectedItemPaths:
             junction_path = Path(dest, Path(src_path).name)
             if smart_check_path(junction_path):
-                Kiritori(window).log(f"'{junction_path}' already exists.")
+                kiritori.log(f"'{junction_path}' already exists.")
                 return
             try:
                 cmd = ["cmd", "/c", "mklink", "/J", str(junction_path), src_path]
                 proc = subprocess.run(cmd, capture_output=True, encoding="cp932")
                 result = proc.stdout.strip()
-                Kiritori(window).log(result)
+                kiritori.log(result)
             except Exception as e:
-                Kiritori(window).log(e)
+                kiritori.log(e)
                 return
 
     def reset_hotkey() -> None:

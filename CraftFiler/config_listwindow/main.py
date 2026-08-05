@@ -1,7 +1,4 @@
-import ckit  # ty: ignore[unresolved-import]
-
-
-def setup(window: ckit.TextWindow) -> None:
+def setup(window) -> None:
 
     def refresh() -> None:
         window.scroll_info.makeVisible(

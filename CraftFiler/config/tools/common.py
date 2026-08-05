@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import os
 import shutil
 import subprocess
@@ -13,6 +14,11 @@ from typing import Callable
 import cfiler_mainwindow  # type: ignore
 import ckit  # type: ignore
 from cfiler import *  # type: ignore
+
+
+def get_now() -> datetime.datetime:
+    JST = datetime.timezone(datetime.timedelta(hours=9))
+    return datetime.datetime.now(tz=JST)
 
 
 class PaintOption(Enum):

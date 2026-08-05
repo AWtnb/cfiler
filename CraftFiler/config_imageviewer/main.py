@@ -6,7 +6,7 @@ import ckit  # ty: ignore[unresolved-import]
 import pyauto  # ty: ignore[unresolved-import]
 
 
-def setup(window: ckit.TextWindow) -> None:
+def setup(window) -> None:
     window.keymap["F11"] = window.command_ToggleMaximize
     window.keymap["H"] = window.command_CursorUp
     window.keymap["J"] = window.command_CursorDown
