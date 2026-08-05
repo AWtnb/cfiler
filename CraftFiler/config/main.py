@@ -79,7 +79,9 @@ from .tools.enter import hook_enter, open_with
 from .tools.listwindow import invoke_listwindow
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
+from .tools.rename import ini as rename_ini
 from .tools.rename import renamer
+from .tools.rename.renamer import RenameInfo
 
 
 def setup(window) -> None:
@@ -96,9 +98,10 @@ def setup(window) -> None:
     kiritori.setup(window)
     listwindow.setup(window)
     office.setup(window)
+    rename_ini.setup(window)
     renamer.setup(window)
-    selector.setup(window)
     style.setup(window)
+    selector.setup(window)
 
     window.enter_hook = hook_enter
 
@@ -693,30 +696,6 @@ def setup(window) -> None:
 
     keybinder.bind(on_vscode, "V")
 
-    class RenameConfig:
-        ini_section = "RENAME_CONFIG"
-
-        def __init__(self, option_name: str) -> None:
-            try:
-                window.ini.add_section(self.ini_section)
-            except configparser.DuplicateSectionError:
-                pass
-            self._option_name = option_name
-
-        def register(self, value: str) -> None:
-            window.ini.set(self.ini_section, self._option_name, value)
-
-        @property
-        def value(self) -> str:
-            try:
-                return window.ini.get(self.ini_section, self._option_name)
-            except Exception:
-                return ""
-
-    class RenameInfo(NamedTuple):
-        orgPath: Path
-        newName: str
-
     def rename_substr() -> None:
 
         pane = CPane()
@@ -727,8 +706,8 @@ def setup(window) -> None:
         placeholder = ";-1"
         sel_end = 0
 
-        rename_config_substr = RenameConfig("substr")
-        if 0 < len(last := rename_config_substr.value):
+        ini_option = "substr"
+        if 0 < len(last := rename_ini.get_value(ini_option)):
             placeholder = last
             sel_end = last.find(";")
 
@@ -757,7 +736,7 @@ def setup(window) -> None:
             print("Canceled.\n")
             return
 
-        rename_config_substr.register(rename_command)
+        rename_ini.register(ini_option, rename_command)
 
         def _confirm() -> tuple[list[RenameInfo], bool]:
             infos = []
@@ -803,8 +782,8 @@ def setup(window) -> None:
         placeholder = "@-1"
         sel_end = 0
 
-        rename_config_insert = RenameConfig("insert")
-        last_insert = rename_config_insert.value
+        ini_option = "insert"
+        last_insert = rename_ini.get_value(ini_option)
         if 0 < len(last_insert):
             placeholder = last_insert
             sel_end = last_insert.find("@")
@@ -832,7 +811,7 @@ def setup(window) -> None:
             if rename_command.endswith(sep):
                 rename_command += "-1"
 
-        rename_config_insert.register(rename_command)
+        rename_ini.register(ini_option, rename_command)
 
         ins = rename_command[: rename_command.rfind(sep)]
         pos = int(rename_command[rename_command.rfind(sep) + 1 :])
@@ -1007,8 +986,8 @@ def setup(window) -> None:
             return
 
         placeholder = "01@-1,1;_;"
-        rename_config_index = RenameConfig("index")
-        last_value = rename_config_index.value
+        ini_option = "index"
+        last_value = rename_ini.get_value(ini_option)
         if 0 < len(last_value):
             placeholder = last_value
 
@@ -1084,7 +1063,7 @@ def setup(window) -> None:
         ni = NameIndex()
 
         print(rename_command)
-        rename_config_index.register(rename_command)
+        rename_ini.register(ini_option, rename_command)
 
         def _confirm() -> tuple[list[RenameInfo], bool]:
             infos = []
@@ -1128,8 +1107,8 @@ def setup(window) -> None:
         placeholder = "/"
         sel_end = 0
 
-        rename_config_regexp = RenameConfig("regexp")
-        last_regexp = rename_config_regexp.value
+        ini_option = "regexp"
+        last_regexp = rename_ini.get_value(ini_option)
         if 0 < len(last_regexp):
             placeholder = last_regexp
             sel_end = max(last_regexp.find("/"), 0)
@@ -1173,7 +1152,7 @@ def setup(window) -> None:
             print("Canceled (Invalid command).\n")
             return
 
-        rename_config_regexp.register(rename_command)
+        rename_ini.register(ini_option, rename_command)
         reg = rc.search_reg
 
         def _confirm() -> tuple[list[RenameInfo], bool]:

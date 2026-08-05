@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import NamedTuple
 
 from .. import cpane
 from ..cpane import CPane
@@ -9,6 +10,11 @@ def setup(_window) -> None:
     window = _window
 
     cpane.setup(window)
+
+
+class RenameInfo(NamedTuple):
+    orgPath: Path
+    newName: str
 
 
 def is_renamable(item) -> bool:
