@@ -113,7 +113,7 @@ def open_with() -> None:
     if len({Path(p).suffix for p in paths}) != 1:
         app_table["(associated app)"] = shell_exec
 
-    if any([path.endswith(".pdf") for path in paths]):
+    if any(path.endswith(".pdf") for path in paths):
         sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
         if smart_check_path(sumatra_path):
             app_table["sumatra"] = sumatra_path
@@ -138,7 +138,7 @@ def open_with() -> None:
     app_table["mery"] = os.path.expandvars(r"${LOCALAPPDATA}\Programs\Mery\Mery.exe")
     app_table["vscode"] = lambda x: open_vscode(x, "--new-window")
 
-    if all([(Path(path).suffix in [".txt", ".csv"]) for path in paths]):
+    if all((Path(path).suffix in [".txt", ".csv"]) for path in paths):
         smooth_csv_path = r"C:\Program Files\SmoothCSV\smoothcsv-app.exe"
         if smart_check_path(smooth_csv_path):
             app_table["smooth csv"] = smooth_csv_path
