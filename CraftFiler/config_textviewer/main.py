@@ -2,7 +2,7 @@ import os
 import time
 from pathlib import Path
 
-import ckit  # ty: ignore[unresolved-import]
+import ckit  # type: ignore
 import pyauto  # type: ignore
 
 # https://github.com/crftwr/cfiler/blob/master/cfiler_filelist.py
@@ -14,7 +14,7 @@ def delay(msec: int = 50) -> None:
     time.sleep(msec / 1000)
 
 
-def setup(window: ckit.TextWindow) -> None:
+def setup(window) -> None:
     window.keymap["E"] = lambda _: None
     window.keymap["Q"] = window.command_Close
     window.keymap["J"] = window.command_ScrollDown

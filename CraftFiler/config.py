@@ -2,11 +2,11 @@ import importlib
 import sys
 from types import ModuleType
 
-import ckit  # ty: ignore[unresolved-import]
-from cfiler_mainwindow import MainWindow  # ty: ignore[unresolved-import]
+import ckit  # type: ignore
+from cfiler_mainwindow import MainWindow  # type: ignore
 
 
-def setup_config(config_module_name: str) -> ModuleType:
+def import_config(config_module_name: str) -> ModuleType:
     config_dir = ckit.dataPath()
     if config_dir not in sys.path:
         sys.path.insert(0, config_dir)
@@ -18,20 +18,26 @@ def setup_config(config_module_name: str) -> ModuleType:
 
 
 def configure(window: MainWindow) -> None:
-    config = setup_config("config")
+    if ckit.CronTable.defaultCronTable():
+        ckit.CronTable.defaultCronTable().cancel()
+        ckit.CronTable.defaultCronTable().clear()
+    else:
+        ckit.CronTable.createDefaultCronTable()
+
+    config = import_config("config")
     config.configure(window)
 
 
 def configure_ListWindow(window: ckit.TextWindow) -> None:
-    config = setup_config("config_listwindow")
+    config = import_config("config_listwindow")
     config.configure(window)
 
 
 def configure_TextViewer(window: ckit.TextWindow) -> None:
-    config = setup_config("config_textviewer")
+    config = import_config("config_textviewer")
     config.configure(window)
 
 
 def configure_ImageViewer(window: ckit.TextWindow) -> None:
-    config = setup_config("config_imageviewer")
+    config = import_config("config_imageviewer")
     config.configure(window)

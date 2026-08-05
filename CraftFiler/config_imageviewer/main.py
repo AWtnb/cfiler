@@ -1,12 +1,12 @@
 import os
 import subprocess
 
-import cfiler_resource  # ty: ignore[unresolved-import]
-import ckit  # ty: ignore[unresolved-import]
-import pyauto  # ty: ignore[unresolved-import]
+import cfiler_resource  # type: ignore
+import ckit  # type: ignore
+import pyauto  # type: ignore
 
 
-def setup(window: ckit.TextWindow) -> None:
+def setup(window) -> None:
     window.keymap["F11"] = window.command_ToggleMaximize
     window.keymap["H"] = window.command_CursorUp
     window.keymap["J"] = window.command_CursorDown

@@ -1,4 +1,4 @@
-from cfiler_mainwindow import MainWindow  # noqa: N999  # ty: ignore[unresolved-import]
+from cfiler_mainwindow import MainWindow  # noqa: N999  # type: ignore
 
 from . import main
 
