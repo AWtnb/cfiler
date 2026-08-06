@@ -19,7 +19,6 @@ import ckit  # type: ignore
 import pyauto  # type: ignore
 from cfiler import *  # type: ignore
 from cfiler_filelist import filter_Default  # type: ignore
-from cfiler_resultwindow import popResultWindow  # type: ignore
 from PIL import ImageGrab  # type: ignore
 
 from . import style
@@ -81,9 +80,9 @@ from .tools.rename import index as rename_index
 from .tools.rename import ini as rename_ini
 from .tools.rename import insert as rename_insert
 from .tools.rename import photo as rename_photo
+from .tools.rename import regexp as rename_regexp
 from .tools.rename import renamer
 from .tools.rename import substr as rename_substr
-from .tools.rename.renamer import RenameInfo
 
 
 def setup(window) -> None:
@@ -101,6 +100,7 @@ def setup(window) -> None:
     listwindow.setup(window)
     office.setup(window)
     rename_index.setup(window)
+    rename_regexp.setup(window)
     rename_ini.setup(window)
     rename_insert.setup(window)
     rename_photo.setup(window)
@@ -708,93 +708,7 @@ def setup(window) -> None:
 
     keybinder.bind(rename_index.execute, "A-S-I")
 
-    def rename_regexp() -> None:
-        pane = CPane()
-        targets = renamer.get_renamable_items(pane)
-        if len(targets) < 1:
-            return
-
-        placeholder = "/"
-        sel_end = 0
-
-        ini_option = "regexp"
-        last_regexp = rename_ini.get_value(ini_option)
-        if 0 < len(last_regexp):
-            placeholder = last_regexp
-            sel_end = max(last_regexp.find("/"), 0)
-
-        print("Rename with regexp-replace. Trailing `/c` enables case-sensitive-mode")
-        rename_command = window.commandLine(
-            "[regexp]/[replace with](/c)", text=placeholder, selection=[0, sel_end]
-        )
-
-        if not rename_command:
-            print("Canceled.\n")
-            return
-
-        class RegCommand:
-            sep = "/"
-
-            def __init__(self, line: str) -> None:
-                a = line.split(self.sep)
-                if len(a) < 2:
-                    a.append("")
-                if len(a) < 3:
-                    a.append("")
-                self.args = a
-
-            def is_valid(self) -> bool:
-                return 0 < len(self.args[0])
-
-            @property
-            def search_reg(self) -> re.Pattern:
-                r = self.args[0]
-                if self.args[2] == "c":
-                    return re.compile(r)
-                return re.compile(r, re.IGNORECASE)
-
-            @property
-            def to_str(self) -> str:
-                return self.args[1]
-
-        rc = RegCommand(rename_command)
-        if not rc.is_valid():
-            print("Canceled (Invalid command).\n")
-            return
-
-        rename_ini.register(ini_option, rename_command)
-        reg = rc.search_reg
-
-        def _confirm() -> tuple[list[RenameInfo], bool]:
-            infos = []
-            lines = []
-            for item in targets:
-                org_path = Path(item.getFullpath())
-                new_name = reg.sub(rc.to_str, org_path.stem) + org_path.suffix
-                if org_path.name != new_name:
-                    infos.append(RenameInfo(org_path, new_name))
-                    lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
-
-            if len(lines) < 1:
-                lines.append("Nothing will be renamed.")
-            else:
-                lines.append(
-                    f"\nregexp: {reg}\nnew text: {rc.to_str}\nOK? (Enter / Esc)"
-                )
-
-            return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-        infos, ok = _confirm()
-        if len(infos) < 1 or not ok:
-            print("Canceled.\n")
-            return
-
-        krtr = kiritori
-        krtr.draw_header("Renaming:")
-        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-        krtr.draw_footer()
-
-    keybinder.bind(rename_regexp, "S-R")
+    keybinder.bind(rename_regexp.execute, "S-R")
 
     class NameAffix:
         sep = "_"
@@ -1945,7 +1859,7 @@ def setup(window) -> None:
             "RenameIndex": rename_index.execute,
             "RenameInsert": rename_insert.execute,
             "RenameExtension": rename_ext,
-            "RenameRegExp": rename_regexp,
+            "RenameRegExp": rename_regexp.execute,
             "RenameStem": rename_stem,
             "RenameSubstr": rename_substr.execute,
             "FindSameFile": FileHashDiff(2).compare,
