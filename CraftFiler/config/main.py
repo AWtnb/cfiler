@@ -56,6 +56,7 @@ from .tools.common import (
     DESKTOP_PATH,
     CallbackFunc,
     PaintOption,
+    get_now,
     open_vscode,
     resolve_scoop_shim,
     run_ps1,
@@ -76,6 +77,7 @@ from .tools.enter import hook_enter, open_with
 from .tools.listwindow import invoke
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
+from .tools.rename import extension as rename_ext
 from .tools.rename import index as rename_index
 from .tools.rename import ini as rename_ini
 from .tools.rename import insert as rename_insert
@@ -99,11 +101,12 @@ def setup(window) -> None:
     kiritori.setup(window)
     listwindow.setup(window)
     office.setup(window)
+    rename_ext.setup(window)
     rename_index.setup(window)
-    rename_regexp.setup(window)
     rename_ini.setup(window)
     rename_insert.setup(window)
     rename_photo.setup(window)
+    rename_regexp.setup(window)
     rename_substr.setup(window)
     renamer.setup(window)
     selector.setup(window)
@@ -777,7 +780,7 @@ def setup(window) -> None:
             super().__init__()
             self.timestamp = ""
             if with_timestamp:
-                self.timestamp = datetime.datetime.today().strftime("%Y%m%d")
+                self.timestamp = get_now().strftime("%Y%m%d")
 
             self._additional = [self.sep + a for a in additional]
 
@@ -903,55 +906,7 @@ def setup(window) -> None:
 
     keybinder.bind(rename_stem, "N")
 
-    def rename_ext() -> None:
-        pane = CPane()
-        if pane.isBlank:
-            return
-        item = pane.focusedItem
-        if item.isdir():
-            return
-
-        if not renamer.is_renamable(item) or pane.isBlank:
-            return
-
-        focused_path = Path(item.getFullpath())
-        placeholder = focused_path.suffix
-
-        exts = []
-        for item in pane.items:
-            name = item.getName()
-            _, ext = os.path.splitext(name)
-            if 0 < len(ext):
-                exts.append(ext)
-        exts = sorted(list(set(exts)))
-
-        def _listup_exts(
-            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-        ) -> tuple:
-            found = []
-            for ext in exts:
-                if ext.lower().startswith(update_info.text.lower()):
-                    found.append(ext)
-            return found, 0
-
-        new_ext, mod = window.commandLine(
-            title="NewExt",
-            text=placeholder,
-            selection=[1, len(placeholder)],
-            candidate_handler=_listup_exts,
-            return_modkey=True,
-        )
-
-        new_ext = stringify(new_ext)
-
-        new_name = focused_path.stem + new_ext
-
-        krtr = kiritori
-        krtr.draw_header("Renaming:")
-        renamer.execute(pane, focused_path, new_name, mod == ckit.MODKEY_SHIFT)
-        krtr.draw_footer()
-
-    keybinder.bind(rename_ext, "S-N")
+    keybinder.bind(rename_ext.execute, "S-N")
 
     def multiple_selected_item() -> None:
         pane = CPane()
@@ -1858,7 +1813,7 @@ def setup(window) -> None:
             "RenamePseudoVoicing": rename_pseudo_voicing,
             "RenameIndex": rename_index.execute,
             "RenameInsert": rename_insert.execute,
-            "RenameExtension": rename_ext,
+            "RenameExtension": rename_ext.execute,
             "RenameRegExp": rename_regexp.execute,
             "RenameStem": rename_stem,
             "RenameSubstr": rename_substr.execute,
