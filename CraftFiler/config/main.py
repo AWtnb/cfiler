@@ -20,9 +20,7 @@ import pyauto  # type: ignore
 from cfiler import *  # type: ignore
 from cfiler_filelist import filter_Default  # type: ignore
 from cfiler_resultwindow import popResultWindow  # type: ignore
-from PIL import Image as PILImage  # type: ignore
 from PIL import ImageGrab  # type: ignore
-from PIL.ExifTags import TAGS  # type: ignore
 
 from . import style
 from .tools import (
@@ -81,6 +79,7 @@ from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
 from .tools.rename import ini as rename_ini
 from .tools.rename import insert as rename_insert
+from .tools.rename import photo as rename_photo
 from .tools.rename import renamer
 from .tools.rename import substr as rename_substr
 from .tools.rename.renamer import RenameInfo
@@ -103,6 +102,7 @@ def setup(window) -> None:
     rename_ini.setup(window)
     rename_insert.setup(window)
     rename_substr.setup(window)
+    rename_photo.setup(window)
     renamer.setup(window)
     selector.setup(window)
     style.setup(window)
@@ -703,134 +703,6 @@ def setup(window) -> None:
     keybinder.bind(rename_substr.execute, "S-S")
 
     keybinder.bind(rename_insert.execute, "S-I")
-
-    class PhotoFile:
-        def __init__(self, path: str):
-            self.path = path
-            _, self.name = os.path.split(self.path)
-            _, self.ext = os.path.splitext(self.name)
-            self.filler = datetime.datetime.fromtimestamp(0)
-
-        def get_byte_offset(self) -> int:
-            ext = self.ext.lower()[1:]
-            if ext in ["jpeg", "jpg", "webp"]:
-                return 0
-            if ext == "raf":
-                if self.name.startswith("_DSF"):
-                    return 0x19E
-                return 0x17A
-            if ext == "cr2":
-                return 0x144
-            if self.name.startswith("MVI_") and ext == "mp4":
-                return 0x160
-            return -1
-
-        def from_exif(self) -> datetime.datetime:
-            try:
-                with PILImage.open(self.path) as img:
-                    exif_data = img._getexif()
-                    if not exif_data:
-                        return self.filler
-                    for tag_id, value in exif_data.items():
-                        tag = TAGS.get(tag_id, tag_id)
-                        if tag == "DateTimeOriginal":
-                            dt = datetime.datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
-                            return dt
-                    return self.filler
-            except Exception as e:
-                print(e)
-                return self.filler
-
-        def get_timestamp(self) -> datetime.datetime:
-            offset = self.get_byte_offset()
-            if offset < 1:
-                if offset == 0:
-                    return self.from_exif()
-                return self.filler
-            with open(self.path, "rb") as f:
-                f.seek(offset)
-                bytes_read = f.read(19)
-            decoded = bytes_read.decode("ascii")
-            return datetime.datetime.strptime(decoded, "%Y:%m:%d %H:%M:%S")
-
-        def rename(self, fmt: str) -> str:
-            ts = self.get_timestamp().strftime(fmt)
-            return ts + "_" + self.name
-
-    def rename_photo_file_by_exifdate() -> None:
-        pane = CPane()
-        targets = []
-        for item in renamer.get_renamable_items(pane):
-            if not item.isdir():
-                targets.append(item)
-
-        if len(targets) < 1:
-            return
-
-        def _confirm() -> tuple[list[RenameInfo], bool]:
-            infos = []
-            lines = []
-            for item in targets:
-                path = item.getFullpath()
-                photo = PhotoFile(path)
-                new_name = photo.rename("%Y_%m%d_%H%M%S00")
-                infos.append(RenameInfo(Path(path), new_name))
-                lines.append(f"Rename: {item.getName()}\n    ==> {new_name}\n")
-
-            lines.append("\ninsert timestamp:\nOK? (Enter / Esc)")
-
-            return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-        infos, ok = _confirm()
-        if len(infos) < 1 or not ok:
-            print("Canceled.\n")
-            return
-
-        krtr = kiritori
-        krtr.draw_header("Renaming:")
-        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-        krtr.draw_footer()
-
-    def rename_lightroom_photo_from_dropbox() -> None:
-        pane = CPane()
-        targets = []
-        for item in renamer.get_renamable_items(pane):
-            if not item.isdir():
-                targets.append(item)
-
-        if len(targets) < 1:
-            return
-
-        def _confirm() -> tuple[list[RenameInfo], bool]:
-            infos = []
-            lines = []
-            for item in targets:
-                path = item.getFullpath()
-                p = Path(path)
-                elems = p.stem.replace("写真 ", "").split(" ")
-                date_ts = elems[0].replace("-", "")
-                time_ts = "".join([str(n).rjust(2, "0") for n in elems[1:4]])
-                if 4 < len(elems):
-                    time_ts = (
-                        time_ts + "-" + elems[-1].replace("(", "").replace(")", "")
-                    )
-                new_name = date_ts + "-IMG_" + time_ts + p.suffix
-                infos.append(RenameInfo(p, new_name))
-                lines.append(f"Rename: {item.getName()}\n    ==> {new_name}\n")
-
-            lines.append("\ninsert timestamp:\nOK? (Enter / Esc)")
-
-            return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-        infos, ok = _confirm()
-        if len(infos) < 1 or not ok:
-            print("Canceled.\n")
-            return
-
-        krtr = kiritori
-        krtr.draw_header("Renaming:")
-        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-        krtr.draw_footer()
 
     def rename_index() -> None:
         pane = CPane()
@@ -2164,8 +2036,8 @@ def setup(window) -> None:
             "ChangeImageType": change_image_type,
             "MakeShortcut": make_shortcut,
             "CleanTempFiles": remove_tempfiles,
-            "RenamePhotoFileByExifDate": rename_photo_file_by_exifdate,
-            "RenameLightroomPhoto": rename_lightroom_photo_from_dropbox,
+            "RenamePhotoFileByExifDate": rename_photo.execute_with_exif,
+            "RenameLightroomPhoto": rename_photo.execute_for_lightroom_photo_from_dropbox,
             "ZipSelections": compress,
             "SetBookmarkAlias": set_bookmark_alias,
             "BookmarkHere": bookmark_here,

@@ -15,10 +15,11 @@ import cfiler_mainwindow  # type: ignore
 import ckit  # type: ignore
 from cfiler import *  # type: ignore
 
+TZ_JST = datetime.timezone(datetime.timedelta(hours=9))
+
 
 def get_now() -> datetime.datetime:
-    JST = datetime.timezone(datetime.timedelta(hours=9))
-    return datetime.datetime.now(tz=JST)
+    return datetime.datetime.now(tz=TZ_JST)
 
 
 class PaintOption(Enum):
