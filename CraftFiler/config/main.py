@@ -56,7 +56,6 @@ from .tools.common import (
     DESKTOP_PATH,
     CallbackFunc,
     PaintOption,
-    get_now,
     open_vscode,
     resolve_scoop_shim,
     run_ps1,
@@ -77,18 +76,27 @@ from .tools.enter import hook_enter, open_with
 from .tools.listwindow import invoke
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
+from .tools.rename import affix_handler, renamer
 from .tools.rename import extension as rename_ext
 from .tools.rename import index as rename_index
 from .tools.rename import ini as rename_ini
 from .tools.rename import insert as rename_insert
 from .tools.rename import photo as rename_photo
 from .tools.rename import regexp as rename_regexp
-from .tools.rename import renamer
 from .tools.rename import substr as rename_substr
+from .tools.rename.affix_handler import (
+    filter_prefixes,
+    filter_suffixes,
+    get_prefix_candidates,
+    get_suffix_candidates,
+    invoke_prefix_handler,
+    invoke_suffix_handler,
+)
 
 
 def setup(window) -> None:
 
+    affix_handler.setup(window)
     archiver.setup(window)
     bookmark.setup(window)
     change_dir.setup(window)
@@ -713,155 +721,24 @@ def setup(window) -> None:
 
     keybinder.bind(rename_regexp.execute, "S-R")
 
-    class NameAffix:
-        sep = "_"
+    def invoke_name_candidate_handler() -> Callable[
+        [ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]
+    ]:
+        pane = cpane.CPane()
+        prefix_candidates = get_prefix_candidates(pane)
+        suffix_candidates = get_suffix_candidates(pane)
+        selected = affix_handler.get_selected_stems()
 
-        def __init__(self) -> None:
-            self.pane = CPane()
-
-        @staticmethod
-        def to_stem(path: str) -> str:
-            _, name = os.path.split(path)
-            stem, _ = os.path.splitext(name)
-            return stem
-
-        def selected_stems(self) -> list[str]:
-            sels = self.pane.selectedItemPaths + CPane(False).selectedItemPaths
-            return sorted([self.to_stem(sel) for sel in sels])
-
-        @staticmethod
-        def len_ordered_unify(lines: list[str]) -> list[str]:
-            return [str(s) for s in sorted(set(lines), key=len)]
-
-    class NamePrefix(NameAffix):
-        def __init__(self) -> None:
-            super().__init__()
-
-        @classmethod
-        def from_name(cls, s: str) -> list[str]:
-            pres = []
-            for i, c in enumerate(s):
-                if 0 < i and c == cls.sep:
-                    pres.append(s[: i + 1])
-            return pres
-
-        def variants(self) -> list[str]:
-            pres = []
-            for path in self.pane.paths:
-                pres += self.from_name(self.to_stem(path))
-            return pres
-
-    class PrefixHandler(NamePrefix):
-        def __init__(self) -> None:
-            super().__init__()
-            self.candidates = self.variants()
-            self.selected = self.selected_stems()
-
-        def filter_by(self, s: str) -> list[str]:
-            return [pre for pre in self.candidates if pre.startswith(s)]
-
-        def invoke(
-            self,
-        ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]]:
-            def _handler(
-                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-            ) -> tuple[list[str], int]:
-                found = self.filter_by(update_info.text)
-                return self.selected + self.len_ordered_unify(found), 0
-
-            return _handler
-
-    class NameSuffix(NameAffix):
-        def __init__(
-            self,
-            with_timestamp: bool = False,
-            additional: list[str] = [],
-        ) -> None:
-            super().__init__()
-            self.timestamp = ""
-            if with_timestamp:
-                self.timestamp = get_now().strftime("%Y%m%d")
-
-            self._additional = [self.sep + a for a in additional]
-
-        @classmethod
-        def from_name(cls, s: str) -> list[str]:
-            sufs = []
-            for i, c in enumerate(s):
-                if 0 < i and c == cls.sep:
-                    sufs.append(s[i:])
-            return sufs
-
-        def variants(self) -> list[str]:
-            sufs = []
-            for path in self.pane.paths:
-                sufs += self.from_name(self.to_stem(path))
-            if 0 < len(self._additional):
-                sufs += self._additional
-            if self.timestamp:
-                if (s := self.sep + self.timestamp) not in sufs:
-                    sufs = [s] + sufs
-            return sufs
-
-        def from_parents(self) -> list[str]:
-            found = []
-            parents = Path(self.pane.currentPath, "_").parents
-            reg = re.compile(r"[0-9]{6,}")
-            for parent in parents:
-                if m := reg.search(parent.name):
-                    found.append(self.sep + m.group(0))
-                    break
-            return found
-
-    class SuffixHandler(NameSuffix):
-        def __init__(self, with_timestamp: bool = False, additional: list[str] = []):
-            super().__init__(with_timestamp, additional)
-            self.selected = self.selected_stems()
-            self.candidates = self.variants() + self.from_parents()
-
-        def filter_by(self, s: str) -> list[str]:
-            suffixes = self.candidates
-            if self.sep not in s:
-                return [s + suf for suf in suffixes]
-            if s.endswith(self.sep):
-                return [s + suf[1:] for suf in suffixes]
-            found = []
-            sep_pos = s.find(self.sep)
-            command_suffix = s[sep_pos:]
-            for suf in suffixes:
-                if suf.startswith(command_suffix):
-                    found.append(s[:sep_pos] + suf)
-            return found
-
-        def invoke(
-            self,
-        ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]]:
-            def _filter(
-                update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-            ) -> tuple[list[str], int]:
-                found = self.filter_by(update_info.text)
-                return self.selected + self.len_ordered_unify(found), 0
-
-            return _filter
-
-    def name_candidate_handler(
-        with_timestamp: bool,
-    ) -> Callable[[ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]]:
-        prefix_handler = PrefixHandler()
-        suffix_handler = SuffixHandler(with_timestamp)
-        selected = NameAffix().selected_stems()
+        def _filter(user_input: str) -> list[str]:
+            if affix_handler.SEP not in user_input:
+                return filter_prefixes(prefix_candidates, user_input)
+            return filter_suffixes(suffix_candidates, user_input)
 
         def _handler(
             update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
         ) -> tuple[list[str], int]:
-            s = update_info.text
-            found = (
-                prefix_handler.filter_by(s)
-                if NameAffix.sep not in s
-                else suffix_handler.filter_by(s)
-            )
-
-            return selected + NameAffix.len_ordered_unify(found), 0
+            affix = _filter(update_info.text)
+            return selected + affix, 0
 
         return _handler
 
@@ -887,7 +764,7 @@ def setup(window) -> None:
             title="NewStem",
             text=placeholder,
             selection=sel,
-            candidate_handler=SuffixHandler(True, additional_suffix).invoke(),
+            candidate_handler=invoke_suffix_handler(),
             return_modkey=True,
         )
 
@@ -986,7 +863,7 @@ def setup(window) -> None:
             window.commandLine(
                 title=prompt,
                 text=placeholder,
-                candidate_handler=SuffixHandler(True).invoke(),
+                candidate_handler=invoke_suffix_handler(),
                 selection=[sel_start, sel_end],
             )
         )
@@ -1124,7 +1001,7 @@ def setup(window) -> None:
             "DirName",
             text=ts,
             selection=[0, len(ts)],
-            candidate_handler=name_candidate_handler(False),
+            candidate_handler=invoke_name_candidate_handler(),
             return_modkey=True,
         )
 
@@ -1144,7 +1021,7 @@ def setup(window) -> None:
 
         result, mod = window.commandLine(
             "Stem",
-            candidate_handler=name_candidate_handler(True),
+            candidate_handler=invoke_name_candidate_handler(),
             return_modkey=True,
         )
 
@@ -1596,7 +1473,7 @@ def setup(window) -> None:
         result, mod = window.commandLine(
             "StartsWith",
             return_modkey=True,
-            candidate_handler=PrefixHandler().invoke(),
+            candidate_handler=invoke_prefix_handler(),
         )
         if result:
             selector.stem_starts_with(result, mod == ckit.MODKEY_SHIFT)
@@ -1607,7 +1484,7 @@ def setup(window) -> None:
         result, mod = window.commandLine(
             "EndsWith",
             return_modkey=True,
-            candidate_handler=SuffixHandler().invoke(),
+            candidate_handler=invoke_suffix_handler(),
         )
         if result:
             selector.stem_ends_with(result, mod == ckit.MODKEY_SHIFT)
