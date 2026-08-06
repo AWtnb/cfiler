@@ -77,6 +77,7 @@ from .tools.enter import hook_enter, open_with
 from .tools.listwindow import invoke
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
+from .tools.rename import index as rename_index
 from .tools.rename import ini as rename_ini
 from .tools.rename import insert as rename_insert
 from .tools.rename import photo as rename_photo
@@ -99,10 +100,11 @@ def setup(window) -> None:
     kiritori.setup(window)
     listwindow.setup(window)
     office.setup(window)
+    rename_index.setup(window)
     rename_ini.setup(window)
     rename_insert.setup(window)
-    rename_substr.setup(window)
     rename_photo.setup(window)
+    rename_substr.setup(window)
     renamer.setup(window)
     selector.setup(window)
     style.setup(window)
@@ -704,124 +706,7 @@ def setup(window) -> None:
 
     keybinder.bind(rename_insert.execute, "S-I")
 
-    def rename_index() -> None:
-        pane = CPane()
-        targets = renamer.get_renamable_items(pane)
-        if len(targets) < 1:
-            return
-
-        placeholder = "01@-1,1;_;"
-        ini_option = "index"
-        last_value = rename_ini.get_value(ini_option)
-        if 0 < len(last_value):
-            placeholder = last_value
-
-        print("Rename insert index:")
-        rename_command = stringify(
-            window.commandLine(
-                "Index[@position,step,skips1,skips2,...;connector;newstem]",
-                text=placeholder,
-                selection=[0, 2],
-            ),
-            trim=False,
-        )
-
-        if len(rename_command) < 1:
-            print("Canceled.\n")
-            return
-
-        sep = ";"
-        if sep not in rename_command:
-            rename_command += sep * 2
-        else:
-            if len(rename_command.split(sep)) < 3:
-                rename_command += sep
-
-        command_index, connector, command_newstem = rename_command.split(sep)[:3]
-
-        class NameIndex:
-            position = -1
-            step = 1
-            skips = []
-
-            def __init__(self) -> None:
-                commands = command_index.split("@")
-                left_parts = commands[0].rstrip()
-                if str(left_parts).isdecimal():
-                    self.index_template = left_parts
-                else:
-                    self.index_template = "00"
-                if 1 < len(commands):
-                    args = [a.strip() for a in commands[1].split(",")]
-                    self.position = int(args[0])
-                    if 1 < len(args):
-                        self.step = int(args[1])
-                    if 2 < len(args):
-                        self.skips = [int(a) for a in args[2:]]
-
-                c = self.index_template[0]
-                if c in "123456789":
-                    self.filler = ""
-                else:
-                    self.filler = c
-
-            def fill(self, i: int) -> str:
-                s = str(i)
-                w = len(self.index_template)
-                filled = s if len(self.filler) < 1 else s.rjust(w, self.filler)
-                if self.position < 0:
-                    return connector + filled
-                return filled + connector
-
-            @property
-            def start(self) -> int:
-                return int(self.index_template)
-
-            def increment(self, i: int) -> int:
-                i += self.step
-                while 1:
-                    if i not in self.skips:
-                        break
-                    i += self.step
-                return i
-
-        ni = NameIndex()
-
-        print(rename_command)
-        rename_ini.register(ini_option, rename_command)
-
-        def _confirm() -> tuple[list[RenameInfo], bool]:
-            infos = []
-            lines = []
-            idx = ni.start
-            for item in targets:
-                org_path = Path(item.getFullpath())
-                stem = org_path.stem if len(command_newstem) < 1 else command_newstem
-                pos = ni.position
-                if ni.position < 0:
-                    pos = len(stem) + 1 + ni.position
-                new_name = stem[:pos] + ni.fill(idx) + stem[pos:] + org_path.suffix
-                idx = ni.increment(idx)
-                infos.append(RenameInfo(org_path, new_name))
-                lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
-
-            lines.append(
-                f"\ninsert (start={ni.start}, step={ni.step}, skips={ni.skips}):\nOK? (Enter / Esc)"
-            )
-
-            return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-        infos, ok = _confirm()
-        if len(infos) < 1 or not ok:
-            print("Canceled.\n")
-            return
-
-        krtr = kiritori
-        krtr.draw_header("Renaming:")
-        [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-        krtr.draw_footer()
-
-    keybinder.bind(rename_index, "A-S-I")
+    keybinder.bind(rename_index.execute, "A-S-I")
 
     def rename_regexp() -> None:
         pane = CPane()
@@ -2057,7 +1942,7 @@ def setup(window) -> None:
                 ckit.getClipboardText().strip()
             ),
             "RenamePseudoVoicing": rename_pseudo_voicing,
-            "RenameIndex": rename_index,
+            "RenameIndex": rename_index.execute,
             "RenameInsert": rename_insert.execute,
             "RenameExtension": rename_ext,
             "RenameRegExp": rename_regexp,
