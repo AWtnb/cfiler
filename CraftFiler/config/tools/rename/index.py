@@ -37,10 +37,15 @@ class Index(NamedTuple):
     skips: list[int]
 
     def to_string(self) -> str:
-        return f"{str(self.number).rjust(self.width, self.pad)}"
+        if len(self.pad) == 1:
+            return f"{str(self.number).rjust(self.width, self.pad)}"
+        return str(self.number).rjust(self.width)
 
     def increment(self) -> Index:
-        return self._replace(number=self.number + self.step)
+        n = self.number + self.step
+        while n in self.skips:
+            n += self.step
+        return self._replace(number=n)
 
 
 REG_DIGITS = re.compile(r"[0-9]+")
@@ -51,11 +56,22 @@ def as_index(s: str) -> Index:
     base = base.rstrip()
     params = [s.strip() for s in rest.split(",")]
 
-    index = int(REG_DIGITS.sub("", base))
+    m = REG_DIGITS.search(base)
+    assert m is not None
+    index = int(m.group())
     width = len(base)
-    pad = "" if REG_DIGITS.match(base) else base[0]
-    position = int(params[0])
-    step = -1 if len(params) < 2 else int(params[1])
+
+    first_char = base[0]
+    pad = "" if first_char in "123456789" else first_char
+
+    position = -1
+    if params[0]:
+        position = int(params[0])
+
+    step = 1
+    if 1 < len(params) < 2:
+        step = int(params[1])
+
     skips = []
     for i, p in enumerate(params):
         if 1 < i:
@@ -82,7 +98,7 @@ class RenameParam(NamedTuple):
         if idx.skips:
             skips += ","
             skips += ",".join([str(s) for s in idx.skips])
-        return f"{idx.to_string()}@{idx.step}{skips};{self.connector};{self.new_stem}"
+        return f"{idx.to_string()}@{idx.position},{idx.step}{skips};{self.connector};{self.new_stem}"
 
 
 INI_OPTION = "index"
@@ -96,7 +112,6 @@ def get_param() -> RenameParam | None:
     rename_command: str | None = window.commandLine(
         "Index[@position,step,skips1,skips2,...;connector;newstem]",
         text=placeholder,
-        selection=[0, 2],
     )
 
     if rename_command is None or len(rename_command) < 1:
@@ -148,7 +163,13 @@ def execute() -> None:
             pos = idx.position
             if pos < 0:
                 pos += len(stem) + 1
-            new_name = stem[:pos] + idx.to_string() + stem[pos:] + org_path.suffix
+            new_name = (
+                stem[:pos]
+                + param.connector
+                + idx.to_string()
+                + stem[pos:]
+                + org_path.suffix
+            )
             idx = idx.increment()
             infos.append(RenameInfo(org_path, new_name))
             lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
