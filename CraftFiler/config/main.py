@@ -37,21 +37,6 @@ from .tools import (
     office,
     selector,
 )
-from .tools.archiver import compress, extract
-from .tools.bookmark import (
-    bookmark_here,
-    fuzzy_bookmark,
-    set_bookmark_alias,
-    toggle_bookmark,
-)
-from .tools.change_dir import (
-    change_drive,
-    go_to,
-    open_latest_under_tree,
-    to_ghq_repo,
-    zyw,
-)
-from .tools.clon import invoke_tempfile_cleaner, remove_tempfiles
 from .tools.common import (
     DESKTOP_PATH,
     CallbackFunc,
@@ -63,17 +48,6 @@ from .tools.common import (
     smart_check_path,
     stringify,
 )
-from .tools.cpane import CPane, LeftPane, RightPane, adjust_pane_width, swap_pane
-from .tools.cursor_jumper import CursorJumper
-from .tools.cursor_mover import (
-    focus_by_timestamp,
-    focus_latest_item,
-    fuzzy_focus,
-    smart_cursorDown,
-    smart_cursorUp,
-)
-from .tools.enter import hook_enter, open_with
-from .tools.listwindow import invoke
 from .tools.office import docx_to_txt, read_openxml
 from .tools.protocols import ItemDefaultProtocol
 from .tools.rename import affix_handler, renamer
@@ -83,15 +57,8 @@ from .tools.rename import ini as rename_ini
 from .tools.rename import insert as rename_insert
 from .tools.rename import photo as rename_photo
 from .tools.rename import regexp as rename_regexp
+from .tools.rename import stem as rename_stem
 from .tools.rename import substr as rename_substr
-from .tools.rename.affix_handler import (
-    filter_prefixes,
-    filter_suffixes,
-    get_prefix_candidates,
-    get_suffix_candidates,
-    invoke_prefix_handler,
-    invoke_suffix_handler,
-)
 
 
 def setup(window) -> None:
@@ -115,12 +82,13 @@ def setup(window) -> None:
     rename_insert.setup(window)
     rename_photo.setup(window)
     rename_regexp.setup(window)
+    rename_stem.setup(window)
     rename_substr.setup(window)
     renamer.setup(window)
     selector.setup(window)
     style.setup(window)
 
-    window.enter_hook = hook_enter
+    window.enter_hook = enter.hook_enter
 
     def reset_default_keys(keys: list) -> None:
         for key in keys:
@@ -178,9 +146,9 @@ def setup(window) -> None:
         }
     )
 
-    keybinder.bind(toggle_bookmark, "C-B")
-    keybinder.bind(lambda: fuzzy_bookmark(False), "B")
-    keybinder.bind(lambda: fuzzy_bookmark(True), "A-S-B")
+    keybinder.bind(bookmark.toggle_bookmark, "C-B")
+    keybinder.bind(lambda: bookmark.fuzzy_bookmark(False), "B")
+    keybinder.bind(lambda: bookmark.fuzzy_bookmark(True), "A-S-B")
 
     def new_cfiler_window() -> None:
         exe_path = sys.executable
@@ -196,12 +164,12 @@ def setup(window) -> None:
 
     keybinder.bind(new_cfiler_window, "C-N")
 
-    keybinder.bind(smart_cursorUp, "K", "Up")
-    keybinder.bind(smart_cursorDown, "J", "Down")
-    keybinder.bind(focus_latest_item, "A-N")
+    keybinder.bind(cursor_mover.smart_cursorUp, "K", "Up")
+    keybinder.bind(cursor_mover.smart_cursorDown, "J", "Down")
+    keybinder.bind(cursor_mover.focus_latest_item, "A-N")
 
     def select_empty_dir() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         for d in pane.dirs:
             path = Path(d.getFullpath())
             if not any(path.iterdir()):
@@ -210,7 +178,7 @@ def setup(window) -> None:
     keybinder.bind(select_empty_dir, "A-E")
 
     def copy_dir_tree() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         selected_names = pane.selectedItemNames
         root = pane.currentPath
         window.setProgressValue(None)
@@ -239,11 +207,11 @@ def setup(window) -> None:
         job = ckit.JobItem(_traverse, _finished)
         window.taskEnqueue(job, create_new_queue=False)
 
-    keybinder.bind(open_latest_under_tree, "S-A-N")
-    keybinder.bind(focus_by_timestamp, "A-Back", "A-B")
+    keybinder.bind(change_dir.open_latest_under_tree, "S-A-N")
+    keybinder.bind(cursor_mover.focus_by_timestamp, "A-Back", "A-B")
 
     def git_init() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         path = pane.currentPath
         git_path = os.path.join(path, ".git")
         if smart_check_path(git_path):
@@ -252,7 +220,7 @@ def setup(window) -> None:
         shell_exec("git", "init", str(path))
 
     def open_lazygit() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         path = pane.currentPath
 
         lazygit = "lazygit"
@@ -269,9 +237,9 @@ def setup(window) -> None:
 
     keybinder.bind(open_lazygit, "A-L")
 
-    keybinder.bind(adjust_pane_width, "C-S")
+    keybinder.bind(cpane.adjust_pane_width, "C-S")
 
-    keybinder.bind(lambda: CPane().focusOther(), "C-L")
+    keybinder.bind(lambda: cpane.CPane().focusOther(), "C-L")
 
     keybinder.bind(window.command_Enter, "L", "Right")
 
@@ -280,14 +248,14 @@ def setup(window) -> None:
 
     keybinder.bind(toggle_hidden, "C-S-H")
 
-    keybinder.bind(open_with, "C-O")
+    keybinder.bind(enter.open_with, "C-O")
 
     def open_with_smooth_csv(_) -> None:
         smooth_csv_path = r"C:\Program Files\SmoothCSV\smoothcsv-app.exe"
         if not smart_check_path(smooth_csv_path):
             return
 
-        pane = CPane()
+        pane = cpane.CPane()
         target = pane.selectedItemPaths
         if len(target) < 1:
             target = [pane.focusedItemPath]
@@ -299,7 +267,7 @@ def setup(window) -> None:
     keybinder.bind(open_with_smooth_csv, "Comma")
 
     def quick_move() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         if not pane.hasSelection:
             window.command_Select(None)
         pane.adjustWidth()
@@ -308,7 +276,7 @@ def setup(window) -> None:
     keybinder.bind(quick_move, "M")
 
     def quick_copy() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         if not pane.hasSelection:
             window.command_Select(None)
         pane.adjustWidth()
@@ -316,13 +284,13 @@ def setup(window) -> None:
 
     keybinder.bind(quick_copy, "C")
 
-    keybinder.bind(swap_pane, "S")
+    keybinder.bind(cpane.swap_pane, "S")
 
-    ckit.CronTable.defaultCronTable().add(invoke_tempfile_cleaner())
+    ckit.CronTable.defaultCronTable().add(clon.invoke_tempfile_cleaner())
 
-    keybinder.bind(zyw.invoke(skip_file=True), "Z")
-    keybinder.bind(zyw.invoke(skip_file=False), "S-Z")
-    keybinder.bind(fuzzy_focus, "S-F")
+    keybinder.bind(change_dir.zyw.invoke(skip_file=True), "Z")
+    keybinder.bind(change_dir.zyw.invoke(skip_file=False), "S-Z")
+    keybinder.bind(cursor_mover.fuzzy_focus, "S-F")
 
     class ImageMagickConfig:
         ini_section = "IMAGE_MAGICK_CONFIG"
@@ -353,7 +321,7 @@ def setup(window) -> None:
             krtr.log(f"{exe_name} not found!")
             return
 
-        pane = CPane()
+        pane = cpane.CPane()
         targets = pane.selectedItemPaths
         if len(targets) < 1:
             return
@@ -417,7 +385,7 @@ def setup(window) -> None:
             kiritori.log(f"'{exe_name}' not found!")
             return
 
-        pane = CPane()
+        pane = cpane.CPane()
         if not pane.hasSelection:
             return
         for path in pane.selectedItemPaths:
@@ -507,7 +475,7 @@ def setup(window) -> None:
             lines.append(f"URL={url}")
             if not name.endswith(".url"):
                 name = name + ".url"
-            Path(CPane().currentPath, name).write_text(
+            Path(cpane.CPane().currentPath, name).write_text(
                 "\n".join(lines), encoding="utf-8"
             )
 
@@ -522,22 +490,22 @@ def setup(window) -> None:
         if c.startswith("http"):
             make_internet_shortcut(c)
             return
-        CPane().openPath(c.strip().strip('"'))
+        cpane.CPane().openPath(c.strip().strip('"'))
 
     keybinder.bind(on_paste, "C-V", "S-Insert")
-    keybinder.bind(change_drive, "D")
-    keybinder.bind(go_to, "C-G")
+    keybinder.bind(change_dir.change_drive, "D")
+    keybinder.bind(change_dir.go_to, "C-G")
 
-    keybinder.bind(to_ghq_repo, "G")
+    keybinder.bind(change_dir.to_ghq_repo, "G")
 
     def eject_current_drive() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         current = pane.currentPath
         if current.startswith("C:"):
             return
 
         current_drive = Path(current).drive
-        other = CPane(False)
+        other = cpane.CPane(False)
         if other.currentPath.startswith(current_drive):
             other.openPath(DESKTOP_PATH)
 
@@ -570,7 +538,7 @@ def setup(window) -> None:
     keybinder.bind(recylcebin, "Delete")
 
     def copy_current_path() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         p = pane.currentPath
         ckit.setClipboardText(p)
         window.setStatusMessage(f"copied current path: '{p}'", 3000)
@@ -583,7 +551,7 @@ def setup(window) -> None:
             window.command_SetClipboard_LogSelected(None)
             return
 
-        pane = CPane()
+        pane = cpane.CPane()
 
         targets = []
         if pane.isBlank:
@@ -600,7 +568,7 @@ def setup(window) -> None:
         if all([Path(path).suffix in [".docx", ".xlsx"] for path in targets]):
             menu.append("Text content")
 
-        result, _ = invoke("Copy", menu)
+        result, _ = listwindow.invoke("Copy", menu)
         if result < 0:
             return
 
@@ -651,14 +619,14 @@ def setup(window) -> None:
     bind_selector()
 
     def unselect_panes() -> None:
-        CPane().unSelectAll()
-        CPane(False).unSelectAll()
+        cpane.CPane().unSelectAll()
+        cpane.CPane(False).unSelectAll()
 
     keybinder.bind(unselect_panes, "C-U", "S-Esc")
 
     def smart_jumpDown(by_prefix: bool, selecting: bool) -> CallbackFunc:
         def _jumper() -> None:
-            CursorJumper(by_prefix).down(selecting)
+            cursor_jumper.CursorJumper(by_prefix).down(selecting)
 
         return _jumper
 
@@ -669,7 +637,7 @@ def setup(window) -> None:
 
     def smart_jumpUp(by_prefix: bool, selecting: bool) -> CallbackFunc:
         def _jumper() -> None:
-            CursorJumper(by_prefix).up(selecting)
+            cursor_jumper.CursorJumper(by_prefix).up(selecting)
 
         return _jumper
 
@@ -680,35 +648,35 @@ def setup(window) -> None:
 
     def duplicate_pane() -> None:
         window.command_ChdirInactivePaneToOther(None)
-        pane = CPane()
+        pane = cpane.CPane()
         pane.focusOther()
 
     keybinder.bind(duplicate_pane, "W")
 
     def open_on_explorer() -> None:
-        pane = CPane(True)
+        pane = cpane.CPane(True)
         shell_exec(pane.currentPath)
 
     keybinder.bind(open_on_explorer, "C-S-E")
 
     def open_to_other() -> None:
-        pane = CPane(True)
+        pane = cpane.CPane(True)
         if not pane.isBlank:
-            CPane(False).openPath(pane.focusedItemPath)
+            cpane.CPane(False).openPath(pane.focusedItemPath)
             pane.focusOther()
 
     keybinder.bind(open_to_other, "S-L")
 
     def open_parent_to_other() -> None:
-        pane = CPane(True)
+        pane = cpane.CPane(True)
         parent, current_name = os.path.split(pane.currentPath)
-        CPane(False).openPath(parent, current_name)
+        cpane.CPane(False).openPath(parent, current_name)
         pane.focusOther()
 
     keybinder.bind(open_parent_to_other, "S-U")
 
     def on_vscode() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         open_vscode(pane.currentPath)
 
     keybinder.bind(on_vscode, "V")
@@ -725,14 +693,16 @@ def setup(window) -> None:
         [ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]
     ]:
         pane = cpane.CPane()
-        prefix_candidates = get_prefix_candidates(pane)
-        suffix_candidates = get_suffix_candidates(pane)
-        selected = affix_handler.get_selected_stems()
+        prefix_candidates = affix_handler.get_prefix_candidates(pane)
+        suffix_candidates = affix_handler.get_suffix_candidates(pane)
+        selected = affix_handler.get_selected_stems(
+            pane
+        ) + affix_handler.get_selected_stems(cpane.CPane(False))
 
         def _filter(user_input: str) -> list[str]:
             if affix_handler.SEP not in user_input:
-                return filter_prefixes(prefix_candidates, user_input)
-            return filter_suffixes(suffix_candidates, user_input)
+                return affix_handler.filter_prefixes(prefix_candidates, user_input)
+            return affix_handler.filter_suffixes(suffix_candidates, user_input)
 
         def _handler(
             update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
@@ -742,51 +712,12 @@ def setup(window) -> None:
 
         return _handler
 
-    def rename_stem() -> None:
-        pane = CPane()
-        if pane.isBlank:
-            return
-        item = pane.focusedItem
-
-        if not renamer.is_renamable(item):
-            return
-
-        ts = item.time()
-        item_timestamp = f"{ts[0]}{ts[1]:02}{ts[2]:02}"
-        additional_suffix = [item_timestamp]
-
-        focused_path = Path(item.getFullpath())
-        placeholder = focused_path.name if focused_path.is_dir() else focused_path.stem
-        offset = len(placeholder)
-        sel = [offset, offset]
-
-        new_stem, mod = window.commandLine(
-            title="NewStem",
-            text=placeholder,
-            selection=sel,
-            candidate_handler=invoke_suffix_handler(),
-            return_modkey=True,
-        )
-
-        new_stem = stringify(new_stem)
-        if len(new_stem) < 1:
-            return
-
-        new_name = new_stem
-        if not focused_path.is_dir():
-            new_name += focused_path.suffix
-
-        krtr = kiritori
-        krtr.draw_header("Renaming:")
-        renamer.execute(pane, focused_path, new_name, mod == ckit.MODKEY_SHIFT)
-        krtr.draw_footer()
-
-    keybinder.bind(rename_stem, "N")
+    keybinder.bind(rename_stem.execute, "N")
 
     keybinder.bind(rename_ext.execute, "S-N")
 
     def multiple_selected_item() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         if not pane.hasSelection:
             return
         if 1 < len(pane.selectedItems):
@@ -844,7 +775,7 @@ def setup(window) -> None:
     keybinder.bind(multiple_selected_item, "C-S-C")
 
     def duplicate_with_new_stem() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
 
         src_path = Path(pane.focusedItemPath)
         if pane.hasSelection:
@@ -863,7 +794,7 @@ def setup(window) -> None:
             window.commandLine(
                 title=prompt,
                 text=placeholder,
-                candidate_handler=invoke_suffix_handler(),
+                candidate_handler=affix_handler.invoke_suffix_handler(),
                 selection=[sel_start, sel_end],
             )
         )
@@ -892,7 +823,7 @@ def setup(window) -> None:
     keybinder.bind(duplicate_with_new_stem, "S-D")
 
     def duplicate_with_new_extension() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
 
         src_path = Path(pane.focusedItemPath)
         if pane.hasSelection:
@@ -937,7 +868,7 @@ def setup(window) -> None:
     def smart_copy_to_dir(remove_origin: bool) -> None:
         prompt = "MoveTo" if remove_origin else "CopyTo"
 
-        pane = CPane()
+        pane = cpane.CPane()
 
         items = []
         for item in pane.selectedItems:
@@ -995,7 +926,7 @@ def setup(window) -> None:
     keybinder.bind(lambda: smart_copy_to_dir(False), "S-C")
 
     def smart_mkdir() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         ts = datetime.datetime.today().strftime("%Y%m%d")
         result, mod = window.commandLine(
             "DirName",
@@ -1015,7 +946,7 @@ def setup(window) -> None:
     keybinder.bind(smart_mkdir, "C-S-N")
 
     def touch_new_file() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         if not hasattr(pane.fileList.getLister(), "touch"):
             return
 
@@ -1143,8 +1074,8 @@ def setup(window) -> None:
             ] + window.sorter_list
 
         sorter = window.sorter_list[0][1]
-        LeftPane().setSorter(sorter)
-        RightPane().setSorter(sorter)
+        cpane.LeftPane().setSorter(sorter)
+        cpane.RightPane().setSorter(sorter)
 
     setup_sorter()
 
@@ -1156,8 +1087,8 @@ def setup(window) -> None:
     keybinder.bind(reload_config, "C-R", "F5")
 
     def open_desktop_to_other() -> None:
-        pane = CPane()
-        other = CPane(False)
+        pane = cpane.CPane()
+        other = cpane.CPane(False)
         if DESKTOP_PATH not in [pane.currentPath, other.currentPath]:
             other.openPath(DESKTOP_PATH)
         pane.focusOther()
@@ -1166,12 +1097,12 @@ def setup(window) -> None:
 
     def starting_position(both_pane: bool = False) -> None:
         window.command_MoveSeparatorCenter(None)
-        pane = CPane()
+        pane = cpane.CPane()
         if pane.currentPath != DESKTOP_PATH:
             pane.openPath(DESKTOP_PATH)
         if both_pane:
             window.command_ChdirInactivePaneToOther(None)
-            LeftPane().activate()
+            cpane.LeftPane().activate()
 
     keybinder.bind(lambda: starting_position(False), "0")
     keybinder.bind(lambda: starting_position(True), "S-0")
@@ -1187,8 +1118,8 @@ def setup(window) -> None:
             if result != cfiler_msgbox.MessageBox.RESULT_YES:
                 return
 
-        left = LeftPane()
-        right = RightPane()
+        left = cpane.LeftPane()
+        right = cpane.RightPane()
         for pane in [left, right]:
             if not pane.currentPath.startswith("C:"):
                 pane.openPath(DESKTOP_PATH)
@@ -1218,12 +1149,12 @@ def setup(window) -> None:
     keybinder.bind(edit_config, "C-E")
 
     def make_shortcut() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         target = pane.selectedItemNames
         if len(target) < 1:
             target.append(pane.focusedItem.getName())
 
-        other_pane_dir = CPane(False).currentPath
+        other_pane_dir = cpane.CPane(False).currentPath
         for name in target:
             lnk_path = str(Path(other_pane_dir, name).with_suffix(".lnk"))
             src_path = str(Path(pane.currentPath, name))
@@ -1255,8 +1186,8 @@ def setup(window) -> None:
             print(f"checking first {self.max_mb}MB of: {name}")
 
         def compare(self) -> None:
-            pane = CPane()
-            other_pane = CPane(False)
+            pane = cpane.CPane()
+            other_pane = cpane.CPane(False)
             with_selection = other_pane.hasSelection
             _, dirname = os.path.split(pane.currentPath)
             _, other_dirname = os.path.split(other_pane.currentPath)
@@ -1346,19 +1277,19 @@ def setup(window) -> None:
             window.taskEnqueue(job, create_new_queue=False)
 
     def diff_files(with_diffinity: bool) -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         left_path = ""
         right_path = ""
 
         if (
             pane.hasSelection
             and len(pane.selectedItems) == 2
-            and not CPane(False).hasSelection
+            and not cpane.CPane(False).hasSelection
         ):
             left_path, right_path = pane.selectedItemPaths
         else:
-            left_pane = LeftPane()
-            right_pane = RightPane()
+            left_pane = cpane.LeftPane()
+            right_pane = cpane.RightPane()
             if len(left_pane.selectedItems) == 1 and len(right_pane.selectedItems) == 1:
                 left_path = left_pane.selectedItemPaths[0]
                 right_path = right_pane.selectedItemPaths[0]
@@ -1397,19 +1328,19 @@ def setup(window) -> None:
         window.taskEnqueue(job, create_new_queue=False)
 
     def from_other_names() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         pane.unSelectAll()
         active_names = pane.names
-        other = CPane(False)
+        other = cpane.CPane(False)
         other_names = [item.getName() for item in other.selectedOrAllItems]
         for name in active_names:
             if name in other_names:
                 pane.selectByName(name)
 
     def from_active_names() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         active_names = [item.getName() for item in pane.selectedOrAllItems]
-        other = CPane(False)
+        other = cpane.CPane(False)
         other.unSelectAll()
         other_names = other.names
         for name in other_names:
@@ -1428,11 +1359,11 @@ def setup(window) -> None:
     keybinder.bind(invoke_regex_selector(True), "S-Colon")
 
     def select_same_name() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         active_names = pane.selectedItemNames
         if len(active_names) < 1:
             active_names = [pane.focusedItem.getName()]
-        other = CPane(False)
+        other = cpane.CPane(False)
         other.unSelectAll()
 
         for name in other.names:
@@ -1440,10 +1371,10 @@ def setup(window) -> None:
                 other.selectByName(name)
 
     def select_name_common() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         pane.unSelectAll()
         active_names = pane.names
-        other = CPane(False)
+        other = cpane.CPane(False)
         other.unSelectAll()
         other_names = other.names
 
@@ -1455,10 +1386,10 @@ def setup(window) -> None:
                 other.selectByName(name)
 
     def select_name_unique() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         pane.unSelectAll()
         active_names = pane.names
-        other = CPane(False)
+        other = cpane.CPane(False)
         other.unSelectAll()
         other_names = other.names
 
@@ -1473,7 +1404,7 @@ def setup(window) -> None:
         result, mod = window.commandLine(
             "StartsWith",
             return_modkey=True,
-            candidate_handler=invoke_prefix_handler(),
+            candidate_handler=affix_handler.invoke_prefix_handler(),
         )
         if result:
             selector.stem_starts_with(result, mod == ckit.MODKEY_SHIFT)
@@ -1484,7 +1415,7 @@ def setup(window) -> None:
         result, mod = window.commandLine(
             "EndsWith",
             return_modkey=True,
-            candidate_handler=invoke_suffix_handler(),
+            candidate_handler=affix_handler.invoke_suffix_handler(),
         )
         if result:
             selector.stem_ends_with(result, mod == ckit.MODKEY_SHIFT)
@@ -1499,7 +1430,7 @@ def setup(window) -> None:
     keybinder.bind(select_stem_contains, "Colon")
 
     def select_byext() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         exts = []
         for item in pane.selectedOrAllItems:
             ext = Path(item.getFullpath()).suffix[1:]
@@ -1509,7 +1440,7 @@ def setup(window) -> None:
         if len(exts) < 1:
             return
 
-        result, mod = invoke("Select Extension", exts)
+        result, mod = listwindow.invoke("Select Extension", exts)
 
         if result < 0:
             return
@@ -1554,7 +1485,7 @@ def setup(window) -> None:
             return self._formatted
 
     def rename_pseudo_voicing() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         items = pane.selectedItems
         for item in items:
             if not renamer.is_renamable(item):
@@ -1568,7 +1499,7 @@ def setup(window) -> None:
             renamer.execute(pane, org_path, new_name)
 
     def save_clipboard_image_as_file() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
 
         def _save(job_item: ckit.JobItem) -> None:
             job_item.file_name = ""
@@ -1611,7 +1542,7 @@ def setup(window) -> None:
             return f"\U0001f50d[{Path(self.root).name}]"
 
     def hide_unselected() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         if pane.hasSelection:
             names = pane.selectedItemNames
             window.subThreadCall(
@@ -1620,12 +1551,12 @@ def setup(window) -> None:
             pane.refresh()
             pane.focus(0)
             pane.repaint(PaintOption.Focused)
-            CPane().unSelectAll()
+            cpane.CPane().unSelectAll()
 
     keybinder.bind(hide_unselected, "S-H")
 
     def clear_filter() -> None:
-        pane = CPane()
+        pane = cpane.CPane()
         window.subThreadCall(pane.fileList.setFilter, (filter_Default("*"),))
         pane.refresh()
         pane.repaint(PaintOption.Focused)
@@ -1633,11 +1564,11 @@ def setup(window) -> None:
     keybinder.bind(clear_filter, "Q")
 
     def make_junction() -> None:
-        active_pane = CPane()
+        active_pane = cpane.CPane()
         if not active_pane.hasSelection:
             return
 
-        other_pane = CPane(False)
+        other_pane = cpane.CPane(False)
         dest = other_pane.currentPath
         for src_path in active_pane.selectedItemPaths:
             junction_path = Path(dest, Path(src_path).name)
@@ -1666,18 +1597,18 @@ def setup(window) -> None:
             "GitInit": git_init,
             "ChangeImageType": change_image_type,
             "MakeShortcut": make_shortcut,
-            "CleanTempFiles": remove_tempfiles,
+            "CleanTempFiles": clon.remove_tempfiles,
             "RenamePhotoFileByExifDate": rename_photo.execute_with_exif,
             "RenameLightroomPhoto": rename_photo.execute_for_lightroom_photo_from_dropbox,
-            "ZipSelections": compress,
-            "SetBookmarkAlias": set_bookmark_alias,
-            "BookmarkHere": bookmark_here,
+            "ZipSelections": archiver.compress,
+            "SetBookmarkAlias": bookmark.set_bookmark_alias,
+            "BookmarkHere": bookmark.bookmark_here,
             "DocxToTxt": docx_to_txt,
             "EjectCurrentDrive": eject_current_drive,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": make_junction,
             "ResetHotkey": reset_hotkey,
-            "UnzipSelections": extract,
+            "UnzipSelections": archiver.extract,
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
             "CopyDirTree": copy_dir_tree,
@@ -1692,7 +1623,7 @@ def setup(window) -> None:
             "RenameInsert": rename_insert.execute,
             "RenameExtension": rename_ext.execute,
             "RenameRegExp": rename_regexp.execute,
-            "RenameStem": rename_stem,
+            "RenameStem": rename_stem.execute,
             "RenameSubstr": rename_substr.execute,
             "FindSameFile": FileHashDiff(2).compare,
             "FromOtherNames": from_other_names,

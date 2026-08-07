@@ -29,9 +29,14 @@ def len_ordered(lines: set[str]) -> list[str]:
 SEP = "_"
 
 
-def get_selected_stems() -> list[str]:
-    sels = cpane.CPane().selectedItemPaths + cpane.CPane(False).selectedItemPaths
-    return sorted([to_stem(sel) for sel in sels])
+def get_selected_item_timestamp(pane: cpane.CPane) -> str:
+    item = pane.focusedItem
+    ts = item.time()
+    return f"{ts[0]}{ts[1]:02}{ts[2]:02}"
+
+
+def get_selected_stems(pane: cpane.CPane) -> list[str]:
+    return sorted([to_stem(p) for p in pane.selectedItemPaths])
 
 
 def get_prefix_candidates(pane: cpane.CPane) -> set[str]:
@@ -51,8 +56,10 @@ def filter_prefixes(candidates: set[str], user_input: str) -> list[str]:
 def invoke_prefix_handler() -> Callable[
     [ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]
 ]:
-    selected = get_selected_stems()
-    candidates = get_prefix_candidates(cpane.CPane())
+    pane = cpane.CPane()
+    selected = get_selected_stems(pane) + get_selected_stems(cpane.CPane(False))
+    candidates = get_prefix_candidates(pane)
+    candidates.add(f"{get_selected_item_timestamp(pane)}_")
 
     def _handler(
         update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
@@ -93,8 +100,10 @@ def filter_suffixes(candidates: set[str], user_input: str) -> list[str]:
 def invoke_suffix_handler() -> Callable[
     [ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]
 ]:
-    selected = get_selected_stems()
-    candidates = get_suffix_candidates(cpane.CPane())
+    pane = cpane.CPane()
+    selected = get_selected_stems(pane) + get_selected_stems(cpane.CPane(False))
+    candidates = get_suffix_candidates(pane)
+    candidates.add(f"_{get_selected_item_timestamp(pane)}")
 
     def _handler(
         update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
