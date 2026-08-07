@@ -1,3 +1,4 @@
+import os
 import time
 
 import ckit  # type: ignore
@@ -67,6 +68,28 @@ def itemformat_NativeName_Ext_Size_YYYYMMDDorHHMMSS(
         )
         + meta_elem
     )
+
+
+class sorter_UnderscoreFirst:
+    def __init__(self, order: int = 1) -> None:
+        self.order = order
+
+    def __call__(self, items) -> None:
+        def _sort_key(item) -> tuple:
+            dir_upper_flag = not item.isdir() if self.order == 1 else item.isdir()
+            name = item.getName()
+            stem, ext = os.path.splitext(name)
+            underscore_count = len(name) - len(name.lstrip("_"))
+            return (
+                dir_upper_flag,
+                not name.startswith("."),
+                not name.startswith("_"),
+                (-1 * underscore_count),
+                stem.lower(),
+                ext.lower(),
+            )
+
+        items.sort(key=_sort_key, reverse=self.order == -1)
 
 
 CUSTOM_THEME = {

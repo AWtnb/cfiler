@@ -1005,34 +1005,13 @@ def setup(window) -> None:
 
     keybinder.bind(snapper.to_home_position, "C-0")
 
-    class sorter_UnderscoreFirst:
-        def __init__(self, order: int = 1) -> None:
-            self.order = order
-
-        def __call__(self, items) -> None:
-            def _sort_key(item) -> tuple:
-                dir_upper_flag = not item.isdir() if self.order == 1 else item.isdir()
-                name = item.getName()
-                stem, ext = os.path.splitext(name)
-                underscore_count = len(name) - len(name.lstrip("_"))
-                return (
-                    dir_upper_flag,
-                    not name.startswith("."),
-                    not name.startswith("_"),
-                    (-1 * underscore_count),
-                    stem.lower(),
-                    ext.lower(),
-                )
-
-            items.sort(key=_sort_key, reverse=self.order == -1)
-
     def setup_sorter() -> None:
         if len(window.sorter_list) == 4:
             window.sorter_list = [
                 (
                     "U : Underscore Order",
-                    sorter_UnderscoreFirst(),
-                    sorter_UnderscoreFirst(order=-1),
+                    style.sorter_UnderscoreFirst(),
+                    style.sorter_UnderscoreFirst(order=-1),
                 ),
             ] + window.sorter_list
 
