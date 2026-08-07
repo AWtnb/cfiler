@@ -2,11 +2,19 @@ import re
 from pathlib import Path
 from typing import Callable
 
-from . import cpane
+import ckit  # type: ignore
+
+from . import cpane, listwindow
+from .rename import affix_handler
 
 
-def setup(window) -> None:
+def setup(_window) -> None:
+    global window  # ty: ignore[unresolved-global]
+    window = _window
+
     cpane.setup(window)
+    affix_handler.setup(window)
+    listwindow.setup(window)
 
 
 def all_items() -> None:
@@ -121,3 +129,121 @@ def stem_matches(s: str, case: bool, negative: bool = False) -> None:
         return reg.search(Path(path).stem) is not None
 
     by_selector_func(_checkPath, negative)
+
+
+def from_other_names() -> None:
+    pane = cpane.CPane()
+    pane.unSelectAll()
+    active_names = pane.names
+    other = cpane.CPane(False)
+    other_names = [item.getName() for item in other.selectedOrAllItems]
+    for name in active_names:
+        if name in other_names:
+            pane.selectByName(name)
+
+
+def from_active_names() -> None:
+    pane = cpane.CPane()
+    active_names = [item.getName() for item in pane.selectedOrAllItems]
+    other = cpane.CPane(False)
+    other.unSelectAll()
+    other_names = other.names
+    for name in other_names:
+        if name in active_names:
+            other.selectByName(name)
+
+
+def select_same_name() -> None:
+    pane = cpane.CPane()
+    active_names = pane.selectedItemNames
+    if len(active_names) < 1:
+        active_names = [pane.focusedItem.getName()]
+    other = cpane.CPane(False)
+    other.unSelectAll()
+
+    for name in other.names:
+        if name in active_names:
+            other.selectByName(name)
+
+
+def select_name_common() -> None:
+    pane = cpane.CPane()
+    pane.unSelectAll()
+    active_names = pane.names
+    other = cpane.CPane(False)
+    other.unSelectAll()
+    other_names = other.names
+
+    for name in active_names:
+        if name in other_names:
+            pane.selectByName(name)
+    for name in other_names:
+        if name in active_names:
+            other.selectByName(name)
+
+
+def select_name_unique() -> None:
+    pane = cpane.CPane()
+    pane.unSelectAll()
+    active_names = pane.names
+    other = cpane.CPane(False)
+    other.unSelectAll()
+    other_names = other.names
+
+    for name in active_names:
+        if name not in other_names:
+            pane.selectByName(name)
+    for name in other_names:
+        if name not in active_names:
+            other.selectByName(name)
+
+
+def select_stem_startswith() -> None:
+    result, mod = window.commandLine(
+        "StartsWith",
+        return_modkey=True,
+        candidate_handler=affix_handler.invoke_prefix_handler(),
+    )
+    if result:
+        stem_starts_with(result, mod == ckit.MODKEY_SHIFT)
+
+
+def select_regexp(case: bool) -> None:
+    result, mod = window.commandLine("Regexp", return_modkey=True)
+    if result:
+        stem_matches(result, case, mod == ckit.MODKEY_SHIFT)
+
+
+def select_stem_endswith() -> None:
+    result, mod = window.commandLine(
+        "EndsWith",
+        return_modkey=True,
+        candidate_handler=affix_handler.invoke_suffix_handler(),
+    )
+    if result:
+        stem_ends_with(result, mod == ckit.MODKEY_SHIFT)
+
+
+def select_stem_contains() -> None:
+    result, mod = window.commandLine("Contains", return_modkey=True)
+    if result:
+        stem_contains(result, mod == ckit.MODKEY_SHIFT)
+
+
+def select_byext() -> None:
+    pane = cpane.CPane()
+    exts = []
+    for item in pane.selectedOrAllItems:
+        ext = Path(item.getFullpath()).suffix[1:]
+        if ext and ext not in exts:
+            exts.append(ext)
+
+    if len(exts) < 1:
+        return
+
+    result, mod = listwindow.invoke("Select Extension", exts)
+
+    if result < 0:
+        return
+
+    by_extension("." + exts[result], mod == ckit.MODKEY_SHIFT)

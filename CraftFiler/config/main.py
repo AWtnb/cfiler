@@ -38,6 +38,7 @@ from .tools.common import (
     DESKTOP_PATH,
     CallbackFunc,
     PaintOption,
+    get_now,
     open_vscode,
     run_ps1,
     shell_exec,
@@ -949,7 +950,7 @@ def setup(window) -> None:
 
     def reload_config() -> None:
         window.configure()
-        ts = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
+        ts = get_now().strftime("%Y-%m-%d %H:%M:%S.%f")
         window.setStatusMessage(f"Reloaded config.py | {ts}", 2000)
 
     keybinder.bind(reload_config, "C-R", "F5")
@@ -996,11 +997,6 @@ def setup(window) -> None:
 
     keybinder.bind(safe_quit, "C-Q", "A-F4")
 
-    def open_doc() -> None:
-        shell_exec("https://github.dev/crftwr/cfiler/blob/master/cfiler_mainwindow.py")
-
-    keybinder.bind(open_doc, "C-F1")
-
     def edit_config() -> None:
         config_dir = os.path.join(os.environ.get("APPDATA", ""), "CraftFiler")
         if not smart_check_path(config_dir):
@@ -1016,127 +1012,11 @@ def setup(window) -> None:
 
     keybinder.bind(edit_config, "C-E")
 
-    def from_other_names() -> None:
-        pane = cpane.CPane()
-        pane.unSelectAll()
-        active_names = pane.names
-        other = cpane.CPane(False)
-        other_names = [item.getName() for item in other.selectedOrAllItems]
-        for name in active_names:
-            if name in other_names:
-                pane.selectByName(name)
-
-    def from_active_names() -> None:
-        pane = cpane.CPane()
-        active_names = [item.getName() for item in pane.selectedOrAllItems]
-        other = cpane.CPane(False)
-        other.unSelectAll()
-        other_names = other.names
-        for name in other_names:
-            if name in active_names:
-                other.selectByName(name)
-
-    def invoke_regex_selector(case: bool) -> CallbackFunc:
-        def _selector() -> None:
-            result, mod = window.commandLine("Regexp", return_modkey=True)
-
-            if result:
-                selector.stem_matches(result, case, mod == ckit.MODKEY_SHIFT)
-
-        return _selector
-
-    keybinder.bind(invoke_regex_selector(True), "S-Colon")
-
-    def select_same_name() -> None:
-        pane = cpane.CPane()
-        active_names = pane.selectedItemNames
-        if len(active_names) < 1:
-            active_names = [pane.focusedItem.getName()]
-        other = cpane.CPane(False)
-        other.unSelectAll()
-
-        for name in other.names:
-            if name in active_names:
-                other.selectByName(name)
-
-    def select_name_common() -> None:
-        pane = cpane.CPane()
-        pane.unSelectAll()
-        active_names = pane.names
-        other = cpane.CPane(False)
-        other.unSelectAll()
-        other_names = other.names
-
-        for name in active_names:
-            if name in other_names:
-                pane.selectByName(name)
-        for name in other_names:
-            if name in active_names:
-                other.selectByName(name)
-
-    def select_name_unique() -> None:
-        pane = cpane.CPane()
-        pane.unSelectAll()
-        active_names = pane.names
-        other = cpane.CPane(False)
-        other.unSelectAll()
-        other_names = other.names
-
-        for name in active_names:
-            if name not in other_names:
-                pane.selectByName(name)
-        for name in other_names:
-            if name not in active_names:
-                other.selectByName(name)
-
-    def select_stem_startswith() -> None:
-        result, mod = window.commandLine(
-            "StartsWith",
-            return_modkey=True,
-            candidate_handler=affix_handler.invoke_prefix_handler(),
-        )
-        if result:
-            selector.stem_starts_with(result, mod == ckit.MODKEY_SHIFT)
-
-    keybinder.bind(select_stem_startswith, "Caret")
-
-    def select_stem_endswith() -> None:
-        result, mod = window.commandLine(
-            "EndsWith",
-            return_modkey=True,
-            candidate_handler=affix_handler.invoke_suffix_handler(),
-        )
-        if result:
-            selector.stem_ends_with(result, mod == ckit.MODKEY_SHIFT)
-
-    keybinder.bind(select_stem_endswith, "S-4")
-
-    def select_stem_contains() -> None:
-        result, mod = window.commandLine("Contains", return_modkey=True)
-        if result:
-            selector.stem_contains(result, mod == ckit.MODKEY_SHIFT)
-
-    keybinder.bind(select_stem_contains, "Colon")
-
-    def select_byext() -> None:
-        pane = cpane.CPane()
-        exts = []
-        for item in pane.selectedOrAllItems:
-            ext = Path(item.getFullpath()).suffix[1:]
-            if ext and ext not in exts:
-                exts.append(ext)
-
-        if len(exts) < 1:
-            return
-
-        result, mod = listwindow.invoke("Select Extension", exts)
-
-        if result < 0:
-            return
-
-        selector.by_extension("." + exts[result], mod == ckit.MODKEY_SHIFT)
-
-    keybinder.bind(select_byext, "S-X")
+    keybinder.bind(lambda: selector.select_regexp(True), "S-Colon")
+    keybinder.bind(selector.select_stem_startswith, "Caret")
+    keybinder.bind(selector.select_stem_endswith, "S-4")
+    keybinder.bind(selector.select_stem_contains, "Colon")
+    keybinder.bind(selector.select_byext, "S-X")
 
     def save_clipboard_image_as_file() -> None:
         pane = cpane.CPane()
@@ -1245,16 +1125,16 @@ def setup(window) -> None:
             "RenameStem": rename_stem.execute,
             "RenameSubstr": rename_substr.execute,
             "FindSameFile": compare.FileHashDiff(2).compare,
-            "FromOtherNames": from_other_names,
-            "FromActiveNames": from_active_names,
-            "SelectSameName": select_same_name,
-            "SelectNameUnique": select_name_unique,
-            "SelectNameCommon": select_name_common,
-            "SelectStemMatchCase": invoke_regex_selector(True),
-            "SelectStemMatch": invoke_regex_selector(False),
-            "SelectStemStartsWith": select_stem_startswith,
-            "SelectStemEndsWith": select_stem_endswith,
-            "SelectStemContains": select_stem_contains,
-            "SelectByExtension": select_byext,
+            "FromOtherNames": selector.from_other_names,
+            "FromActiveNames": selector.from_active_names,
+            "SelectSameName": selector.select_same_name,
+            "SelectNameUnique": selector.select_name_unique,
+            "SelectNameCommon": selector.select_name_common,
+            "SelectStemMatchCase": lambda: selector.select_regexp(True),
+            "SelectStemMatch": lambda: selector.select_regexp(False),
+            "SelectStemStartsWith": selector.select_stem_startswith,
+            "SelectStemEndsWith": selector.select_stem_endswith,
+            "SelectStemContains": selector.select_stem_contains,
+            "SelectByExtension": selector.select_byext,
         }
     )
