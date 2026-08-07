@@ -112,3 +112,25 @@ def invoke_suffix_handler() -> Callable[
         return selected + matched, 0
 
     return _handler
+
+
+def invoke_name_candidate_handler() -> Callable[
+    [ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]
+]:
+    pane = cpane.CPane()
+    prefix_candidates = get_prefix_candidates(pane)
+    suffix_candidates = get_suffix_candidates(pane)
+    selected = get_selected_stems(pane) + get_selected_stems(cpane.CPane(False))
+
+    def _filter(user_input: str) -> list[str]:
+        if SEP not in user_input:
+            return filter_prefixes(prefix_candidates, user_input)
+        return filter_suffixes(suffix_candidates, user_input)
+
+    def _handler(
+        update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
+    ) -> tuple[list[str], int]:
+        affix = _filter(update_info.text)
+        return selected + affix, 0
+
+    return _handler

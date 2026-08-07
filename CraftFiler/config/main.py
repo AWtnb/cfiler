@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Callable
 
 import cfiler_msgbox  # type: ignore
 import ckit  # type: ignore
@@ -641,29 +640,6 @@ def setup(window) -> None:
 
     keybinder.bind(rename_regexp.execute, "S-R")
 
-    def invoke_name_candidate_handler() -> Callable[
-        [ckit.ckit_widget.EditWidget.UpdateInfo], tuple[list[str], int]
-    ]:
-        pane = cpane.CPane()
-        prefix_candidates = affix_handler.get_prefix_candidates(pane)
-        suffix_candidates = affix_handler.get_suffix_candidates(pane)
-        selected = affix_handler.get_selected_stems(
-            pane
-        ) + affix_handler.get_selected_stems(cpane.CPane(False))
-
-        def _filter(user_input: str) -> list[str]:
-            if affix_handler.SEP not in user_input:
-                return affix_handler.filter_prefixes(prefix_candidates, user_input)
-            return affix_handler.filter_suffixes(suffix_candidates, user_input)
-
-        def _handler(
-            update_info: ckit.ckit_widget.EditWidget.UpdateInfo,
-        ) -> tuple[list[str], int]:
-            affix = _filter(update_info.text)
-            return selected + affix, 0
-
-        return _handler
-
     keybinder.bind(rename_stem.execute, "N")
 
     keybinder.bind(rename_ext.execute, "S-N")
@@ -884,7 +860,7 @@ def setup(window) -> None:
             "DirName",
             text=ts,
             selection=[0, len(ts)],
-            candidate_handler=invoke_name_candidate_handler(),
+            candidate_handler=affix_handler.invoke_name_candidate_handler(),
             return_modkey=True,
         )
 
@@ -904,7 +880,7 @@ def setup(window) -> None:
 
         result, mod = window.commandLine(
             "Stem",
-            candidate_handler=invoke_name_candidate_handler(),
+            candidate_handler=affix_handler.invoke_name_candidate_handler(),
             return_modkey=True,
         )
 
