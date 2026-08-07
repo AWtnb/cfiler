@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Protocol
 
 import ckit  # type: ignore
-from cfiler import *  # type: ignore
 from cfiler_filelist import FileList  # type: ignore
 
 

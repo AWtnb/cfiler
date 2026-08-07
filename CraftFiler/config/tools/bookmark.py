@@ -7,7 +7,6 @@ import subprocess
 from pathlib import Path
 
 import ckit  # type: ignore
-from cfiler import *  # type: ignore
 
 from . import cpane, kiritori
 from .common import check_fzf, open_vscode, smart_check_path, stringify

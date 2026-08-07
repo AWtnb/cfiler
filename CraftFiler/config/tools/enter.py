@@ -5,8 +5,6 @@ import shutil
 from pathlib import Path
 from typing import Callable
 
-from cfiler import *  # type: ignore
-
 from . import archiver, cpane, listwindow, office
 from .browser_info import get_default_browser
 from .common import open_vscode, shell_exec, smart_check_path

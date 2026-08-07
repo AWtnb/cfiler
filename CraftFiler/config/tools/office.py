@@ -7,7 +7,6 @@ import tempfile
 from pathlib import Path
 
 import ckit  # type: ignore
-from cfiler import *  # type: ignore
 from cfiler_filelist import item_Default  # type: ignore
 
 from . import cpane, kiritori

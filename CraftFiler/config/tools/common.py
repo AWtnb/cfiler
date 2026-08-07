@@ -13,7 +13,6 @@ from typing import Callable
 
 import cfiler_mainwindow  # type: ignore
 import ckit  # type: ignore
-from cfiler import *  # type: ignore
 
 TZ_JST = datetime.timezone(datetime.timedelta(hours=9))
 

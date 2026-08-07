@@ -3,12 +3,9 @@ from __future__ import annotations
 import configparser
 import datetime
 import os
-import re
 import shutil
 import subprocess
 import sys
-import urllib.parse
-import urllib.request
 from pathlib import Path
 from typing import Callable
 
@@ -32,6 +29,7 @@ from .tools import (
     enter,
     keybinder,
     kiritori,
+    linker,
     listwindow,
     office,
     selector,
@@ -69,12 +67,12 @@ def setup(window) -> None:
     clon.setup(window)
     compare.setup(window)
     cpane.setup(window)
-    rename_pseudo_voicing.setup(window)
     cursor_jumper.setup(window)
     cursor_mover.setup(window)
     enter.setup(window)
     keybinder.setup(window)
     kiritori.setup(window)
+    linker.setup(window)
     listwindow.setup(window)
     office.setup(window)
     rename_ext.setup(window)
@@ -82,6 +80,7 @@ def setup(window) -> None:
     rename_ini.setup(window)
     rename_insert.setup(window)
     rename_photo.setup(window)
+    rename_pseudo_voicing.setup(window)
     rename_regexp.setup(window)
     rename_stem.setup(window)
     rename_substr.setup(window)
@@ -435,62 +434,13 @@ def setup(window) -> None:
         job = ckit.JobItem(_conc, _finish)
         window.taskEnqueue(job, create_new_queue=False)
 
-    def make_internet_shortcut(url: str = "") -> None:
-        if not url.startswith("http"):
-            kiritori.log(f"invalid url: '{url}'")
-            return
-
-        def _access(job_item: ckit.JobItem) -> None:
-            job_item.body = None
-            try:
-                req = urllib.request.Request(url)
-                with urllib.request.urlopen(req) as res:
-                    body = res.read()
-                    try:
-                        text = body.decode("utf-8", errors="ignore")
-                    except Exception:
-                        text = body.decode("cp932", errors="ignore")
-                    job_item.body = text
-            except Exception as e:
-                kiritori.log(e)
-
-        def _make_shortcut(job_item: ckit.JobItem) -> None:
-            title = ""
-            if job_item.body is not None:
-                m = re.search(
-                    r"<title.*?>(.*?)</title>", job_item.body, re.IGNORECASE | re.DOTALL
-                )
-                title = m.group(1).strip() if m else ""
-
-            lines = ["[InternetShortcut]"]
-            domain = urllib.parse.urlparse(url).netloc
-            name = stringify(
-                window.commandLine(
-                    "Shortcut title",
-                    text=f"{title} - {domain}",
-                    selection=[0, len(title)],
-                )
-            )
-            if len(name) < 1:
-                print("Canceled.\n")
-                return
-            lines.append(f"URL={url}")
-            if not name.endswith(".url"):
-                name = name + ".url"
-            Path(cpane.CPane().currentPath, name).write_text(
-                "\n".join(lines), encoding="utf-8"
-            )
-
-        job = ckit.JobItem(_access, _make_shortcut)
-        window.taskEnqueue(job, create_new_queue=False)
-
     def on_paste() -> None:
         c = ckit.getClipboardText()
         if len(c) < 1:
             save_clipboard_image_as_file()
             return
         if c.startswith("http"):
-            make_internet_shortcut(c)
+            linker.make_internet_shortcut(c)
             return
         cpane.CPane().openPath(c.strip().strip('"'))
 
@@ -1090,19 +1040,6 @@ def setup(window) -> None:
 
     keybinder.bind(edit_config, "C-E")
 
-    def make_shortcut() -> None:
-        pane = cpane.CPane()
-        target = pane.selectedItemNames
-        if len(target) < 1:
-            target.append(pane.focusedItem.getName())
-
-        other_pane_dir = cpane.CPane(False).currentPath
-        for name in target:
-            lnk_path = str(Path(other_pane_dir, name).with_suffix(".lnk"))
-            src_path = str(Path(pane.currentPath, name))
-            run_ps1("mklnk", src_path, lnk_path)
-            kiritori.log(f"Created shortcut '{lnk_path}'")
-
     def from_other_names() -> None:
         pane = cpane.CPane()
         pane.unSelectAll()
@@ -1290,27 +1227,6 @@ def setup(window) -> None:
 
     keybinder.bind(clear_filter, "Q")
 
-    def make_junction() -> None:
-        active_pane = cpane.CPane()
-        if not active_pane.hasSelection:
-            return
-
-        other_pane = cpane.CPane(False)
-        dest = other_pane.currentPath
-        for src_path in active_pane.selectedItemPaths:
-            junction_path = Path(dest, Path(src_path).name)
-            if smart_check_path(junction_path):
-                kiritori.log(f"'{junction_path}' already exists.")
-                return
-            try:
-                cmd = ["cmd", "/c", "mklink", "/J", str(junction_path), src_path]
-                proc = subprocess.run(cmd, capture_output=True, encoding="cp932")
-                result = proc.stdout.strip()
-                kiritori.log(result)
-            except Exception as e:
-                kiritori.log(e)
-                return
-
     def reset_hotkey() -> None:
         window.ini.set("HOTKEY", "activate_vk", "0")
         window.ini.set("HOTKEY", "activate_mod", "0")
@@ -1323,7 +1239,7 @@ def setup(window) -> None:
         {
             "GitInit": git_init,
             "ChangeImageType": change_image_type,
-            "MakeShortcut": make_shortcut,
+            "MakeShortcut": linker.make_shortcut,
             "CleanTempFiles": clon.remove_tempfiles,
             "RenamePhotoFileByExifDate": rename_photo.execute_with_exif,
             "RenameLightroomPhoto": rename_photo.execute_for_lightroom_photo_from_dropbox,
@@ -1333,7 +1249,7 @@ def setup(window) -> None:
             "DocxToTxt": docx_to_txt,
             "EjectCurrentDrive": eject_current_drive,
             "ConcPdfGo": concatenate_pdf,
-            "MakeJunction": make_junction,
+            "MakeJunction": linker.make_junction,
             "ResetHotkey": reset_hotkey,
             "UnzipSelections": archiver.extract,
             "HideUnselectedItems": hide_unselected,
@@ -1342,7 +1258,7 @@ def setup(window) -> None:
             "Diffinity": lambda: compare.diff_files(with_diffinity=True),
             "DiffWithVSCode": lambda: compare.diff_files(with_diffinity=False),
             "MultipleSelectedItem": multiple_selected_item,
-            "MakeInternetShortcut": lambda: make_internet_shortcut(
+            "MakeInternetShortcut": lambda: linker.make_internet_shortcut(
                 ckit.getClipboardText().strip()
             ),
             "RenamePseudoVoicing": rename_pseudo_voicing.execute,

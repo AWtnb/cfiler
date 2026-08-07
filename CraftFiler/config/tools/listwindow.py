@@ -3,7 +3,6 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from cfiler import *  # type: ignore
 from cfiler_listwindow import ListWindow  # type: ignore
 
 
