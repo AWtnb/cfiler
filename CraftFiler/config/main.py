@@ -54,6 +54,7 @@ from .tools.rename import index as rename_index
 from .tools.rename import ini as rename_ini
 from .tools.rename import insert as rename_insert
 from .tools.rename import photo as rename_photo
+from .tools.rename import pseudo_voising as rename_pseudo_voicing
 from .tools.rename import regexp as rename_regexp
 from .tools.rename import stem as rename_stem
 from .tools.rename import substr as rename_substr
@@ -68,6 +69,7 @@ def setup(window) -> None:
     clon.setup(window)
     compare.setup(window)
     cpane.setup(window)
+    rename_pseudo_voicing.setup(window)
     cursor_jumper.setup(window)
     cursor_mover.setup(window)
     enter.setup(window)
@@ -1223,55 +1225,6 @@ def setup(window) -> None:
 
     keybinder.bind(select_byext, "S-X")
 
-    class PseudoVoicing:
-        voicables = "かきくけこさしすせそたちつてとはひふへほカキクケコサシスセソタチツテトハヒフヘホ"
-
-        def __init__(self, s) -> None:
-            self._formatted = s
-
-        def _replace(self, s: str, offset: int) -> str:
-            c = s[0]
-            if c not in self.voicables:
-                return s
-            if offset == 1:
-                if c == "う":
-                    return "\u3094"
-                if c == "ウ":
-                    return "\u30f4"
-            return chr(ord(c) + offset)
-
-        def fix_voicing(self) -> None:
-            self._formatted = re.sub(
-                r".[\u309b\u3099]",
-                lambda mo: self._replace(mo.group(0), 1),
-                self._formatted,
-            )
-
-        def fix_half_voicing(self) -> None:
-            self._formatted = re.sub(
-                r".[\u309a\u309c]",
-                lambda mo: self._replace(mo.group(0), 2),
-                self._formatted,
-            )
-
-        @property
-        def formatted(self) -> str:
-            return self._formatted
-
-    def rename_pseudo_voicing() -> None:
-        pane = cpane.CPane()
-        items = pane.selectedItems
-        for item in items:
-            if not renamer.is_renamable(item):
-                continue
-            name = item.getName()
-            pv = PseudoVoicing(name)
-            pv.fix_voicing()
-            pv.fix_half_voicing()
-            new_name = pv.formatted
-            org_path = Path(item.getFullpath())
-            renamer.execute(pane, org_path, new_name)
-
     def save_clipboard_image_as_file() -> None:
         pane = cpane.CPane()
 
@@ -1392,7 +1345,7 @@ def setup(window) -> None:
             "MakeInternetShortcut": lambda: make_internet_shortcut(
                 ckit.getClipboardText().strip()
             ),
-            "RenamePseudoVoicing": rename_pseudo_voicing,
+            "RenamePseudoVoicing": rename_pseudo_voicing.execute,
             "RenameIndex": rename_index.execute,
             "RenameInsert": rename_insert.execute,
             "RenameExtension": rename_ext.execute,
