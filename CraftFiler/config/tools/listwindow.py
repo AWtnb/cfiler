@@ -46,7 +46,7 @@ def invoke(
     return result, mod
 
 
-def ask_open_by_vscode() -> bool:
+def ask_open_by_vscode() -> bool | None:
     class App(Enum):
         CFILER = "CFiler"
         VSCODE = "VSCode"
@@ -55,7 +55,7 @@ def ask_open_by_vscode() -> bool:
 
     result, _ = invoke("Open with:", [app.value for app in apps])
     if result < 0:
-        return False
+        return None
 
     selected = apps[result]
 

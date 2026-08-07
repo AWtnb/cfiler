@@ -141,9 +141,13 @@ def fuzzy_bookmark(local_only: bool) -> None:
         if path is None:
             return
 
-        if smart_check_path(os.path.join(path, ".git")) and ask_open_by_vscode():
-            open_vscode(path)
-            return
+        if smart_check_path(os.path.join(path, ".git")):
+            v = ask_open_by_vscode()
+            if v is None:
+                return
+            if v:
+                open_vscode(path)
+                return
 
         pane.openPath(path)
 

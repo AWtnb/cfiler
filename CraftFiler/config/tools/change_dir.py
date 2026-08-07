@@ -228,9 +228,13 @@ def to_ghq_repo() -> None:
             return
 
         path = Path(ghq_root) / job_item.rel_path
-        if smart_check_path(path / ".git") and listwindow.ask_open_by_vscode():
-            open_vscode(str(path))
-            return
+        if smart_check_path(path / ".git"):
+            v = listwindow.ask_open_by_vscode()
+            if v is None:
+                return
+            if v:
+                open_vscode(str(path))
+                return
 
         cpane.CPane().openPath(str(path))
 
