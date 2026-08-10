@@ -45,10 +45,15 @@ def fix_half_voicing(s: str) -> str:
 def execute() -> None:
     pane = cpane.CPane()
     items = pane.selectedItems
+
+    renames: list[renamer.ItemRename] = []
+
     for item in items:
         if not renamer.is_renamable(item):
             continue
         name = item.getName()
         new_name = fix_half_voicing(fix_voicing(name))
         org_path = Path(item.getFullpath())
-        renamer.execute(pane, org_path, new_name)
+        renames.append(renamer.ItemRename(org_path, new_name))
+
+    renamer.execute(pane, renames)

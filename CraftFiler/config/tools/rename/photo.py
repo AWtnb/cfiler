@@ -4,14 +4,12 @@ import datetime
 import os
 from pathlib import Path
 
-from cfiler_resultwindow import popResultWindow  # type: ignore
 from PIL import Image as PILImage  # type: ignore
 from PIL.ExifTags import TAGS  # type: ignore
 
-from .. import cpane, kiritori
+from .. import cpane
 from ..common import TZ_JST
 from . import renamer
-from .renamer import RenameInfo
 
 
 def setup(_window) -> None:
@@ -19,7 +17,6 @@ def setup(_window) -> None:
     window = _window
 
     cpane.setup(window)
-    kiritori.setup(window)
     renamer.setup(window)
 
 
@@ -93,27 +90,14 @@ def execute_with_exif() -> None:
     if len(targets) < 1:
         return
 
-    def _confirm() -> tuple[list[RenameInfo], bool]:
-        infos = []
-        lines = []
-        for item in targets:
-            path = item.getFullpath()
-            new_name = PhotoFile(path).rename("%Y_%m%d_%H%M%S00")
-            infos.append(RenameInfo(Path(path), new_name))
-            lines.append(f"Rename: {item.getName()}\n    ==> {new_name}\n")
+    renames: list[renamer.ItemRename] = []
 
-        lines.append("\ninsert timestamp:\nOK? (Enter / Esc)")
+    for item in targets:
+        path = item.getFullpath()
+        new_name = PhotoFile(path).rename("%Y_%m%d_%H%M%S00")
+        renames.append(renamer.ItemRename(Path(path), new_name))
 
-        return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-    infos, ok = _confirm()
-    if len(infos) < 1 or not ok:
-        print("Canceled.\n")
-        return
-
-    kiritori.draw_header("Renaming:")
-    [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-    kiritori.draw_footer()
+    renamer.execute(pane, renames)
 
 
 def execute_for_lightroom_photo_from_dropbox() -> None:
@@ -126,31 +110,17 @@ def execute_for_lightroom_photo_from_dropbox() -> None:
     if len(targets) < 1:
         return
 
-    def _confirm() -> tuple[list[RenameInfo], bool]:
-        infos = []
-        lines = []
-        for item in targets:
-            path = item.getFullpath()
-            p = Path(path)
-            elems = p.stem.replace("写真 ", "").split(" ")
-            date_ts = elems[0].replace("-", "")
-            time_ts = "".join([str(n).rjust(2, "0") for n in elems[1:4]])
-            if 4 < len(elems):
-                time_ts = time_ts + "-" + elems[-1].replace("(", "").replace(")", "")
-            new_name = date_ts + "-IMG_" + time_ts + p.suffix
-            infos.append(RenameInfo(p, new_name))
-            lines.append(f"Rename: {item.getName()}\n    ==> {new_name}\n")
+    renames: list[renamer.ItemRename] = []
 
-        lines.append("\ninsert timestamp:\nOK? (Enter / Esc)")
+    for item in targets:
+        path = item.getFullpath()
+        p = Path(path)
+        elems = p.stem.replace("写真 ", "").split(" ")
+        date_ts = elems[0].replace("-", "")
+        time_ts = "".join([str(n).rjust(2, "0") for n in elems[1:4]])
+        if 4 < len(elems):
+            time_ts = time_ts + "-" + elems[-1].replace("(", "").replace(")", "")
+        new_name = date_ts + "-IMG_" + time_ts + p.suffix
+        renames.append(renamer.ItemRename(p, new_name))
 
-        return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-    infos, ok = _confirm()
-    if len(infos) < 1 or not ok:
-        print("Canceled.\n")
-        return
-
-    krtr = kiritori
-    krtr.draw_header("Renaming:")
-    [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-    krtr.draw_footer()
+    renamer.execute(pane, renames)

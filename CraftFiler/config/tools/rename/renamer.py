@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import NamedTuple
 
-from .. import cpane
+from cfiler_resultwindow import popResultWindow  # type: ignore
+
+from .. import cpane, kiritori
 
 
 def setup(_window) -> None:
@@ -9,11 +13,18 @@ def setup(_window) -> None:
     window = _window
 
     cpane.setup(window)
+    kiritori.setup(window)
 
 
-class RenameInfo(NamedTuple):
-    orgPath: Path
-    newName: str
+class ItemRename(NamedTuple):
+    org_path: Path
+    new_name: str
+
+    def get_preview(self) -> str:
+        return f"Rename: {self.org_path.name}\n    ==> {self.new_name}\n"
+
+    def get_result(self) -> str:
+        return f"Renamed: {self.org_path.name}\n     ==> {self.new_name}\n"
 
 
 def is_renamable(item) -> bool:
@@ -29,16 +40,28 @@ def get_renamable_items(pane: cpane.CPane) -> list:
     return []
 
 
-def execute(pane, org_path: Path, new_name: str, focus: bool = False) -> None:
-    new_path = org_path.with_name(new_name)
-    if new_path.name in [item.name for item in new_path.parent.iterdir()]:
-        print(f"'{new_name}' already exists!")
+def execute(pane: cpane.CPane, renames: list[ItemRename]) -> None:
+    if len(renames) < 1:
         return
-    try:
-        window.subThreadCall(org_path.rename, (str(new_path),))
-        print(f"Renamed: {org_path.name}\n     ==> {new_name}\n")
-        pane.refresh()
-        if focus:
-            pane.focusByName(new_name)
-    except Exception as e:  # noqa: BLE001
-        print(e)
+
+    preview_lines = [r.get_preview() for r in renames]
+    preview_lines.append("\nOK? (Enter / Esc)")
+    if not popResultWindow(window, "Preview", "\n".join(preview_lines)):
+        return
+
+    kiritori.draw_header("Renaming:")
+    for rename in renames:
+        new_path = rename.org_path.with_name(rename.new_name)
+        if new_path.name in [item.name for item in new_path.parent.iterdir()]:
+            print(f"'{rename.new_name}' already exists!")
+            return
+        try:
+            window.subThreadCall(rename.org_path.rename, (str(new_path),))
+            print(rename.get_result())
+            pane.refresh()
+        except Exception as e:  # noqa: BLE001
+            print(e)
+    kiritori.draw_footer()
+
+    last = renames.pop()
+    pane.focusByName(last.new_name)

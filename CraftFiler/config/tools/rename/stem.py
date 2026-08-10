@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import ckit  # type: ignore
-
-from .. import cpane, kiritori
+from .. import cpane
 from ..common import stringify
 from . import affix_handler, renamer
 
@@ -14,7 +12,6 @@ def setup(_window) -> None:
     window = _window
 
     cpane.setup(window)
-    kiritori.setup(window)
     renamer.setup(window)
     affix_handler.setup(window)
 
@@ -33,12 +30,11 @@ def execute() -> None:
     offset = len(placeholder)
     sel = [offset, offset]
 
-    new_stem, mod = window.commandLine(
+    new_stem = window.commandLine(
         title="NewStem",
         text=placeholder,
         selection=sel,
         candidate_handler=affix_handler.invoke_suffix_handler(),
-        return_modkey=True,
     )
 
     new_stem = stringify(new_stem)
@@ -49,7 +45,5 @@ def execute() -> None:
     if not focused_path.is_dir():
         new_name += focused_path.suffix
 
-    krtr = kiritori
-    krtr.draw_header("Renaming:")
-    renamer.execute(pane, focused_path, new_name, mod == ckit.MODKEY_SHIFT)
-    krtr.draw_footer()
+    rename = renamer.ItemRename(focused_path, new_name)
+    renamer.execute(pane, [rename])

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import ckit  # type: ignore
 
-from .. import cpane, kiritori
+from .. import cpane
 from . import renamer
 
 
@@ -14,7 +14,6 @@ def setup(_window) -> None:
     window = _window
 
     cpane.setup(window)
-    kiritori.setup(window)
     renamer.setup(window)
 
 
@@ -49,19 +48,17 @@ def execute() -> None:
                 found.append(ext)
         return found, 0
 
-    new_ext, mod = window.commandLine(
+    new_ext = window.commandLine(
         title="NewExt",
         text=placeholder,
         selection=[1, len(placeholder)],
         candidate_handler=_listup_exts,
-        return_modkey=True,
     )
 
     if new_ext is None:
         new_ext = ""
 
     new_name = focused_path.stem + new_ext
+    rename = renamer.ItemRename(focused_path, new_name)
 
-    kiritori.draw_header("Renaming:")
-    renamer.execute(pane, focused_path, new_name, mod == ckit.MODKEY_SHIFT)
-    kiritori.draw_footer()
+    renamer.execute(pane, [rename])

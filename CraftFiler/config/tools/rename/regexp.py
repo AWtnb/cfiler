@@ -4,12 +4,9 @@ import re
 from pathlib import Path
 from typing import NamedTuple
 
-from cfiler_resultwindow import popResultWindow  # type: ignore
-
-from .. import cpane, kiritori
+from .. import cpane
 from . import ini as rename_ini
 from . import renamer
-from .renamer import RenameInfo
 
 
 def setup(_window) -> None:
@@ -17,7 +14,6 @@ def setup(_window) -> None:
     window = _window
 
     cpane.setup(window)
-    kiritori.setup(window)
     renamer.setup(window)
     rename_ini.setup(window)
 
@@ -88,30 +84,12 @@ def execute() -> None:
         else re.compile(param.pattern, re.IGNORECASE)
     )
 
-    def _confirm() -> tuple[list[RenameInfo], bool]:
-        infos = []
-        lines = []
-        for item in targets:
-            org_path = Path(item.getFullpath())
-            new_name = reg.sub(param.new_str, org_path.stem) + org_path.suffix
-            if org_path.name != new_name:
-                infos.append(RenameInfo(org_path, new_name))
-                lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
+    renames: list[renamer.ItemRename] = []
 
-        if len(lines) < 1:
-            lines.append("Nothing will be renamed.")
-        else:
-            lines.append(
-                f"\nregexp: {reg}\nnew text: {param.new_str}\nOK? (Enter / Esc)"
-            )
+    for item in targets:
+        org_path = Path(item.getFullpath())
+        new_name = reg.sub(param.new_str, org_path.stem) + org_path.suffix
+        if org_path.name != new_name:
+            renames.append(renamer.ItemRename(org_path, new_name))
 
-        return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-    infos, ok = _confirm()
-    if len(infos) < 1 or not ok:
-        print("Canceled.\n")
-        return
-
-    kiritori.draw_header("Renaming:")
-    [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-    kiritori.draw_footer()
+    renamer.execute(pane, renames)

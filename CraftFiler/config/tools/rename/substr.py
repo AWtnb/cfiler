@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from cfiler_resultwindow import popResultWindow  # type: ignore
-
 from .. import cpane, kiritori
 from . import ini as rename_ini
 from . import renamer
-from .renamer import RenameInfo
 
 
 def setup(_window) -> None:
@@ -79,24 +76,11 @@ def execute() -> None:
     history = f"{offset};{length}"
     rename_ini.register(INI_OPTION, history)
 
-    def _confirm() -> tuple[list[RenameInfo], bool]:
-        infos = []
-        lines = []
-        for item in targets:
-            org_path = Path(item.getFullpath())
-            new_name = get_new_stem(org_path.stem, offset, length) + org_path.suffix
-            infos.append(RenameInfo(org_path, new_name))
-            lines.append(f"Rename: {org_path.name}\n    ==> {new_name}\n")
+    renames: list[renamer.ItemRename] = []
 
-        lines.append(f"\noffset: {offset}\nlength: {length}\nOK? (Enter / Esc)")
+    for item in targets:
+        org_path = Path(item.getFullpath())
+        new_name = get_new_stem(org_path.stem, offset, length) + org_path.suffix
+        renames.append(renamer.ItemRename(org_path, new_name))
 
-        return infos, popResultWindow(window, "Preview", "\n".join(lines))
-
-    infos, ok = _confirm()
-    if len(infos) < 1 or not ok:
-        print("Canceled.\n")
-        return
-
-    kiritori.draw_header("Renaming:")
-    [renamer.execute(pane, info.orgPath, info.newName) for info in infos]
-    kiritori.draw_footer()
+    renamer.execute(pane, renames)
