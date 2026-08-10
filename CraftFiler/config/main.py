@@ -1,22 +1,13 @@
 from __future__ import annotations
 
-import os
-import shutil
-import sys
-from pathlib import Path
-
-import cfiler_msgbox  # type: ignore
 import ckit  # type: ignore
-import pyauto  # type: ignore
 from cfiler import *  # type: ignore
 
 from .tools import (
-    archiver,
     bookmark,
     change_dir,
     clipboard,
     clon,
-    compare,
     cpane,
     cursor_jumper,
     cursor_mover,
@@ -25,21 +16,11 @@ from .tools import (
     item_handler,
     keybinder,
     kiritori,
-    linker,
-    listwindow,
     misc,
-    office,
     selector,
     snapper,
 )
-from .tools.common import (
-    DESKTOP_PATH,
-    CallbackFunc,
-    get_now,
-    open_vscode,
-    shell_exec,
-    smart_check_path,
-)
+from .tools.common import CallbackFunc
 from .tools.rename import affix_handler, renamer
 from .tools.rename import extension as rename_ext
 from .tools.rename import index as rename_index
@@ -55,12 +36,10 @@ from .tools.rename import substr as rename_substr
 def setup(window) -> None:
 
     affix_handler.setup(window)
-    archiver.setup(window)
     bookmark.setup(window)
     change_dir.setup(window)
     clipboard.setup(window)
     clon.setup(window)
-    compare.setup(window)
     cpane.setup(window)
     cursor_jumper.setup(window)
     cursor_mover.setup(window)
@@ -69,11 +48,7 @@ def setup(window) -> None:
     item_handler.setup(window)
     keybinder.setup(window)
     kiritori.setup(window)
-    linker.setup(window)
-    listwindow.setup(window)
     misc.setup(window)
-    office.setup(window)
-
     rename_ext.setup(window)
     rename_index.setup(window)
     rename_ini.setup(window)
@@ -87,6 +62,7 @@ def setup(window) -> None:
     selector.setup(window)
     snapper.setup(window)
 
+    ckit.CronTable.defaultCronTable().add(clon.invoke_tempfile_cleaner())
     window.enter_hook = enter.hook_enter
 
     def reset_default_keys(keys: list) -> None:
@@ -149,19 +125,7 @@ def setup(window) -> None:
     keybinder.bind(lambda: bookmark.fuzzy_bookmark(False), "B")
     keybinder.bind(lambda: bookmark.fuzzy_bookmark(True), "A-S-B")
 
-    def new_cfiler_window() -> None:
-        exe_path = sys.executable
-        if smart_check_path(exe_path):
-            slashed = DESKTOP_PATH.replace("\\", "/")
-            pyauto.shellExecute(
-                None,
-                exe_path,
-                f' -L"{slashed}" -R"{slashed}"',
-            )
-        else:
-            kiritori.log(f"{exe_path} not found.")
-
-    keybinder.bind(new_cfiler_window, "C-N")
+    keybinder.bind(misc.new_cfiler_window, "C-N")
 
     keybinder.bind(cursor_mover.smart_cursorUp, "K", "Up")
     keybinder.bind(cursor_mover.smart_cursorDown, "J", "Down")
@@ -172,23 +136,7 @@ def setup(window) -> None:
     keybinder.bind(change_dir.open_latest_under_tree, "S-A-N")
     keybinder.bind(cursor_mover.focus_by_timestamp, "A-Back", "A-B")
 
-    def open_lazygit() -> None:
-        pane = cpane.CPane()
-        path = pane.currentPath
-
-        lazygit = "lazygit"
-        if shutil.which(lazygit) is None:
-            kiritori.log(f"'{lazygit}' not found...")
-            return
-
-        git_path = os.path.join(path, ".git")
-        if not smart_check_path(git_path):
-            kiritori.log(f"'{git_path}' not found.")
-            return
-
-        shell_exec("wt.exe", "lazygit", "-p", path)
-
-    keybinder.bind(open_lazygit, "A-L")
+    keybinder.bind(misc.open_lazygit, "A-L")
 
     keybinder.bind(cpane.adjust_pane_width, "C-S")
 
@@ -196,36 +144,17 @@ def setup(window) -> None:
 
     keybinder.bind(window.command_Enter, "L", "Right")
 
-    def toggle_hidden() -> None:
-        window.showHiddenFile(not window.isHiddenFileVisible())
-
-    keybinder.bind(toggle_hidden, "C-S-H")
+    keybinder.bind(misc.toggle_hidden, "C-S-H")
 
     keybinder.bind(enter.open_with, "C-O")
 
-    def open_with_smooth_csv(_) -> None:
-        smooth_csv_path = r"C:\Program Files\SmoothCSV\smoothcsv-app.exe"
-        if not smart_check_path(smooth_csv_path):
-            return
-
-        pane = cpane.CPane()
-        target = pane.selectedItemPaths
-        if len(target) < 1:
-            target = [pane.focusedItemPath]
-
-        for p in target:
-            if Path(p).suffix in [".csv", ".txt"]:
-                shell_exec(smooth_csv_path, p)
-
-    keybinder.bind(open_with_smooth_csv, "Comma")
+    keybinder.bind(enter.open_with_smooth_csv, "Comma")
 
     keybinder.bind(item_handler.quick_move, "M")
 
     keybinder.bind(item_handler.quick_copy, "C")
 
     keybinder.bind(cpane.swap_pane, "S")
-
-    ckit.CronTable.defaultCronTable().add(clon.invoke_tempfile_cleaner())
 
     keybinder.bind(change_dir.zyw.invoke(skip_file=True), "Z")
     keybinder.bind(change_dir.zyw.invoke(skip_file=False), "S-Z")
@@ -283,22 +212,13 @@ def setup(window) -> None:
     keybinder.bind(smart_jumpUp(False, False), "C-K")
     keybinder.bind(smart_jumpUp(False, True), "S-C-K")
 
-    def duplicate_pane() -> None:
-        window.command_ChdirInactivePaneToOther(None)
-        pane = cpane.CPane()
-        pane.focusOther()
-
-    keybinder.bind(duplicate_pane, "W")
+    keybinder.bind(misc.duplicate_pane, "W")
 
     keybinder.bind(item_handler.open_on_explorer, "C-S-E")
     keybinder.bind(item_handler.open_to_other, "S-L")
     keybinder.bind(item_handler.open_parent_to_other, "S-U")
 
-    def on_vscode() -> None:
-        pane = cpane.CPane()
-        open_vscode(pane.currentPath)
-
-    keybinder.bind(on_vscode, "V")
+    keybinder.bind(misc.on_vscode, "V")
 
     keybinder.bind(rename_substr.execute, "S-S")
 
@@ -325,54 +245,14 @@ def setup(window) -> None:
 
     keybinder.bind(snapper.to_home_position, "C-0")
 
-    def reload_config() -> None:
-        window.configure()
-        ts = get_now().strftime("%Y-%m-%d %H:%M:%S.%f")
-        window.setStatusMessage(f"Reloaded config.py | {ts}", 2000)
+    keybinder.bind(misc.reload_config, "C-R", "F5")
 
-    keybinder.bind(reload_config, "C-R", "F5")
+    keybinder.bind(misc.open_desktop_to_other, "A-O")
 
-    def open_desktop_to_other() -> None:
-        pane = cpane.CPane()
-        other = cpane.CPane(False)
-        if DESKTOP_PATH not in [pane.currentPath, other.currentPath]:
-            other.openPath(DESKTOP_PATH)
-        pane.focusOther()
+    keybinder.bind(lambda: misc.starting_position(False), "0")
+    keybinder.bind(lambda: misc.starting_position(True), "S-0")
 
-    keybinder.bind(open_desktop_to_other, "A-O")
-
-    def starting_position(both_pane: bool = False) -> None:
-        window.command_MoveSeparatorCenter(None)
-        pane = cpane.CPane()
-        if pane.currentPath != DESKTOP_PATH:
-            pane.openPath(DESKTOP_PATH)
-        if both_pane:
-            window.command_ChdirInactivePaneToOther(None)
-            cpane.LeftPane().activate()
-
-    keybinder.bind(lambda: starting_position(False), "0")
-    keybinder.bind(lambda: starting_position(True), "S-0")
-
-    def safe_quit() -> None:
-        if window.ini.getint("MISC", "confirm_quit"):
-            result = cfiler_msgbox.popMessageBox(
-                window,
-                cfiler_msgbox.MessageBox.TYPE_YESNO,
-                "Confirm",
-                "Quit?",
-            )
-            if result != cfiler_msgbox.MessageBox.RESULT_YES:
-                return
-
-        left = cpane.LeftPane()
-        right = cpane.RightPane()
-        for pane in [left, right]:
-            if not pane.currentPath.startswith("C:"):
-                pane.openPath(DESKTOP_PATH)
-
-        window.quit()
-
-    keybinder.bind(safe_quit, "C-Q", "A-F4")
+    keybinder.bind(misc.safe_quit, "C-Q", "A-F4")
 
     keybinder.bind(misc.edit_config, "C-E")
 

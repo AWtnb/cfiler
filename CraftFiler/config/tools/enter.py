@@ -152,3 +152,18 @@ def open_with() -> None:
             exe(path)  # ty:ignore[call-top-callable]
         else:
             shell_exec(exe, path)
+
+
+def open_with_smooth_csv(_) -> None:
+    smooth_csv_path = r"C:\Program Files\SmoothCSV\smoothcsv-app.exe"
+    if not smart_check_path(smooth_csv_path):
+        return
+
+    pane = cpane.CPane()
+    target = pane.selectedItemPaths
+    if len(target) < 1:
+        target = [pane.focusedItemPath]
+
+    for p in target:
+        if Path(p).suffix in [".csv", ".txt"]:
+            shell_exec(smooth_csv_path, p)

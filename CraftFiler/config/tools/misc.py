@@ -1,11 +1,22 @@
 import os
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
+import cfiler_msgbox  # type: ignore
 import ckit  # type: ignore
+import pyauto  # type: ignore
 
 from . import cpane, kiritori
-from .common import DESKTOP_PATH, open_vscode, run_ps1, shell_exec, smart_check_path
+from .common import (
+    DESKTOP_PATH,
+    get_now,
+    open_vscode,
+    run_ps1,
+    shell_exec,
+    smart_check_path,
+)
 
 
 def setup(_window) -> None:
@@ -13,6 +24,23 @@ def setup(_window) -> None:
     window = _window
     cpane.setup(window)
     kiritori.setup(window)
+
+
+def open_lazygit() -> None:
+    pane = cpane.CPane()
+    path = pane.currentPath
+
+    lazygit = "lazygit"
+    if shutil.which(lazygit) is None:
+        kiritori.log(f"'{lazygit}' not found...")
+        return
+
+    git_path = os.path.join(path, ".git")
+    if not smart_check_path(git_path):
+        kiritori.log(f"'{git_path}' not found.")
+        return
+
+    shell_exec("wt.exe", "lazygit", "-p", path)
 
 
 def git_init() -> None:
@@ -65,6 +93,12 @@ def reset_hotkey() -> None:
     window.ini.set("HOTKEY", "activate_mod", "0")
 
 
+def reload_config() -> None:
+    window.configure()
+    ts = get_now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    window.setStatusMessage(f"Reloaded config.py | {ts}", 2000)
+
+
 def edit_config() -> None:
     config_dir = os.path.join(os.environ.get("APPDATA", ""), "CraftFiler")
     if not smart_check_path(config_dir):
@@ -77,3 +111,69 @@ def edit_config() -> None:
     result = open_vscode(dir_path)
     if not result:
         subprocess.run(["explorer.exe", dir_path], check=False)
+
+
+def new_cfiler_window() -> None:
+    exe_path = sys.executable
+    if smart_check_path(exe_path):
+        slashed = DESKTOP_PATH.replace("\\", "/")
+        pyauto.shellExecute(
+            None,
+            exe_path,
+            f' -L"{slashed}" -R"{slashed}"',
+        )
+    else:
+        kiritori.log(f"{exe_path} not found.")
+
+
+def toggle_hidden() -> None:
+    window.showHiddenFile(not window.isHiddenFileVisible())
+
+
+def on_vscode() -> None:
+    pane = cpane.CPane()
+    open_vscode(pane.currentPath)
+
+
+def duplicate_pane() -> None:
+    window.command_ChdirInactivePaneToOther(None)
+    pane = cpane.CPane()
+    pane.focusOther()
+
+
+def safe_quit() -> None:
+    if window.ini.getint("MISC", "confirm_quit"):
+        result = cfiler_msgbox.popMessageBox(
+            window,
+            cfiler_msgbox.MessageBox.TYPE_YESNO,
+            "Confirm",
+            "Quit?",
+        )
+        if result != cfiler_msgbox.MessageBox.RESULT_YES:
+            return
+
+    left = cpane.LeftPane()
+    right = cpane.RightPane()
+    for pane in [left, right]:
+        if not pane.currentPath.startswith("C:"):
+            pane.openPath(DESKTOP_PATH)
+
+    window.quit()
+
+
+def open_desktop_to_other() -> None:
+    pane = cpane.CPane()
+    other = cpane.CPane(False)
+    if DESKTOP_PATH not in [pane.currentPath, other.currentPath]:
+        other.openPath(DESKTOP_PATH)
+    pane.focusOther()
+
+
+def starting_position(both_pane: bool = False) -> None:
+    window.command_MoveSeparatorCenter(None)
+    pane = cpane.CPane()
+    if pane.currentPath != DESKTOP_PATH:
+        pane.openPath(DESKTOP_PATH)
+    if both_pane:
+        window.command_ChdirInactivePaneToOther(None)
+        cpane.LeftPane().activate()
