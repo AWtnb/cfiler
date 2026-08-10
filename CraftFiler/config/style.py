@@ -134,3 +134,16 @@ def setup(window) -> None:
     window.createThemePlane()
     window.updateColor()
     window.updateWallpaper()
+
+    if len(window.sorter_list) == 4:
+        window.sorter_list = [
+            (
+                "U : Underscore Order",
+                sorter_UnderscoreFirst(),
+                sorter_UnderscoreFirst(order=-1),
+            ),
+        ] + window.sorter_list
+
+    sorter = window.sorter_list[0][1]
+    window.subThreadCall(window.activePane().file_list.setSorter, (sorter,))
+    window.subThreadCall(window.inactivePane().file_list.setSorter, (sorter,))

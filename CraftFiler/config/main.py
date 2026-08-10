@@ -10,7 +10,6 @@ import ckit  # type: ignore
 import pyauto  # type: ignore
 from cfiler import *  # type: ignore
 
-from . import style
 from .tools import (
     archiver,
     bookmark,
@@ -87,7 +86,6 @@ def setup(window) -> None:
     renamer.setup(window)
     selector.setup(window)
     snapper.setup(window)
-    style.setup(window)
 
     window.enter_hook = enter.hook_enter
 
@@ -326,22 +324,6 @@ def setup(window) -> None:
     keybinder.bind(item_handler.touch_new_file, "T")
 
     keybinder.bind(snapper.to_home_position, "C-0")
-
-    def setup_sorter() -> None:
-        if len(window.sorter_list) == 4:
-            window.sorter_list = [
-                (
-                    "U : Underscore Order",
-                    style.sorter_UnderscoreFirst(),
-                    style.sorter_UnderscoreFirst(order=-1),
-                ),
-            ] + window.sorter_list
-
-        sorter = window.sorter_list[0][1]
-        cpane.LeftPane().setSorter(sorter)
-        cpane.RightPane().setSorter(sorter)
-
-    setup_sorter()
 
     def reload_config() -> None:
         window.configure()
