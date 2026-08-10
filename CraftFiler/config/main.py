@@ -12,7 +12,6 @@ import cfiler_msgbox  # type: ignore
 import ckit  # type: ignore
 import pyauto  # type: ignore
 from cfiler import *  # type: ignore
-from cfiler_filelist import filter_Default  # type: ignore
 
 from . import style
 from .tools import (
@@ -26,6 +25,7 @@ from .tools import (
     cursor_jumper,
     cursor_mover,
     enter,
+    item_filter,
     keybinder,
     kiritori,
     linker,
@@ -37,7 +37,6 @@ from .tools import (
 from .tools.common import (
     DESKTOP_PATH,
     CallbackFunc,
-    PaintOption,
     get_now,
     open_vscode,
     run_ps1,
@@ -70,6 +69,7 @@ def setup(window) -> None:
     cursor_jumper.setup(window)
     cursor_mover.setup(window)
     enter.setup(window)
+    item_filter.setup(window)
     keybinder.setup(window)
     kiritori.setup(window)
     linker.setup(window)
@@ -848,45 +848,9 @@ def setup(window) -> None:
     keybinder.bind(selector.select_stem_contains, "Colon")
     keybinder.bind(selector.select_byext, "S-X")
 
-    class PathMatchFilter:
-        def __init__(self, root: str, names: list[str]) -> None:
-            self.root = root
-            self.names = names
+    keybinder.bind(item_filter.hide_unselected, "S-H")
 
-        def __call__(self, item) -> bool:
-            path = item.getFullpath()
-            if path.startswith(self.root) and len(self.root) < len(path):
-                for name in self.names:
-                    p = os.path.join(self.root, name)
-                    if path.startswith(p):
-                        return True
-                return False
-            return True
-
-        def __str__(self) -> str:
-            return f"\U0001f50d[{Path(self.root).name}]"
-
-    def hide_unselected() -> None:
-        pane = cpane.CPane()
-        if pane.hasSelection:
-            names = pane.selectedItemNames
-            window.subThreadCall(
-                pane.fileList.setFilter, (PathMatchFilter(pane.currentPath, names),)
-            )
-            pane.refresh()
-            pane.focus(0)
-            pane.repaint(PaintOption.Focused)
-            cpane.CPane().unSelectAll()
-
-    keybinder.bind(hide_unselected, "S-H")
-
-    def clear_filter() -> None:
-        pane = cpane.CPane()
-        window.subThreadCall(pane.fileList.setFilter, (filter_Default("*"),))
-        pane.refresh()
-        pane.repaint(PaintOption.Focused)
-
-    keybinder.bind(clear_filter, "Q")
+    keybinder.bind(item_filter.clear_filter, "Q")
 
     def reset_hotkey() -> None:
         window.ini.set("HOTKEY", "activate_vk", "0")
@@ -913,8 +877,8 @@ def setup(window) -> None:
             "MakeJunction": linker.make_junction,
             "ResetHotkey": reset_hotkey,
             "UnzipSelections": archiver.extract,
-            "HideUnselectedItems": hide_unselected,
-            "ClearFilter": clear_filter,
+            "HideUnselectedItems": item_filter.hide_unselected,
+            "ClearFilter": item_filter.clear_filter,
             "CopyDirTree": clipboard.copy_dir_tree,
             "Diffinity": lambda: compare.diff_files(with_diffinity=True),
             "DiffWithVSCode": lambda: compare.diff_files(with_diffinity=False),
