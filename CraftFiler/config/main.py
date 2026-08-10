@@ -13,13 +13,13 @@ import ckit  # type: ignore
 import pyauto  # type: ignore
 from cfiler import *  # type: ignore
 from cfiler_filelist import filter_Default  # type: ignore
-from PIL import ImageGrab  # type: ignore
 
 from . import style
 from .tools import (
     archiver,
     bookmark,
     change_dir,
+    clipboard,
     clon,
     compare,
     cpane,
@@ -45,7 +45,6 @@ from .tools.common import (
     smart_check_path,
     stringify,
 )
-from .tools.office import docx_to_txt, read_openxml
 from .tools.rename import affix_handler, renamer
 from .tools.rename import extension as rename_ext
 from .tools.rename import index as rename_index
@@ -64,6 +63,7 @@ def setup(window) -> None:
     archiver.setup(window)
     bookmark.setup(window)
     change_dir.setup(window)
+    clipboard.setup(window)
     clon.setup(window)
     compare.setup(window)
     cpane.setup(window)
@@ -169,44 +169,7 @@ def setup(window) -> None:
     keybinder.bind(cursor_mover.smart_cursorDown, "J", "Down")
     keybinder.bind(cursor_mover.focus_latest_item, "A-N")
 
-    def select_empty_dir() -> None:
-        pane = cpane.CPane()
-        for d in pane.dirs:
-            path = Path(d.getFullpath())
-            if not any(path.iterdir()):
-                pane.selectByName(path.name)
-
-    keybinder.bind(select_empty_dir, "A-E")
-
-    def copy_dir_tree() -> None:
-        pane = cpane.CPane()
-        selected_names = pane.selectedItemNames
-        root = pane.currentPath
-        window.setProgressValue(None)
-
-        def _traverse(job_item: ckit.JobItem) -> None:
-            job_item.paths = []
-            for item in pane.traverse(False):
-                if job_item.isCanceled():
-                    return
-                rel = item.getFullpath()[len(root) :].lstrip(os.sep)
-                if len(selected_names) < 1 or any(
-                    (rel == name or rel.startswith(name + os.sep))
-                    for name in selected_names
-                ):
-                    job_item.paths.append(rel)
-
-        def _finished(job_item: ckit.JobItem) -> None:
-            window.clearProgress()
-            if job_item.isCanceled():
-                kiritori.log("Canceled.")
-            else:
-                lines = "\n".join(sorted(job_item.paths))
-                ckit.setClipboardText(lines)
-                kiritori.log(f"Copied tree: {root}")
-
-        job = ckit.JobItem(_traverse, _finished)
-        window.taskEnqueue(job, create_new_queue=False)
+    keybinder.bind(selector.select_empty_dir, "A-E")
 
     keybinder.bind(change_dir.open_latest_under_tree, "S-A-N")
     keybinder.bind(cursor_mover.focus_by_timestamp, "A-Back", "A-B")
@@ -434,17 +397,7 @@ def setup(window) -> None:
         job = ckit.JobItem(_conc, _finish)
         window.taskEnqueue(job, create_new_queue=False)
 
-    def on_paste() -> None:
-        c = ckit.getClipboardText()
-        if len(c) < 1:
-            save_clipboard_image_as_file()
-            return
-        if c.startswith("http"):
-            linker.make_internet_shortcut(c)
-            return
-        cpane.CPane().openPath(c.strip().strip('"'))
-
-    keybinder.bind(on_paste, "C-V", "S-Insert")
+    keybinder.bind(clipboard.hook_paste, "C-V", "S-Insert")
     keybinder.bind(change_dir.change_drive, "D")
     keybinder.bind(change_dir.go_to, "C-G")
 
@@ -489,70 +442,9 @@ def setup(window) -> None:
 
     keybinder.bind(recylcebin, "Delete")
 
-    def copy_current_path() -> None:
-        pane = cpane.CPane()
-        p = pane.currentPath
-        ckit.setClipboardText(p)
-        window.setStatusMessage(f"copied current path: '{p}'", 3000)
+    keybinder.bind(clipboard.copy_current_path, "C-A-P")
 
-    keybinder.bind(copy_current_path, "C-A-P")
-
-    def on_copy() -> None:
-        selection_left, selection_right = window.log_pane.selection
-        if selection_left != selection_right:
-            window.command_SetClipboard_LogSelected(None)
-            return
-
-        pane = cpane.CPane()
-
-        targets = []
-        if pane.isBlank:
-            targets.append(pane.currentPath)
-        else:
-            targets = pane.selectedItemPaths
-            if len(targets) < 1:
-                targets.append(pane.focusedItemPath)
-
-        menu = ["Fullpath", "Name"]
-        if any([Path(t).is_file() for t in targets]):
-            menu.append("Basename")
-
-        if all([Path(path).suffix in [".docx", ".xlsx"] for path in targets]):
-            menu.append("Text content")
-
-        result, _ = listwindow.invoke("Copy", menu)
-        if result < 0:
-            return
-
-        def _copy(job_item: ckit.JobItem) -> None:
-            lines = []
-            for target in targets:
-                if result == 0:
-                    lines.append(target)
-                    continue
-                p = Path(target)
-                if result == 1:
-                    lines.append(p.name)
-                    continue
-                if result == 3:
-                    content = read_openxml(target)
-                    lines.append(content)
-                    continue
-                lines.append(p.stem)
-            ckit.setClipboardText("\n".join(lines))
-            job_item.count = len(lines)
-
-        def _finished(job_item: ckit.JobItem) -> None:
-            s = f"Copied {job_item.count} {menu[result]}"
-            if 1 < job_item.count:
-                s += "s"
-            s += "."
-            window.setStatusMessage(s, 2000)
-
-        job = ckit.JobItem(_copy, _finished)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    keybinder.bind(on_copy, "C-C")
+    keybinder.bind(clipboard.hook_copy, "C-C")
 
     def bind_selector() -> None:
         for k, v in {
@@ -1018,31 +910,6 @@ def setup(window) -> None:
     keybinder.bind(selector.select_stem_contains, "Colon")
     keybinder.bind(selector.select_byext, "S-X")
 
-    def save_clipboard_image_as_file() -> None:
-        pane = cpane.CPane()
-
-        def _save(job_item: ckit.JobItem) -> None:
-            job_item.file_name = ""
-            img = ImageGrab.grabclipboard()
-            if not img or isinstance(img, list):
-                kiritori.log("Canceled: No image in clipboard.")
-                return
-            job_item.file_name = (
-                datetime.datetime.today().strftime("%Y%m%d-%H%M%S") + ".png"
-            )
-            save_path = os.path.join(pane.currentPath, job_item.file_name)
-            img.save(save_path)
-
-        def _finish(job_item: ckit.JobItem) -> None:
-            if job_item.file_name:
-                pane.refresh()
-                pane.focusByName(job_item.file_name)
-
-        job = ckit.JobItem(_save, _finish)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    keybinder.bind(save_clipboard_image_as_file, "C-S-I")
-
     class PathMatchFilter:
         def __init__(self, root: str, names: list[str]) -> None:
             self.root = root
@@ -1102,7 +969,7 @@ def setup(window) -> None:
             "ZipSelections": archiver.compress,
             "SetBookmarkAlias": bookmark.set_bookmark_alias,
             "BookmarkHere": bookmark.bookmark_here,
-            "DocxToTxt": docx_to_txt,
+            "DocxToTxt": office.docx_to_txt,
             "EjectCurrentDrive": eject_current_drive,
             "ConcPdfGo": concatenate_pdf,
             "MakeJunction": linker.make_junction,
@@ -1110,7 +977,7 @@ def setup(window) -> None:
             "UnzipSelections": archiver.extract,
             "HideUnselectedItems": hide_unselected,
             "ClearFilter": clear_filter,
-            "CopyDirTree": copy_dir_tree,
+            "CopyDirTree": clipboard.copy_dir_tree,
             "Diffinity": lambda: compare.diff_files(with_diffinity=True),
             "DiffWithVSCode": lambda: compare.diff_files(with_diffinity=False),
             "MultipleSelectedItem": multiple_selected_item,

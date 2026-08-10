@@ -99,10 +99,8 @@ def docx_to_txt() -> None:
     if len(paths) < 1:
         paths = [pane.focusedItemPath]
 
-    krtr = kiritori
-
     def _read(_: ckit.JobItem) -> None:
-        krtr.draw_header("Converting docx")
+        kiritori.draw_header("Converting docx")
 
         for i, path in enumerate(paths, start=1):
             if not path.endswith(".docx"):
@@ -120,7 +118,7 @@ def docx_to_txt() -> None:
                 pane.unSelectByName(docx_name)
 
     def _write(_: ckit.JobItem) -> None:
-        krtr.draw_footer()
+        kiritori.draw_footer()
 
     job = ckit.JobItem(_read, _write)
     window.taskEnqueue(job, create_new_queue=False)

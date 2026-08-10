@@ -247,3 +247,11 @@ def select_byext() -> None:
         return
 
     by_extension("." + exts[result], mod == ckit.MODKEY_SHIFT)
+
+
+def select_empty_dir() -> None:
+    pane = cpane.CPane()
+    for d in pane.dirs:
+        path = Path(d.getFullpath())
+        if not any(path.iterdir()):
+            pane.selectByName(path.name)
