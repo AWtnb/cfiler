@@ -255,3 +255,8 @@ def select_empty_dir() -> None:
         path = Path(d.getFullpath())
         if not any(path.iterdir()):
             pane.selectByName(path.name)
+
+
+def unselect_panes() -> None:
+    cpane.CPane().unSelectAll()
+    cpane.CPane(False).unSelectAll()

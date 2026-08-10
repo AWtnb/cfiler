@@ -462,11 +462,7 @@ def setup(window) -> None:
 
     bind_selector()
 
-    def unselect_panes() -> None:
-        cpane.CPane().unSelectAll()
-        cpane.CPane(False).unSelectAll()
-
-    keybinder.bind(unselect_panes, "C-U", "S-Esc")
+    keybinder.bind(selector.unselect_panes, "C-U", "S-Esc")
 
     def smart_jumpDown(by_prefix: bool, selecting: bool) -> CallbackFunc:
         def _jumper() -> None:
@@ -536,64 +532,6 @@ def setup(window) -> None:
     keybinder.bind(rename_stem.execute, "N")
 
     keybinder.bind(rename_ext.execute, "S-N")
-
-    def multiple_selected_item() -> None:
-        pane = cpane.CPane()
-        if not pane.hasSelection:
-            return
-        if 1 < len(pane.selectedItems):
-            kiritori.log("Caneled. (Select just 1 item)")
-            return
-
-        src_path = Path(pane.selectedItemPaths[0])
-        result = stringify(
-            window.commandLine(
-                title="connector,suffix,count",
-                text="-,01,2",
-            )
-        )
-
-        if len(result) < 1:
-            return
-
-        elems = result.split(",")
-        if len(elems) < 3:
-            if len(elems) < 2:
-                elems.append("0")
-            elems.append("1")
-        [connector, template, count] = elems
-        if len(template.strip()) < 1 or len(count.strip()) < 1:
-            return
-        if not template[-1].isdecimal() or not count.strip().isdecimal():
-            kiritori.log("Invalid format.")
-            return
-
-        count = int(count.strip())
-        if count < 1:
-            return
-
-        def _clone(src: Path, conn: str, temp: str, cnt: int) -> None:
-            for i in range(int(temp), cnt + 1):
-                w = len(temp)
-                n = str(i)
-                tail = n.rjust(w, temp[0]) if 1 < w else n.rjust(w)
-                new_path = src.with_name(src.stem + conn + tail + src.suffix)
-                if smart_check_path(new_path):
-                    print(f"Skipped because of name dupl: {new_path.name}")
-                else:
-                    if src.is_dir():
-                        shutil.copytree(src, new_path)
-                    else:
-                        shutil.copy(src, new_path)
-                    print(f"Cloned: {new_path.name}")
-
-        krtr = kiritori
-        krtr.draw_header("Making clone:")
-        window.subThreadCall(_clone, (src_path, connector, template, count))
-        pane.refresh()
-        krtr.draw_footer()
-
-    keybinder.bind(multiple_selected_item, "C-S-C")
 
     def duplicate_with_new_stem() -> None:
         pane = cpane.CPane()
@@ -980,7 +918,6 @@ def setup(window) -> None:
             "CopyDirTree": clipboard.copy_dir_tree,
             "Diffinity": lambda: compare.diff_files(with_diffinity=True),
             "DiffWithVSCode": lambda: compare.diff_files(with_diffinity=False),
-            "MultipleSelectedItem": multiple_selected_item,
             "MakeInternetShortcut": lambda: linker.make_internet_shortcut(
                 ckit.getClipboardText().strip()
             ),
