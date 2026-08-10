@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import configparser
 import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -30,6 +28,7 @@ from .tools import (
     kiritori,
     linker,
     listwindow,
+    misc,
     office,
     selector,
     snapper,
@@ -39,10 +38,8 @@ from .tools.common import (
     CallbackFunc,
     get_now,
     open_vscode,
-    run_ps1,
     shell_exec,
     smart_check_path,
-    stringify,
 )
 from .tools.rename import affix_handler, renamer
 from .tools.rename import extension as rename_ext
@@ -75,7 +72,9 @@ def setup(window) -> None:
     kiritori.setup(window)
     linker.setup(window)
     listwindow.setup(window)
+    misc.setup(window)
     office.setup(window)
+
     rename_ext.setup(window)
     rename_index.setup(window)
     rename_ini.setup(window)
@@ -175,15 +174,6 @@ def setup(window) -> None:
     keybinder.bind(change_dir.open_latest_under_tree, "S-A-N")
     keybinder.bind(cursor_mover.focus_by_timestamp, "A-Back", "A-B")
 
-    def git_init() -> None:
-        pane = cpane.CPane()
-        path = pane.currentPath
-        git_path = os.path.join(path, ".git")
-        if smart_check_path(git_path):
-            kiritori.log(f"'{git_path}' already exists.")
-            return
-        shell_exec("git", "init", str(path))
-
     def open_lazygit() -> None:
         pane = cpane.CPane()
         path = pane.currentPath
@@ -243,186 +233,11 @@ def setup(window) -> None:
     keybinder.bind(change_dir.zyw.invoke(skip_file=False), "S-Z")
     keybinder.bind(cursor_mover.fuzzy_focus, "S-F")
 
-    class ImageMagickConfig:
-        ini_section = "IMAGE_MAGICK_CONFIG"
-
-        def __init__(self, option_name: str) -> None:
-            try:
-                window.ini.add_section(self.ini_section)
-            except configparser.DuplicateSectionError:
-                pass
-            self._option_name = option_name
-
-        def register(self, value: str) -> None:
-            window.ini.set(self.ini_section, self._option_name, value)
-
-        @property
-        def value(self) -> str:
-            try:
-                return window.ini.get(self.ini_section, self._option_name)
-            except Exception:
-                return ""
-
-    def change_image_type() -> None:
-        exe_name = "magick.exe"
-        imagemagick = shutil.which(exe_name)
-
-        krtr = kiritori
-        if imagemagick is None:
-            krtr.log(f"{exe_name} not found!")
-            return
-
-        pane = cpane.CPane()
-        targets = pane.selectedItemPaths
-        if len(targets) < 1:
-            return
-
-        image_magick_config_ext = ImageMagickConfig("ext")
-        placeholder = ""
-        if 0 < len(last := image_magick_config_ext.value):
-            placeholder = last
-
-        ext = stringify(window.commandLine("NewExtension", text=placeholder))
-        if ext == "":
-            return
-
-        if not ext.startswith("."):
-            ext = "." + ext
-
-        image_magick_config_ext.register(ext)
-
-        num = len(targets)
-        msg = f"Converting {num} item"
-        if 1 < num:
-            msg += "s"
-        msg += f" to {ext}:\n"
-
-        def _convert(job_item: ckit.JobItem) -> None:
-            job_item.converted_names = []
-
-            krtr.draw_header(msg)
-
-            for i, path in enumerate(targets, start=1):
-                p = Path(path)
-                new_path = p.with_name(p.stem + ext)
-                cmd = [imagemagick, path, str(new_path)]
-                proc = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    encoding="utf-8",
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    check=False,
-                )
-                if proc.returncode != 0:
-                    print(proc.stderr)
-                else:
-                    print(f"[{i:02}/{num:02}]{new_path.name}")
-                    job_item.converted_names.append(p.name)
-
-        def _finish(job_item: ckit.JobItem) -> None:
-            names = job_item.converted_names
-            for name in names:
-                pane.unSelectByName(name)
-            if 0 < len(names):
-                krtr.draw_footer()
-
-        job = ckit.JobItem(_convert, _finish)
-        window.taskEnqueue(job, create_new_queue=False)
-
-    def concatenate_pdf() -> None:
-        exe_name = "go-pdfconc.exe"
-        exe_path = shutil.which(exe_name)
-        if not exe_path:
-            kiritori.log(f"'{exe_name}' not found!")
-            return
-
-        pane = cpane.CPane()
-        if not pane.hasSelection:
-            return
-        for path in pane.selectedItemPaths:
-            p = Path(path)
-            if p.is_dir():
-                kiritori.log("dir item is selected!")
-                return
-            if p.suffix != ".pdf":
-                kiritori.log("non-pdf file found!")
-                return
-
-        basename = stringify(window.commandLine(title="Outname", text="conc"))
-        if len(basename) < 1:
-            return
-
-        src = "\n".join(pane.selectedItemPaths)
-
-        def _conc(_) -> None:
-            window.setProgressValue(None)
-            try:
-                cmd = [exe_path, "--outname", basename]
-                proc = subprocess.run(
-                    cmd,
-                    input=src,
-                    capture_output=True,
-                    encoding="utf-8",
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    check=False,
-                )
-                if proc.returncode != 0:
-                    kiritori.log(f"ERROR: {proc.stdout}")
-            except Exception as e:
-                kiritori.log(e)
-
-        def _finish(job_item: ckit.JobItem) -> None:
-            window.clearProgress()
-            if job_item.isCanceled():
-                kiritori.log("Canceled.")
-            else:
-                pane.refresh()
-                name = basename + ".pdf"
-                pane.focusByName(name)
-                kiritori.log(f"Concatenated as '{name}':\n\n{src}")
-
-        job = ckit.JobItem(_conc, _finish)
-        window.taskEnqueue(job, create_new_queue=False)
-
     keybinder.bind(clipboard.hook_paste, "C-V", "S-Insert")
     keybinder.bind(change_dir.change_drive, "D")
     keybinder.bind(change_dir.go_to, "C-G")
 
     keybinder.bind(change_dir.to_ghq_repo, "G")
-
-    def eject_current_drive() -> None:
-        pane = cpane.CPane()
-        current = pane.currentPath
-        if current.startswith("C:"):
-            return
-
-        current_drive = Path(current).drive
-        other = cpane.CPane(False)
-        if other.currentPath.startswith(current_drive):
-            other.openPath(DESKTOP_PATH)
-
-        pane.openPath(DESKTOP_PATH)
-
-        def _eject(job_item: ckit.JobItem) -> None:
-            job_item.result = None
-            proc = run_ps1("eject", current_drive)
-            if proc.returncode != 0:
-                if o := proc.stdout:
-                    kiritori.log(o)
-                if e := proc.stderr:
-                    kiritori.log(e)
-                return
-            job_item.result = f"Ejected drive '{current_drive}'"
-
-        def _finished(job_item: ckit.JobItem) -> None:
-            if job_item.result is None:
-                pane.openPath(current)
-                kiritori.log(f"Failed to eject drive '{current_drive}'")
-            else:
-                kiritori.log(job_item.result)
-
-        job = ckit.JobItem(_eject, _finished)
-        window.taskEnqueue(job, create_new_queue=False)
 
     keybinder.bind(item_handler.recylcebin, "Delete")
 
@@ -577,20 +392,7 @@ def setup(window) -> None:
 
     keybinder.bind(safe_quit, "C-Q", "A-F4")
 
-    def edit_config() -> None:
-        config_dir = os.path.join(os.environ.get("APPDATA", ""), "CraftFiler")
-        if not smart_check_path(config_dir):
-            kiritori.log(f"cannot find config dir: {config_dir}")
-            return
-        dir_path = config_dir
-        if (real_path := os.path.realpath(config_dir)) != config_dir:
-            dir_path = os.path.dirname(real_path)
-
-        result = open_vscode(dir_path)
-        if not result:
-            subprocess.run(["explorer.exe", dir_path])
-
-    keybinder.bind(edit_config, "C-E")
+    keybinder.bind(misc.edit_config, "C-E")
 
     keybinder.bind(lambda: selector.select_regexp(True), "S-Colon")
     keybinder.bind(selector.select_stem_startswith, "Caret")
@@ -601,58 +403,3 @@ def setup(window) -> None:
     keybinder.bind(item_filter.hide_unselected, "S-H")
 
     keybinder.bind(item_filter.clear_filter, "Q")
-
-    def reset_hotkey() -> None:
-        window.ini.set("HOTKEY", "activate_vk", "0")
-        window.ini.set("HOTKEY", "activate_mod", "0")
-
-    def update_command_list(command_table: dict) -> None:
-        for name, func in command_table.items():
-            window.launcher.command_list += [(name, keybinder.wrap(func))]
-
-    update_command_list(
-        {
-            "GitInit": git_init,
-            "ChangeImageType": change_image_type,
-            "MakeShortcut": linker.make_shortcut,
-            "CleanTempFiles": clon.remove_tempfiles,
-            "RenamePhotoFileByExifDate": rename_photo.execute_with_exif,
-            "RenameLightroomPhoto": rename_photo.execute_for_lightroom_photo_from_dropbox,
-            "ZipSelections": archiver.compress,
-            "SetBookmarkAlias": bookmark.set_bookmark_alias,
-            "BookmarkHere": bookmark.bookmark_here,
-            "DocxToTxt": office.docx_to_txt,
-            "EjectCurrentDrive": eject_current_drive,
-            "ConcPdfGo": concatenate_pdf,
-            "MakeJunction": linker.make_junction,
-            "ResetHotkey": reset_hotkey,
-            "UnzipSelections": archiver.extract,
-            "HideUnselectedItems": item_filter.hide_unselected,
-            "ClearFilter": item_filter.clear_filter,
-            "CopyDirTree": clipboard.copy_dir_tree,
-            "Diffinity": lambda: compare.diff_files(with_diffinity=True),
-            "DiffWithVSCode": lambda: compare.diff_files(with_diffinity=False),
-            "MakeInternetShortcut": lambda: linker.make_internet_shortcut(
-                ckit.getClipboardText().strip()
-            ),
-            "RenamePseudoVoicing": rename_pseudo_voicing.execute,
-            "RenameIndex": rename_index.execute,
-            "RenameInsert": rename_insert.execute,
-            "RenameExtension": rename_ext.execute,
-            "RenameRegExp": rename_regexp.execute,
-            "RenameStem": rename_stem.execute,
-            "RenameSubstr": rename_substr.execute,
-            "FindSameFile": compare.FileHashDiff(2).compare,
-            "FromOtherNames": selector.from_other_names,
-            "FromActiveNames": selector.from_active_names,
-            "SelectSameName": selector.select_same_name,
-            "SelectNameUnique": selector.select_name_unique,
-            "SelectNameCommon": selector.select_name_common,
-            "SelectStemMatchCase": lambda: selector.select_regexp(True),
-            "SelectStemMatch": lambda: selector.select_regexp(False),
-            "SelectStemStartsWith": selector.select_stem_startswith,
-            "SelectStemEndsWith": selector.select_stem_endswith,
-            "SelectStemContains": selector.select_stem_contains,
-            "SelectByExtension": selector.select_byext,
-        }
-    )
