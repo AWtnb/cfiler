@@ -432,12 +432,10 @@ class CPane:
 
         ignore_list = list(ignore_dirnames) + ["node_modules"]
         for dirpath, subdirs, subfiles in os.walk(self.currentPath):
-            for dn in subdirs:
-                if dn.startswith(".") or dn in ignore_list:
-                    subdirs.remove(dn)
-            for fn in subfiles:
-                if fn.startswith("~$_"):
-                    subfiles.remove(fn)
+            subdirs[:] = [
+                dn for dn in subdirs if not dn.startswith(".") and dn not in ignore_list
+            ]
+            subfiles[:] = [fn for fn in subfiles if not fn.startswith("~$_")]
             ent = FileListEntry(self.currentPath, dirpath)
             if not only_file:
                 yield from filter(

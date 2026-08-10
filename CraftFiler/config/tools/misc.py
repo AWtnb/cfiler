@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Iterator
 
 import cfiler_msgbox  # type: ignore
 import ckit  # type: ignore
@@ -177,3 +180,60 @@ def starting_position(both_pane: bool = False) -> None:
     if both_pane:
         window.command_ChdirInactivePaneToOther(None)
         cpane.LeftPane().activate()
+
+
+def traverse_file(root: str) -> Iterator[str]:
+
+    def _is_skippable(dir_name: str) -> bool:
+        return dir_name == "node_modules" or dir_name.startswith((".", "__"))
+
+    for dir_path, dir_names, file_names in os.walk(root):
+        dir_names[:] = [d for d in dir_names if not _is_skippable(d)]
+        for f in file_names:
+            yield os.path.join(dir_path, f)
+
+
+def summarize_for_llm(root: Path, targets: list[str]) -> tuple[str, int]:
+    paths = []
+    for path in targets:
+        if Path(path).is_dir():
+            paths.extend(traverse_file(path))
+        else:
+            paths.append(path)
+
+    codeblock = "```"
+    lines: list[str] = ["## dir tree\n", codeblock]
+    lines.extend(str(Path(p).relative_to(root)) for p in paths)
+    lines.append(codeblock)
+    lines.append("\n## file contents\n")
+
+    counter = 0
+    for path in paths:
+        p = Path(path)
+        try:
+            content = p.read_text(encoding="utf-8")
+            counter += 1
+        except Exception:  # noqa: BLE001, S112
+            continue
+        lines.append(f"### {p.relative_to(root)}\n")
+        lines.append(f"{codeblock}{p.name}")
+        lines.append(content)
+        lines.append(f"{codeblock}\n")
+
+    return "\n".join(lines), counter
+
+
+def make_summarize_on_other() -> None:
+    pane = cpane.CPane()
+    root = Path(pane.currentPath)
+    summary, item_count = summarize_for_llm(root, pane.selectedItemPaths)
+    if item_count < 1:
+        return
+
+    summary_name = window.commandLine(
+        title="SummaryName (on other pane)", text=f"summary_{root.name}.txt"
+    )
+    other_pane = cpane.CPane(False)
+    Path(other_pane.currentPath, summary_name).write_text(summary, encoding="utf-8")
+
+    kiritori.log(f"Summarized {item_count} items.")

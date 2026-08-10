@@ -55,6 +55,7 @@ def setup(window) -> None:
     style.setup(window)
 
     mapping = {
+        "CopyForLLM": misc.make_summarize_on_other,
         "GitInit": misc.git_init,
         "ChangeImageType": image_magick.change_image_type,
         "MakeShortcut": linker.make_shortcut,
