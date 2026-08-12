@@ -36,17 +36,13 @@ class RenameParam(NamedTuple):
 def get_param() -> RenameParam | None:
     sep = "/"
     placeholder = sep
-    sel_end = 0
 
     last_regexp = rename_ini.get_value(INI_OPTION)
     if 0 < len(last_regexp):
         placeholder = last_regexp
-        sel_end = max(last_regexp.find("/"), sel_end)
 
     print("Rename with regexp-replace. Trailing `/c` enables case-sensitive-mode")
-    rename_command = window.commandLine(
-        "[regexp]/[replace with](/c)", text=placeholder, selection=[0, sel_end]
-    )
+    rename_command = window.commandLine("[regexp]/[replace with](/c)", text=placeholder)
 
     if not rename_command:
         return None
