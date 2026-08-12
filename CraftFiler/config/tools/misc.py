@@ -223,7 +223,7 @@ def summarize_for_llm(root: Path, targets: list[str]) -> tuple[str, int]:
     return "\n".join(lines), counter
 
 
-def make_summarize_on_other() -> None:
+def make_summary_for_llm_on_other_pane() -> None:
     pane = cpane.CPane()
     root = Path(pane.currentPath)
     summary, item_count = summarize_for_llm(root, pane.selectedItemPaths)
