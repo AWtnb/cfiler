@@ -16,16 +16,7 @@ from .tools import (
     misc,
     snapper,
 )
-from .tools.rename import affix_handler, renamer
-from .tools.rename import extension as rename_ext
-from .tools.rename import index as rename_index
-from .tools.rename import ini as rename_ini
-from .tools.rename import insert as rename_insert
-from .tools.rename import photo as rename_photo
-from .tools.rename import pseudo_voising as rename_pseudo_voicing
-from .tools.rename import regexp as rename_regexp
-from .tools.rename import stem as rename_stem
-from .tools.rename import substr as rename_substr
+from .tools.rename import affix_handler
 
 
 def setup(window) -> None:
@@ -41,16 +32,6 @@ def setup(window) -> None:
     keybinder.setup(window)
     kiritori.setup(window)
     misc.setup(window)
-    rename_ext.setup(window)
-    rename_index.setup(window)
-    rename_ini.setup(window)
-    rename_insert.setup(window)
-    rename_photo.setup(window)
-    rename_pseudo_voicing.setup(window)
-    rename_regexp.setup(window)
-    rename_stem.setup(window)
-    rename_substr.setup(window)
-    renamer.setup(window)
     snapper.setup(window)
 
     ckit.CronTable.defaultCronTable().add(clon.invoke_tempfile_cleaner())
@@ -152,11 +133,5 @@ def setup(window) -> None:
     keybinder.bind(misc.reload_config, "C-R", "F5")
     keybinder.bind(misc.safe_quit, "C-Q", "A-F4")
     keybinder.bind(misc.toggle_hidden, "C-S-H")
-    keybinder.bind(rename_ext.execute, "S-N")
-    keybinder.bind(rename_index.execute, "A-S-I")
-    keybinder.bind(rename_insert.execute, "S-I")
-    keybinder.bind(rename_regexp.execute, "S-R")
-    keybinder.bind(rename_stem.execute, "N")
-    keybinder.bind(rename_substr.execute, "S-S")
     keybinder.bind(snapper.to_home_position, "C-0")
     keybinder.bind(window.command_Enter, "L", "Right")
