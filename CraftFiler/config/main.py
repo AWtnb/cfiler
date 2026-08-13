@@ -14,7 +14,6 @@ from .tools import (
     keybinder,
     kiritori,
     misc,
-    selector,
     snapper,
 )
 from .tools.rename import affix_handler, renamer
@@ -52,7 +51,6 @@ def setup(window) -> None:
     rename_stem.setup(window)
     rename_substr.setup(window)
     renamer.setup(window)
-    selector.setup(window)
     snapper.setup(window)
 
     ckit.CronTable.defaultCronTable().add(clon.invoke_tempfile_cleaner())
@@ -114,22 +112,6 @@ def setup(window) -> None:
         }
     )
 
-    def bind_selector() -> None:
-        for k, v in {
-            "C-A": selector.all_items,
-            "U": selector.clear_all,
-            "Esc": selector.clear_all,
-            "A-F": selector.files,
-            "A-D": selector.dirs,
-            "S-Home": selector.to_top,
-            "S-A": selector.to_top,
-            "S-End": selector.to_bottom,
-            "S-E": selector.to_bottom,
-        }.items():
-            keybinder.bind(v, k)
-
-    bind_selector()
-
     keybinder.bind(change_dir.change_drive, "D")
     keybinder.bind(change_dir.go_to, "C-G")
     keybinder.bind(change_dir.open_latest_under_tree, "S-A-N")
@@ -160,7 +142,7 @@ def setup(window) -> None:
     keybinder.bind(lambda: item_handler.smart_copy_to_dir(True), "S-M")
     keybinder.bind(lambda: misc.starting_position(False), "0")
     keybinder.bind(lambda: misc.starting_position(True), "S-0")
-    keybinder.bind(lambda: selector.select_regexp(True), "S-Colon")
+
     keybinder.bind(misc.duplicate_pane, "W")
     keybinder.bind(misc.edit_config, "C-E")
     keybinder.bind(misc.new_cfiler_window, "C-N")
@@ -176,11 +158,5 @@ def setup(window) -> None:
     keybinder.bind(rename_regexp.execute, "S-R")
     keybinder.bind(rename_stem.execute, "N")
     keybinder.bind(rename_substr.execute, "S-S")
-    keybinder.bind(selector.select_byext, "S-X")
-    keybinder.bind(selector.select_empty_dir, "A-E")
-    keybinder.bind(selector.select_stem_contains, "Colon")
-    keybinder.bind(selector.select_stem_endswith, "S-4")
-    keybinder.bind(selector.select_stem_startswith, "Caret")
-    keybinder.bind(selector.unselect_panes, "C-U", "S-Esc")
     keybinder.bind(snapper.to_home_position, "C-0")
     keybinder.bind(window.command_Enter, "L", "Right")
