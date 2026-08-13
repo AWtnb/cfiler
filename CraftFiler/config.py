@@ -18,12 +18,6 @@ def import_config(config_module_name: str) -> ModuleType:
 
 
 def configure(window: MainWindow) -> None:
-    if ckit.CronTable.defaultCronTable():
-        ckit.CronTable.defaultCronTable().cancel()
-        ckit.CronTable.defaultCronTable().clear()
-    else:
-        ckit.CronTable.createDefaultCronTable()
-
     config = import_config("config")
     config.configure(window)
 

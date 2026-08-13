@@ -20,6 +20,11 @@ from .tools import clon, enter
 
 
 def configure(window) -> None:
+    if ckit.CronTable.defaultCronTable():
+        ckit.CronTable.defaultCronTable().cancel()
+        ckit.CronTable.defaultCronTable().clear()
+    else:
+        ckit.CronTable.createDefaultCronTable()
 
     style.setup(window)
 
