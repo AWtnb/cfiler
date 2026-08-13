@@ -6,6 +6,7 @@ from .tools import bookmark, keybinder
 def setup(window) -> None:
 
     bookmark.setup(window)
+    keybinder.setup(window)
 
     keybinder.bind(bookmark.toggle_bookmark, "C-B")
     keybinder.bind(lambda: bookmark.fuzzy_bookmark(False), "B")

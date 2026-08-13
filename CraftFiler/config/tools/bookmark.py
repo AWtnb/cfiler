@@ -64,6 +64,9 @@ def remove_bookmark(path: str) -> None:
 
 def toggle_bookmark() -> None:
     pane = cpane.CPane(True)
+    if pane.isBlank:
+        return
+
     path = pane.focusedItemPath
     dirname, filename = os.path.split(path)
     if filename.lower() in window.bookmark.listDir(dirname):
