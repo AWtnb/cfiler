@@ -4,6 +4,7 @@ from .tools import change_dir, keybinder
 
 
 def setup(window) -> None:
+    keybinder.setup(window)
     change_dir.setup(window)
 
     keybinder.bind(change_dir.change_drive, "D")

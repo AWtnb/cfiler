@@ -17,6 +17,7 @@ def setup(window) -> None:
     rename_regexp.setup(window)
     rename_stem.setup(window)
     rename_substr.setup(window)
+    keybinder.setup(window)
 
     keybinder.bind(rename_ext.execute, "S-N")
     keybinder.bind(rename_index.execute, "A-S-I")

@@ -5,6 +5,7 @@ from .tools import keybinder, selector
 
 def setup(window) -> None:
 
+    keybinder.setup(window)
     selector.setup(window)
 
     keybinder.bind(selector.select_byext, "S-X")

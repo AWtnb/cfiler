@@ -5,6 +5,7 @@ from .tools import item_handler, keybinder
 
 def setup(window) -> None:
 
+    keybinder.setup(window)
     item_handler.setup(window)
 
     keybinder.bind(item_handler.duplicate_with_new_extension, "A-S-D")

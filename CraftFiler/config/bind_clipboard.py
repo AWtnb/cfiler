@@ -5,6 +5,7 @@ from .tools import clipboard, keybinder
 
 def setup(window) -> None:
 
+    keybinder.setup(window)
     clipboard.setup(window)
 
     keybinder.bind(clipboard.copy_current_path, "C-A-P")
