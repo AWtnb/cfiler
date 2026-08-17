@@ -1,6 +1,22 @@
 from __future__ import annotations
 
 from .tools import cursor_jumper, keybinder
+from .tools.common import CallbackFunc
+
+
+def invoke_jumper(downward: bool, by_prefix: bool, selecting: bool) -> CallbackFunc:
+    jumper = cursor_jumper.CursorJumper(by_prefix)
+    if downward:
+
+        def _jump_down() -> None:
+            jumper.down(selecting)
+
+        return _jump_down
+
+    def _jump_up() -> None:
+        jumper.up(selecting)
+
+    return _jump_up
 
 
 def setup(window) -> None:
@@ -14,11 +30,8 @@ def setup(window) -> None:
         (False, False): "C-J",
         (False, True): "S-C-J",
     }.items():
-
-        def _jump_down(b=by_prefix, s=selecting) -> None:
-            cursor_jumper.CursorJumper(b).down(s)
-
-        keybinder.bind(_jump_down, key)
+        func = invoke_jumper(True, by_prefix, selecting)
+        keybinder.bind(func, key)
 
     for (by_prefix, selecting), key in {
         (True, False): "A-K",
@@ -26,8 +39,5 @@ def setup(window) -> None:
         (False, False): "C-K",
         (False, True): "S-C-K",
     }.items():
-
-        def _jump_up(b=by_prefix, s=selecting) -> None:
-            cursor_jumper.CursorJumper(b).up(s)
-
-        keybinder.bind(_jump_up, key)
+        func = invoke_jumper(False, by_prefix, selecting)
+        keybinder.bind(func, key)
