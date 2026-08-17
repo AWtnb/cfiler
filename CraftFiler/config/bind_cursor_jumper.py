@@ -5,16 +5,15 @@ from .tools.common import CallbackFunc
 
 
 def invoke_jumper(downward: bool, by_prefix: bool, selecting: bool) -> CallbackFunc:
-    jumper = cursor_jumper.CursorJumper(by_prefix)
     if downward:
 
         def _jump_down() -> None:
-            jumper.down(selecting)
+            cursor_jumper.jump_down(by_prefix, selecting)
 
         return _jump_down
 
     def _jump_up() -> None:
-        jumper.up(selecting)
+        cursor_jumper.jump_up(by_prefix, selecting)
 
     return _jump_up
 

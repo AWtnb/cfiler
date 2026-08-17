@@ -69,43 +69,40 @@ def get_prefix_edges(pane: cpane.CPane) -> list[int]:
     return sorted(set(edges))
 
 
-class CursorJumper:
-    def __init__(self, by_prefix: bool):
-        self.pane = cpane.CPane()
-        if by_prefix:
-            self.dests = get_prefix_edges(self.pane)
-        else:
-            self.dests = get_item_edges(self.pane)
+def jump_down(by_prefix: bool, selecting: bool) -> None:
+    pane = cpane.CPane()
+    dests = get_prefix_edges(pane) if by_prefix else get_item_edges(pane)
+    if len(dests) < 1:
+        return
+    cur = pane.cursor
+    idx = -1
+    for t in dests:
+        if cur < t:
+            idx = t
+            break
+    if idx < 0:
+        return
+    if selecting:
+        for i in range(pane.count):
+            if cur <= i <= idx:
+                pane.select(i)
+    pane.focus(idx)
 
-    def down(self, selecting: bool) -> None:
-        if len(self.dests) < 1:
-            return
-        cur = self.pane.cursor
-        idx = -1
-        for t in self.dests:
-            if cur < t:
-                idx = t
-                break
-        if idx < 0:
-            return
-        if selecting:
-            for i in range(self.pane.count):
-                if cur <= i <= idx:
-                    self.pane.select(i)
-        self.pane.focus(idx)
 
-    def up(self, selecting: bool) -> None:
-        if len(self.dests) < 1:
-            return
-        cur = self.pane.cursor
-        idx = -1
-        for t in self.dests:
-            if t < cur:
-                idx = t
-        if idx < 0:
-            return
-        if selecting:
-            for i in range(self.pane.count):
-                if idx <= i <= cur:
-                    self.pane.select(i)
-        self.pane.focus(idx)
+def jump_up(by_prefix: bool, selecting: bool) -> None:
+    pane = cpane.CPane()
+    dests = get_prefix_edges(pane) if by_prefix else get_item_edges(pane)
+    if len(dests) < 1:
+        return
+    cur = pane.cursor
+    idx = -1
+    for t in dests:
+        if t < cur:
+            idx = t
+    if idx < 0:
+        return
+    if selecting:
+        for i in range(pane.count):
+            if idx <= i <= cur:
+                pane.select(i)
+    pane.focus(idx)
