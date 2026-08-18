@@ -63,10 +63,8 @@ def extract_with_7zip(dest: str, *paths: str) -> None:
     if len(targets) < 1:
         return
 
-    krtr = kiritori
-
     def _extract(_) -> None:
-        krtr.draw_header(f"Extracting as '{dest}'...")
+        kiritori.draw_header(f"Extracting as '{dest}'...")
 
         for target in targets:
             try:
@@ -95,7 +93,7 @@ def extract_with_7zip(dest: str, *paths: str) -> None:
 
     def _finished(_) -> None:
         print("Finished")
-        krtr.draw_footer()
+        kiritori.draw_footer()
         pane = cpane.CPane()
         pane.refresh()
         pane.focusByName(Path(dest).name)
