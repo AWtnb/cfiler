@@ -69,7 +69,7 @@ def execute() -> None:
         return
 
     ins, pos = param
-    history = f"{ins};{pos}"
+    history = f"{ins}@{pos}"
     rename_ini.register(INI_OPTION, history)
 
     renames: list[renamer.ItemRename] = []
