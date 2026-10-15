@@ -4,7 +4,13 @@
 
 ## Install
 
-Run [`install.ps1`](./install.ps1) to create junction of `CraftFiler` to AppData.
+Run:
+
+```
+uv run install.py
+```
+
+to create junction of `CraftFiler` to AppData.
 
 ## Development Setup
 
